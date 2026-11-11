@@ -161,14 +161,19 @@ func (m *Ci) Model() *dagger.Directory {
 		Directory("/out")
 }
 
-// BuildApk builds a release APK (debug-signed until a keystore exists).
-func (m *Ci) BuildApk() *dagger.File {
+// BuildApk builds a release APK for one ABI (debug-signed until a keystore
+// exists). One APK per ABI keeps the size down: ONNX Runtime alone is
+// 20-35 MB per architecture. Play Store builds should use an app bundle.
+func (m *Ci) BuildApk(
+	// +default="arm64-v8a"
+	abi string,
+) *dagger.File {
 	return m.base().
 		WithDirectory("/src/assets/models", m.Model(), dagger.ContainerWithDirectoryOpts{Owner: "ci"}).
 		WithMountedCache("/home/ci/.gradle", dag.CacheVolume("pp-app-gradle"), dagger.ContainerWithMountedCacheOpts{Owner: "ci"}).
 		WithEnvVariable("GRADLE_OPTS", "-Dorg.gradle.daemon=false").
-		WithExec([]string{"flutter", "build", "apk", "--release", "--target-platform", "android-arm64,android-arm"}).
-		File("/src/build/app/outputs/flutter-apk/app-release.apk")
+		WithExec([]string{"flutter", "build", "apk", "--release", "--split-per-abi", "--target-platform", "android-arm64,android-arm"}).
+		File("/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk")
 }
 
 // Scaffold runs `flutter create` and returns the generated platform folders.
