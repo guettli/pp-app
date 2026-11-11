@@ -1,0 +1,170 @@
+[
+ {
+  "lang": "de-DE",
+  "phrase": "Das Feuer brennt",
+  "target": "/das ˈfɔɪ̯ɐ bʁɛnt./",
+  "recognized": "dasfɔʏərbrɛnt",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Das_Feuer_brennt/Das_Feuer_brennt-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Das Feuer brennt",
+  "target": "/das ˈfɔɪ̯ɐ bʁɛnt./",
+  "recognized": "dasfɔʏərbrɛnt",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Das_Feuer_brennt/Das_Feuer_brennt-Thomas2.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Bus",
+  "target": "/deːɐ̯ buːs./",
+  "recognized": "ðeɪhɑɹpoʊz",
+  "pp_similarity": 0.78,
+  "file": "tests/data/de-DE/Der_Bus/Der_Bus-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Delfin",
+  "target": "/deːɐ̯ dɛlˈfiːn./",
+  "recognized": "deɾdelfiːn",
+  "pp_similarity": 0.94,
+  "file": "tests/data/de-DE/Der_Delfin/Der_Delfin-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Fuchs",
+  "target": "/deːɐ̯ fʊks./",
+  "recognized": "deːɐfʊks",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Fuchs/Der_Fuchs-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Hamster",
+  "target": "/deːɐ̯ ˈhamstɐ./",
+  "recognized": "deːɐhamstɐ",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Hamster/Der_Hamster-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Hase lacht",
+  "target": "/deːɐ̯ ˈhaːzə laxt./",
+  "recognized": "deːɐhɑːzəlaxt",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Hase_lacht/Der_Hase_lacht-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Hund",
+  "target": "/deːɐ̯ hʊnt./",
+  "recognized": "deːɐhʊnt",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Hund/Der_Hund-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Junge",
+  "target": "/deːɐ̯ ˈjʊŋə./",
+  "recognized": "deaɪtɕuŋə",
+  "pp_similarity": 0.85,
+  "file": "tests/data/de-DE/Der_Junge/Der_Junge-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Mann",
+  "target": "/deːɐ̯ man./",
+  "recognized": "deːɐman",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Mann/Der_Mann-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Panda",
+  "target": "/deːɐ̯ ˈpanda./",
+  "recognized": "deːɐpandɑ",
+  "pp_similarity": 0.99,
+  "file": "tests/data/de-DE/Der_Panda/Der_Panda-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Papagei",
+  "target": "/deːɐ̯ ˌpapaˈɡ̊aɪ̯./",
+  "recognized": "deːpɑapɑkaɪ",
+  "pp_similarity": 0.82,
+  "file": "tests/data/de-DE/Der_Papagei/Der_Papagei-guettli.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Regen",
+  "target": "/deːɐ̯ ˈʁeːɡn̩./",
+  "recognized": "deːɐɾeːgən",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Regen/Der_Regen-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Der Wal",
+  "target": "/deːɐ̯ vaːl./",
+  "recognized": "deːɐvaːl",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Der_Wal/Der_Wal-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Erdbeere",
+  "target": "/diː ˈeːɐ̯tˌbeːʁə./",
+  "recognized": "diːʔɛːɐtbɛɾə",
+  "pp_similarity": 0.94,
+  "file": "tests/data/de-DE/Die_Erdbeere/Die_Erdbeere-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Eule",
+  "target": "/diː ˈɔɪ̯lə./",
+  "recognized": "diːɔɪlə",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Die_Eule/Die_Eule-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Kuh muht",
+  "target": "/diː kuː muːt./",
+  "recognized": "diːkɾuːmuːt",
+  "pp_similarity": 0.94,
+  "file": "tests/data/de-DE/Die_Kuh_muht/Die_Kuh_muht-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Maus",
+  "target": "/diː maʊ̯s./",
+  "recognized": "dimaʊs",
+  "pp_similarity": 0.99,
+  "file": "tests/data/de-DE/Die_Maus/Die_Maus-guettli.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Maus piepst",
+  "target": "/diː maʊ̯s piːpst./",
+  "recognized": "diːmaʊspiːpst",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Die_Maus_piepst/Die_Maus_piepst-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Milch",
+  "target": "/diː mɪlç./",
+  "recognized": "diːmɛlɪç",
+  "pp_similarity": 0.92,
+  "file": "tests/data/de-DE/Die_Milch/Die_Milch-Thomas.flac.yaml"
+ },
+ {
+  "lang": "de-DE",
+  "phrase": "Die Rose",
+  "target": "/diː ˈʁoːzə./",
+  "recognized": "diːʁoːzə",
+  "pp_similarity": 1,
+  "file": "tests/data/de-DE/Die_Rose/Die_Rose-Thomas.flac.yaml"
+ }
+]

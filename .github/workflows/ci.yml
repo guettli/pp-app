@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Format, analyze, test
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: check-fast
+
+  apk:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build APK
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: build-apk export --path build/phoneme-party.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: phoneme-party-apk
+          path: build/phoneme-party.apk
