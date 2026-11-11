@@ -18,7 +18,8 @@ built with Flutter. Native successor of the web app
 2. The child sees a picture, taps it (or 🔊) to hear the phrase (device TTS),
    then taps 🎤 and speaks.
 3. The rocket flies as high as the pronunciation was clear. 3 stars = the
-   planet is reached.
+   planet is reached. Recording stops by tap or after 4–10 s, depending on
+   the phrase length.
 4. Every expected sound is shown as a chip: green = right, orange = close,
    red = missing / wrong.
 
@@ -61,7 +62,25 @@ python3 tool/fetch_emoji.py <fluentui-emoji clone> emojis.txt   # assets/emoji/
 dagger call -m ci panphon-features export --path assets/panphon/panphon_features.json
 ```
 
-The ONNX model is downloaded during `build-apk` and never committed.
+The ONNX model is downloaded during `build-apk` (pinned Hugging Face revision,
+checked by sha256) and never committed.
+
+### Signing
+
+Android only installs an update if it is signed with the same key as the
+installed app. Without a keystore every build gets a fresh debug key, so a
+new APK cannot replace an old one (and uninstalling deletes the child's
+stars). Release builds therefore use an upload key:
+
+```sh
+dagger call -m ci build-apk \
+  --keystore-base-64 file:upload.jks.b64 --keystore-password file:password \
+  export --path build/phoneme-party.apk
+```
+
+In GitHub Actions the repository secrets `KEYSTORE_BASE64` (base64 of the
+PKCS12 keystore, alias `upload`) and `KEYSTORE_PASSWORD` are used when set;
+otherwise CI falls back to a debug key.
 
 ## Licenses
 

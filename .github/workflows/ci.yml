@@ -21,9 +21,26 @@ jobs:
   apk:
     needs: check
     runs-on: ubuntu-latest
+    env:
+      # Secrets are not available in `if:`; forks get none and use a debug key.
+      HAS_KEYSTORE: ${{ secrets.KEYSTORE_BASE64 != '' }}
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build APK
+      - name: Build APK (release key)
+        if: env.HAS_KEYSTORE == 'true'
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: >-
+            build-apk --keystore-base-64 env:KEYSTORE_BASE64
+            --keystore-password env:KEYSTORE_PASSWORD
+            export --path build/phoneme-party.apk
+      - name: Build APK (debug key)
+        if: env.HAS_KEYSTORE != 'true'
         uses: dagger/dagger-for-github@v8.4.1
         with:
           version: "0.21.8"

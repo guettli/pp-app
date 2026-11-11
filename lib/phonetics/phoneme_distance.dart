@@ -98,10 +98,13 @@ class PhonemeComparer {
       (c >= 0x0300 && c <= 0x036F) || c == 0x02B0 || c == 0x02B2 || c == 0x02E0;
 
   /// Removes markup the recogniser cannot hear (stress, syllable dots,
-  /// glottal stops) and harmonises spelling variants.
+  /// glottal stops, punctuation, liaison and h-aspiré marks) and harmonises
+  /// spelling variants.
   static String normalize(String ipa, String lang) {
     var s = ipa
-        .replaceAll(RegExp('[/\\[\\]ˈˌ.ʔ\u200D]'), '')
+        .replaceAll(RegExp('[/\\[\\]ˈˌ.ʔ\u200D!?,¡¿‿ʼ]'), '')
+        // PanPhon only has the decomposed ç; phrases and ZIPA use U+00E7
+        .replaceAll('\u00E7', 'c\u0327')
         .replaceAll('͡', '') // tie bar
         .replaceAll('̯', '') // non-syllabic
         .replaceAll('̴', '') // velarised
@@ -152,6 +155,9 @@ class PhonemeComparer {
     }
     return (phonemes, words);
   }
+
+  /// Whether [phoneme] (a token from [tokenize]) has articulatory features.
+  bool isKnown(String phoneme) => _lookup(phoneme) != null;
 
   List<int>? _lookup(String p) {
     var s = p;

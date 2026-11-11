@@ -36,10 +36,12 @@ class PhoneRecognizer {
     final feats = extractFbank(audio);
     final frames = feats.length ~/ numMelBins;
     if (frames < 10) return Recognition(const []);
-    final x = await OrtValue.fromList(feats, [1, frames, numMelBins]);
-    final xLens = await OrtValue.fromList(Int64List.fromList([frames]), [1]);
-    final outputs = await _session.run({'x': x, 'x_lens': xLens});
+    OrtValue? x, xLens;
+    var outputs = <String, OrtValue>{};
     try {
+      x = await OrtValue.fromList(feats, [1, frames, numMelBins]);
+      xLens = await OrtValue.fromList(Int64List.fromList([frames]), [1]);
+      outputs = await _session.run({'x': x, 'x_lens': xLens});
       final out =
           outputs['log_probs'] ?? outputs['logits'] ?? outputs.values.first;
       final data = (await out.asFlattenedList())
@@ -49,8 +51,8 @@ class PhoneRecognizer {
       final t = out.shape[1], v = out.shape[2];
       return Recognition(decodeCtc(data, t, v, _tokens));
     } finally {
-      await x.dispose();
-      await xLens.dispose();
+      await x?.dispose();
+      await xLens?.dispose();
       for (final o in outputs.values) {
         await o.dispose();
       }

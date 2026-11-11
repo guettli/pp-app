@@ -51,6 +51,10 @@ const flutterArchiveURLTemplate = "https://storage.googleapis.com/flutter_infra_
 const (
 	modelRepo = "anyspeech/zipa-small-crctc-ns-700k"
 	modelFile = "model.int8.onnx"
+	// Pinned so an upstream change cannot silently change recognition.
+	modelRevision = "797523ffb49e31e821a972313813cc4a26d902ef"
+	modelSHA256   = "c0a74847edb1224f90a5a1d20c501f81d841439e0692f8e32d1fe6bd94beaa77"
+	tokensSHA256  = "f8e042a0c9130532b22d03ec7cae2f75a23fbec70c450c31a8efb51787b2b8fe"
 )
 
 // toolchain: Ubuntu + JDK 17 + Android SDK + Flutter (no cache mounts, so the
@@ -149,29 +153,50 @@ func (m *Ci) CheckFast(ctx context.Context) (string, error) {
 	return out, nil
 }
 
-// Model downloads the ZIPA ONNX model and its token table.
+// Model downloads the ZIPA ONNX model and its token table (pinned revision,
+// checked against sha256).
 func (m *Ci) Model() *dagger.Directory {
-	base := "https://huggingface.co/" + modelRepo + "/resolve/main/"
+	base := "https://huggingface.co/" + modelRepo + "/resolve/" + modelRevision + "/"
+	sums := modelSHA256 + "  model.onnx\n" + tokensSHA256 + "  tokens.txt\n"
 	return dag.Container().
 		From("alpine:3.21").
 		WithExec([]string{"apk", "add", "--no-cache", "curl"}).
 		WithWorkdir("/out").
 		WithExec([]string{"curl", "-fsSL", "-o", "model.onnx", base + modelFile}).
 		WithExec([]string{"curl", "-fsSL", "-o", "tokens.txt", base + "tokens.txt"}).
+		WithNewFile("/sha256sums", sums).
+		WithExec([]string{"sha256sum", "-c", "/sha256sums"}).
 		Directory("/out")
 }
 
-// BuildApk builds a release APK for one ABI (debug-signed until a keystore
-// exists). One APK per ABI keeps the size down: ONNX Runtime alone is
-// 20-35 MB per architecture. Play Store builds should use an app bundle.
+// BuildApk builds a release APK for one ABI. One APK per ABI keeps the size
+// down: ONNX Runtime alone is 20-35 MB per architecture. Play Store builds
+// should use an app bundle.
+//
+// Without a keystore the APK is signed with a throw-away debug key, so it
+// cannot be installed as an update over an APK from another build.
 func (m *Ci) BuildApk(
 	// +default="arm64-v8a"
 	abi string,
+	// Release keystore (PKCS12/JKS, base64-encoded), key alias "upload".
+	// +optional
+	keystoreBase64 *dagger.Secret,
+	// Password of the keystore and the key.
+	// +optional
+	keystorePassword *dagger.Secret,
 ) *dagger.File {
-	return m.base().
+	c := m.base().
 		WithDirectory("/src/assets/models", m.Model(), dagger.ContainerWithDirectoryOpts{Owner: "ci"}).
 		WithMountedCache("/home/ci/.gradle", dag.CacheVolume("pp-app-gradle"), dagger.ContainerWithMountedCacheOpts{Owner: "ci"}).
-		WithEnvVariable("GRADLE_OPTS", "-Dorg.gradle.daemon=false").
+		WithEnvVariable("GRADLE_OPTS", "-Dorg.gradle.daemon=false")
+	if keystoreBase64 != nil && keystorePassword != nil {
+		c = c.
+			WithSecretVariable("KS_B64", keystoreBase64).
+			WithSecretVariable("KS_PASS", keystorePassword).
+			WithExec([]string{"sh", "-euc", `echo "$KS_B64" | base64 -d > /home/ci/upload.jks
+printf 'storeFile=/home/ci/upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' "$KS_PASS" "$KS_PASS" > android/key.properties`})
+	}
+	return c.
 		WithExec([]string{"flutter", "build", "apk", "--release", "--split-per-abi", "--target-platform", "android-arm64,android-arm"}).
 		File("/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk")
 }

@@ -29,11 +29,6 @@ class AppState {
     await progress.setStudyLang(lang);
   }
 
-  int worldStars(int world) => book
-      .world(world)
-      .fold(0, (sum, p) => sum + progress.stars(book.lang, p.text));
-
-  /// World n is open when world n-1 has at least one star per phrase on average.
-  bool worldOpen(int world) =>
-      world == 0 || worldStars(world - 1) >= book.world(world - 1).length;
+  int worldStars(int world) => progress.worldStars(book, world);
+  bool worldOpen(int world) => progress.worldOpen(book, world);
 }

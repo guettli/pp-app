@@ -59,6 +59,23 @@ void main() {
     expect(cmp.phonemeCost('ɡ', 'k', 'de-DE'), lessThan(0.15));
   });
 
+  test('punctuation and liaison marks are not phonemes', () {
+    expect(cmp.compare('/pʁoːst!/', 'pʁoːst', 'de-DE').stars, 3);
+    expect(cmp.compare('/¿ ˈkomo eˈstas?/', 'komoestas', 'es-ES').stars, 3);
+    expect(cmp.compare('/s‿il tə plɛ./', 'siltəplɛ', 'fr-FR').stars, 3);
+    expect(cmp.compare('/ɑ̃ ʼo./', 'ɑ̃o', 'fr-FR').stars, 3); // h aspiré
+    expect(cmp.tokenize('/ɡuːt, ˈdaŋkə./', 'de-DE').$1, isNot(contains(',')));
+  });
+
+  test('precomposed ç is a known phoneme, close to ʃ', () {
+    // phrases and ZIPA write U+00E7, PanPhon only knows c + U+0327
+    final c = cmp.tokenize('ɪ\u00E7', 'de-DE').$1.last;
+    expect(cmp.isKnown(c), isTrue);
+    expect(cmp.phonemeCost(c, 'ʃ', 'de-DE'), lessThan(0.3));
+    // "ich" said as "isch" is close, not wrong
+    expect(cmp.compare('ɪç', 'ɪʃ', 'de-DE').score, greaterThanOrEqualTo(0.75));
+  });
+
   test('combining diacritics stay with their phoneme', () {
     final (p, _) = cmp.tokenize('/pɛ̃/', 'fr-FR');
     expect(p, ['p', 'ɛ̃']);

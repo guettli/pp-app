@@ -18,6 +18,7 @@ class S {
   String get speak => _t['speak']!;
   String get next => _t['next']!;
   String get needMic => _t['needMic']!;
+  String get tryAgain => _t['tryAgain']!;
   String get worldDone => _t['worldDone']!;
   String get ok => _t['ok']!;
   String get loading => _t['loading']!;
@@ -31,6 +32,7 @@ class S {
       'speak': 'Sprechen',
       'next': 'Weiter',
       'needMic': 'Bitte erlaube das Mikrofon.',
+      'tryAgain': 'Das hat nicht geklappt. Versuch es noch einmal.',
       'worldDone': 'Geschafft!',
       'newStars': '{n} neue Sterne gesammelt.',
       'ok': 'Super',
@@ -43,6 +45,7 @@ class S {
       'speak': 'Speak',
       'next': 'Next',
       'needMic': 'Please allow the microphone.',
+      'tryAgain': 'That did not work. Please try again.',
       'worldDone': 'Well done!',
       'newStars': '{n} new stars collected.',
       'ok': 'Great',
@@ -55,6 +58,7 @@ class S {
       'speak': 'Parler',
       'next': 'Suivant',
       'needMic': 'Autorise le microphone, s’il te plaît.',
+      'tryAgain': 'Ça n’a pas marché. Essaie encore.',
       'worldDone': 'Bravo !',
       'newStars': '{n} nouvelles étoiles.',
       'ok': 'Super',
@@ -67,6 +71,7 @@ class S {
       'speak': 'Parla',
       'next': 'Avanti',
       'needMic': 'Per favore consenti il microfono.',
+      'tryAgain': 'Non ha funzionato. Riprova.',
       'worldDone': 'Bravo!',
       'newStars': '{n} nuove stelle raccolte.',
       'ok': 'Evviva',
@@ -79,6 +84,7 @@ class S {
       'speak': 'Hablar',
       'next': 'Siguiente',
       'needMic': 'Por favor, permite el micrófono.',
+      'tryAgain': 'No ha funcionado. Inténtalo otra vez.',
       'worldDone': '¡Muy bien!',
       'newStars': '{n} estrellas nuevas.',
       'ok': 'Genial',
