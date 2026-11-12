@@ -50,3 +50,8 @@ app.*.map.json
 # Downloaded at build time (dagger call -m ci model), ~71 MB
 /assets/models/*.onnx
 /assets/models/tokens.txt
+
+# decrypted signing material (see README "Signing")
+*.jks
+*.jks.b64
+/password

@@ -82,6 +82,23 @@ In GitHub Actions the repository secrets `KEYSTORE_BASE64` (base64 of the
 PKCS12 keystore, alias `upload`) and `KEYSTORE_PASSWORD` are used when set;
 otherwise CI falls back to a debug key.
 
+The key itself is kept in git, encrypted with [SOPS](https://getsops.io) and
+age (`secrets/android-upload.enc.yaml`, recipient in `.sops.yaml`: the master
+key of guettli/gitops). Losing it means no more updates for installed apps.
+With `SOPS_AGE_KEY` set:
+
+```sh
+f=secrets/android-upload.enc.yaml
+sops decrypt --extract '["keystore_base64"]' $f > upload.jks.b64
+sops decrypt --extract '["keystore_password"]' $f > password
+# restore the GitHub secrets
+gh secret set KEYSTORE_BASE64 < upload.jks.b64
+gh secret set KEYSTORE_PASSWORD < password
+```
+
+Do not commit the decrypted files (`*.jks`, `*.b64`, `password` are
+ignored).
+
 ## Licenses
 
 - Code: MIT (see `LICENSE`).
