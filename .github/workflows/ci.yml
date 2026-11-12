@@ -18,8 +18,10 @@ jobs:
           module: ci
           args: check-fast
 
+  # Pull requests: build the APK as a downloadable artifact (main: see release).
   apk:
     needs: check
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     env:
       # Secrets are not available in `if:`; forks get none and use a debug key.
@@ -51,3 +53,72 @@ jobs:
         with:
           name: phoneme-party-apk
           path: build/phoneme-party.apk
+
+  # Every merge to main becomes a release, so the README can link to
+  # releases/latest/download/... and phones can install updates directly.
+  release:
+    needs: check
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency: release
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+      KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+      # versionCode must grow with every release, or phones refuse the update
+      BUILD_NUMBER: ${{ github.run_number }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require the release key
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "::error::KEYSTORE_BASE64/KEYSTORE_PASSWORD missing (see README, Signing)"
+            exit 1
+          fi
+      - name: Build APK arm64 (most phones)
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: >-
+            build-apk --abi arm64-v8a --build-number ${{ github.run_number }}
+            --keystore-base-64 env:KEYSTORE_BASE64
+            --keystore-password env:KEYSTORE_PASSWORD
+            export --path dist/phoneme-party.apk
+      - name: Build APK armv7 (older 32-bit phones)
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: >-
+            build-apk --abi armeabi-v7a --build-number ${{ github.run_number }}
+            --keystore-base-64 env:KEYSTORE_BASE64
+            --keystore-password env:KEYSTORE_PASSWORD
+            export --path dist/phoneme-party-armv7.apk
+      - name: Version
+        id: version
+        uses: dagger/dagger-for-github@v8.4.1
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: release-version --build-number ${{ github.run_number }}
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.output }}
+        run: |
+          VERSION=$(echo "$VERSION" | tr -d '[:space:]')
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::bad version '$VERSION'"; exit 1; }
+          TAG="v$VERSION"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            # re-run of the same workflow run: same build number, replace files
+            gh release upload "$TAG" dist/*.apk --clobber
+          else
+            gh release create "$TAG" dist/*.apk \
+              --target "$GITHUB_SHA" --title "Phoneme Party $VERSION" \
+              --generate-notes --latest
+          fi

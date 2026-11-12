@@ -1,5 +1,13 @@
 # Phoneme Party (App)
 
+**📲 [Download for Android (APK)](https://github.com/guettli/pp-app/releases/latest/download/phoneme-party.apk)**
+· older 32-bit phones: [armv7 APK](https://github.com/guettli/pp-app/releases/latest/download/phoneme-party-armv7.apk)
+· [all releases](https://github.com/guettli/pp-app/releases)
+
+Open the link on the phone, tap the downloaded file and allow "install
+unknown apps" once. Updates install the same way, over the old version; the
+stars are kept.
+
 Speaking clearly should be fun. A free, offline pronunciation game for kids,
 built with Flutter. Native successor of the web app
 [guettli/pp](https://github.com/guettli/pp).
@@ -61,6 +69,11 @@ python3 tool/build_phrases.py ../pp > emojis.txt      # assets/phrases/*.json
 python3 tool/fetch_emoji.py <fluentui-emoji clone> emojis.txt   # assets/emoji/
 dagger call -m ci panphon-features export --path assets/panphon/panphon_features.json
 ```
+
+Every merge to `main` publishes a GitHub release `v<major>.<minor>.<run>`
+(major/minor from `pubspec.yaml`, the workflow run number is also the
+Android versionCode) with both APKs. Pull requests get the APK as a workflow
+artifact.
 
 The ONNX model is downloaded during `build-apk` (pinned Hugging Face revision,
 checked by sha256) and never committed.
