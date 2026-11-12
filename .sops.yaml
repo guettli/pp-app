@@ -1,0 +1,6 @@
+# SOPS creation rules. The age recipient is the master key also used by
+# guettli/gitops (private half: SOPS_AGE_KEY in its .env and the cluster's
+# flux-system/sops-age Secret).
+creation_rules:
+  - path_regex: secrets/.*\.enc\.yaml$
+    age: age1r0k34dkgzppaew7etm3ka7p0dgxcd365gxe66kuuqsnw6hqax9qswda0sh
