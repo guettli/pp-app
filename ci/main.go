@@ -11,6 +11,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"dagger/ci/internal/dagger"
 )
@@ -176,6 +178,7 @@ func (m *Ci) Model() *dagger.Directory {
 // Without a keystore the APK is signed with a throw-away debug key, so it
 // cannot be installed as an update over an APK from another build.
 func (m *Ci) BuildApk(
+	ctx context.Context,
 	// +default="arm64-v8a"
 	abi string,
 	// Release keystore (PKCS12/JKS, base64-encoded), key alias "upload".
@@ -184,7 +187,12 @@ func (m *Ci) BuildApk(
 	// Password of the keystore and the key.
 	// +optional
 	keystorePassword *dagger.Secret,
-) *dagger.File {
+	// Build number (Android versionCode); must grow with every release so
+	// phones accept the update. The version name becomes
+	// <major>.<minor>.<buildNumber> from pubspec.yaml. 0 keeps pubspec's.
+	// +default=0
+	buildNumber int,
+) (*dagger.File, error) {
 	c := m.base().
 		WithDirectory("/src/assets/models", m.Model(), dagger.ContainerWithDirectoryOpts{Owner: "ci"}).
 		WithMountedCache("/home/ci/.gradle", dag.CacheVolume("pp-app-gradle"), dagger.ContainerWithMountedCacheOpts{Owner: "ci"}).
@@ -196,9 +204,38 @@ func (m *Ci) BuildApk(
 			WithExec([]string{"sh", "-euc", `echo "$KS_B64" | base64 -d > /home/ci/upload.jks
 printf 'storeFile=/home/ci/upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' "$KS_PASS" "$KS_PASS" > android/key.properties`})
 	}
+	args := []string{"flutter", "build", "apk", "--release", "--split-per-abi", "--target-platform", "android-arm64,android-arm"}
+	if buildNumber > 0 {
+		name, err := m.releaseVersion(ctx, buildNumber)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, "--build-name", name, "--build-number", strconv.Itoa(buildNumber))
+	}
 	return c.
-		WithExec([]string{"flutter", "build", "apk", "--release", "--split-per-abi", "--target-platform", "android-arm64,android-arm"}).
-		File("/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk")
+		WithExec(args).
+		File("/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk"), nil
+}
+
+// ReleaseVersion returns the version name for a build number:
+// <major>.<minor> from pubspec.yaml plus the build number as patch.
+func (m *Ci) ReleaseVersion(
+	ctx context.Context,
+	buildNumber int,
+) (string, error) {
+	return m.releaseVersion(ctx, buildNumber)
+}
+
+func (m *Ci) releaseVersion(ctx context.Context, buildNumber int) (string, error) {
+	pubspec, err := m.Source.File("pubspec.yaml").Contents(ctx)
+	if err != nil {
+		return "", err
+	}
+	match := regexp.MustCompile(`(?m)^version:\s*(\d+)\.(\d+)\.`).FindStringSubmatch(pubspec)
+	if match == nil {
+		return "", fmt.Errorf("no version: <major>.<minor>.<patch> in pubspec.yaml")
+	}
+	return fmt.Sprintf("%s.%s.%d", match[1], match[2], buildNumber), nil
 }
 
 // Scaffold runs `flutter create` and returns the generated platform folders.
