@@ -1,0 +1,43 @@
+# IPA for words without a pronunciation on English Wiktionary (written by
+# hand in Wiktionary's style; plurals derived from the singular entry).
+# lang<TAB>word<TAB>IPA
+de-DE	Flamingo	/flaˈmɪŋɡo/
+de-DE	Delfin	/dɛlˈfiːn/
+de-DE	Popcorn	/ˈpɔpkɔrn/
+de-DE	Teddy	/ˈtɛdi/
+de-DE	Trompete	/trɔmˈpeːtə/
+en-GB	cherries	/ˈt͡ʃɛɹiz/
+it-IT	popcorn	/ˈpɔpkorn/
+it-IT	monopattino	/monopatˈtino/
+es-ES	palomitas	/paloˈmitas/
+es-ES	cerezas	/θeˈɾeθas/
+es-ES	calcetines	/kalθeˈtines/
+es-ES	patinete	/patiˈnete/
+# Wiktionary entries that were wrong for us (fragment parsed, US or
+# non-RP variant, optional sounds in parentheses, odd notation)
+en-GB	candle	/ˈkændl̩/
+en-GB	lemon	/ˈlɛmən/
+en-GB	two	/tuː/
+en-GB	four	/fɔː/
+en-GB	hat	/hæt/
+en-GB	ladder	/ˈlædə/
+en-GB	dress	/dɹɛs/
+en-GB	tulip	/ˈtjuːlɪp/
+en-GB	ladybird	/ˈleɪdibɜːd/
+en-GB	flamingo	/fləˈmɪŋɡəʊ/
+en-GB	star	/stɑː/
+en-GB	scooter	/ˈskuːtə/
+en-GB	butterfly	/ˈbʌtəflaɪ/
+en-GB	helicopter	/ˈhɛlɪkɒptə/
+fr-FR	bus	/bys/
+fr-FR	cinq	/sɛ̃k/
+fr-FR	noix de coco	/nwa də ko.ko/
+de-DE	Schwein	/ʃvaɪ̯n/
+de-DE	Pilz	/pɪlts/
+de-DE	Fahrrad	/ˈfaːɐ̯ˌʁaːt/
+de-DE	Socken	/ˈzɔkn̩/
+es-ES	hueso	/ˈweso/
+es-ES	huevo	/ˈwebo/
+en-GB	squirrel	/ˈskwɪɹəl/
+en-GB	strawberry	/ˈstɹɔːbəɹi/
+en-GB	chocolate	/ˈtʃɒklət/
