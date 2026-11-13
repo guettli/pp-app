@@ -10,6 +10,7 @@ import 'package:record/record.dart';
 
 import '../app_state.dart';
 import '../data/phrases.dart';
+import '../phonetics/endpointer.dart';
 import '../phonetics/phoneme_distance.dart';
 import '../phonetics/recognizer.dart';
 import '../ui/emoji_image.dart';
@@ -17,9 +18,11 @@ import '../ui/strings.dart';
 import 'rocket_launch.dart';
 import 'rules.dart';
 
-/// `starting` covers the permission dialog and recorder start-up, so taps
-/// during that time are ignored instead of starting a second recording.
-enum _Phase { ready, starting, listening, thinking, result }
+/// One round: `starting` (permission, set-up) -> `speaking` (the phone says
+/// the phrase) -> `listening` (hands-free: ends when the child stops
+/// talking) -> `thinking` -> `result`. Taps during `starting`/`speaking`/
+/// `thinking` are ignored, so a child cannot start two rounds.
+enum _Phase { ready, starting, speaking, listening, thinking, result }
 
 class PlayScreen extends StatefulWidget {
   const PlayScreen({super.key, required this.app, required this.world});
@@ -31,7 +34,8 @@ class PlayScreen extends StatefulWidget {
   State<PlayScreen> createState() => _PlayScreenState();
 }
 
-class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
+class _PlayScreenState extends State<PlayScreen>
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   final _recorder = AudioRecorder();
   final _tts = FlutterTts();
   late final List<Phrase> _phrases = widget.app.book.world(widget.world);
@@ -47,8 +51,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   StreamSubscription<Uint8List>? _sub;
   Timer? _timer;
   double _level = 0;
-  StreamSubscription<Amplitude>? _ampSub;
+  Endpointer? _endpointer;
   int _sessionStars = 0;
+
+  /// Incremented to abandon a running round (screen closed, app paused).
+  int _round = 0;
 
   Phrase get _phrase => _phrases[_index];
   String get _lang => widget.app.book.lang;
@@ -56,84 +63,112 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tts.setLanguage(_lang);
     _tts.setSpeechRate(0.4);
+    // speak() completes when the phrase has been said, so listening can
+    // start right after it
+    _tts.awaitSpeakCompletion(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _play());
   }
 
   @override
   void dispose() {
+    _round++;
+    WidgetsBinding.instance.removeObserver(this);
     _timer?.cancel();
     _sub?.cancel();
-    _ampSub?.cancel();
     _recorder.dispose();
     _tts.stop();
     _bob.dispose();
     super.dispose();
   }
 
-  /// Speaking while the mic records would score the device's own voice.
-  bool get _canSpeak => _phase == _Phase.ready || _phase == _Phase.result;
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Not on `inactive`: the permission dialog causes that.
+    if (state == AppLifecycleState.paused) _abort();
+  }
 
+  bool get _idle => _phase == _Phase.ready || _phase == _Phase.result;
+  bool _current(int round) => mounted && round == _round;
+
+  /// Says the phrase again without recording.
   Future<void> _speak() async {
-    if (!_canSpeak) return;
+    if (!_idle) return;
     await _tts.stop();
     await _tts.speak(_phrase.text);
   }
 
-  Future<void> _toggleMic() async {
-    switch (_phase) {
-      case _Phase.listening:
-        await _stop();
-      case _Phase.ready || _Phase.result:
-        await _start();
-      case _Phase.starting || _Phase.thinking:
-        break;
-    }
-  }
-
-  Future<void> _start() async {
+  /// The phone says the phrase, then listens until the child has spoken.
+  Future<void> _play() async {
+    if (!_idle || !mounted) return;
+    final round = ++_round;
     final back = _phase;
     setState(() => _phase = _Phase.starting);
     try {
+      // Ask before speaking, so the dialog does not cover the phrase.
       if (!await _recorder.hasPermission()) {
         _fail(back, (s) => s.needMic);
         return;
       }
-      await _tts.stop();
-      if (!mounted) return;
-      _buffer.clear();
-      final stream = await _recorder.startStream(
-        const RecordConfig(
-          encoder: AudioEncoder.pcm16bits,
-          sampleRate: 16000,
-          numChannels: 1,
-          autoGain: true,
-          noiseSuppress: true,
-        ),
-      );
-      if (!mounted) return;
-      _sub = stream.listen(_buffer.add);
-      _ampSub = _recorder
-          .onAmplitudeChanged(const Duration(milliseconds: 80))
-          .listen((a) {
-            if (!mounted) return;
-            setState(() => _level = ((a.current + 50) / 50).clamp(0.0, 1.0));
-          });
-      _timer = Timer(recordingLimit(_phrase.text), _stop);
+      if (!_current(round)) return;
       setState(() {
-        _phase = _Phase.listening;
+        _phase = _Phase.speaking;
         _result = null;
       });
+      await _tts.stop();
+      await _tts
+          .speak(_phrase.text)
+          .timeout(
+            Duration(seconds: 3 + _phrase.text.length ~/ 4),
+            onTimeout: () => null, // no TTS engine: listen anyway
+          );
+      // let the speaker's echo fade before the mic opens
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!_current(round)) return;
+      await _listen(round);
     } catch (e, st) {
-      debugPrint('start recording failed: $e\n$st');
-      _fail(back, (s) => s.tryAgain);
+      debugPrint('round failed: $e\n$st');
+      if (_current(round)) _fail(back, (s) => s.tryAgain);
     }
   }
 
+  Future<void> _listen(int round) async {
+    _buffer.clear();
+    final ep = _endpointer = Endpointer();
+    final stream = await _recorder.startStream(
+      const RecordConfig(
+        encoder: AudioEncoder.pcm16bits,
+        sampleRate: 16000,
+        numChannels: 1,
+        autoGain: true,
+        noiseSuppress: true,
+      ),
+    );
+    if (!_current(round)) {
+      await _recorder.stop();
+      return;
+    }
+    _sub = stream.listen((chunk) {
+      _buffer.add(chunk);
+      ep.addPcm16(chunk);
+      if (!mounted) return;
+      final db = 20 * math.log(math.max(ep.level, 1e-5)) / math.ln10;
+      setState(() => _level = ((db + 50) / 50).clamp(0.0, 1.0));
+      if (ep.done) _stop();
+    });
+    _timer = Timer(recordingLimit(_phrase.text), _stop);
+    setState(() => _phase = _Phase.listening);
+  }
+
+  /// Ends the recording (child finished, time limit, or tap) and scores it.
   Future<void> _stop() async {
     if (_phase != _Phase.listening) return;
-    // Set synchronously: the timer and a tap must not both get past here.
+    // Set synchronously: the timer, the endpointer and a tap must not all
+    // get past here.
     final phrase = _phrase;
+    final heard = _endpointer?.heardSpeech ?? true;
     _timer?.cancel();
     setState(() {
       _phase = _Phase.thinking;
@@ -142,8 +177,11 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     try {
       await _recorder.stop();
       await _sub?.cancel();
-      await _ampSub?.cancel();
-      _sub = _ampSub = null;
+      _sub = null;
+      if (!heard) {
+        _fail(_Phase.ready, (s) => s.notHeard);
+        return;
+      }
       final audio = trimSilence(pcm16ToFloat(_buffer.takeBytes()));
       final rec = await widget.app.recognizer.recognize(audio);
       final cmp = widget.app.comparer.compare(phrase.ipa, rec.ipa, _lang);
@@ -161,6 +199,32 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
       _fail(_Phase.ready, (s) => s.tryAgain);
+    }
+  }
+
+  /// Stops whatever runs (app went to the background) without scoring.
+  Future<void> _abort() async {
+    if (_idle) return;
+    _round++;
+    _timer?.cancel();
+    await _tts.stop();
+    if (_phase == _Phase.listening) {
+      await _recorder.stop();
+      await _sub?.cancel();
+      _sub = null;
+    }
+    if (mounted) setState(() => _phase = _Phase.ready);
+  }
+
+  /// Big button: listening -> done talking; idle -> new round.
+  void _onMic() {
+    switch (_phase) {
+      case _Phase.listening:
+        _stop();
+      case _Phase.ready || _Phase.result:
+        _play();
+      case _Phase.starting || _Phase.speaking || _Phase.thinking:
+        break;
     }
   }
 
@@ -183,6 +247,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
       _phase = _Phase.ready;
       _result = null;
     });
+    _play();
   }
 
   void _showWorldDone() {
@@ -248,7 +313,7 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                         child: child,
                       ),
                       child: GestureDetector(
-                        onTap: _canSpeak ? _speak : null,
+                        onTap: _idle ? _speak : null,
                         child: EmojiImage(
                           _phrase.emoji,
                           size: math.min(160, c.maxHeight * 0.22),
@@ -273,6 +338,19 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
                       PhonemeChips(result: _result!),
                     ],
                     const Spacer(),
+                    AnimatedOpacity(
+                      opacity: _phase == _Phase.listening ? 1 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Text(
+                        s.yourTurn,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
                     _controls(s, scheme),
                     const SizedBox(height: 24),
                   ],
@@ -288,12 +366,18 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
   Widget _controls(S s, ColorScheme scheme) {
     final listening = _phase == _Phase.listening;
     final busy = _phase == _Phase.thinking || _phase == _Phase.starting;
+    final Widget micChild = switch (_phase) {
+      _Phase.starting ||
+      _Phase.thinking => const CircularProgressIndicator(color: Colors.white),
+      _Phase.speaking => const EmojiImage('👂', size: 60),
+      _ => const EmojiImage('🎤', size: 60),
+    };
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _RoundButton(
           tooltip: s.listen,
-          onTap: _canSpeak ? _speak : null,
+          onTap: _idle ? _speak : null,
           color: const Color(0xFF3D5AFE),
           child: const EmojiImage('🔊', size: 40),
         ),
@@ -301,15 +385,16 @@ class _PlayScreenState extends State<PlayScreen> with TickerProviderStateMixin {
           scale: listening ? 1.0 + _level * 0.35 : 1.0,
           duration: const Duration(milliseconds: 80),
           child: _RoundButton(
-            tooltip: s.speak,
+            tooltip: listening ? s.yourTurn : s.speak,
             size: 110,
-            onTap: busy ? null : _toggleMic,
+            onTap: busy || _phase == _Phase.speaking ? null : _onMic,
+            dimmed: busy,
             color: listening
                 ? const Color(0xFFFF5252)
+                : _phase == _Phase.speaking
+                ? const Color(0xFF3D5AFE)
                 : const Color(0xFFFF9100),
-            child: busy
-                ? const CircularProgressIndicator(color: Colors.white)
-                : const EmojiImage('🎤', size: 60),
+            child: micChild,
           ),
         ),
         _RoundButton(
@@ -334,7 +419,11 @@ class _RoundButton extends StatelessWidget {
     required this.color,
     required this.tooltip,
     this.size = 76,
+    this.dimmed,
   });
+
+  /// Defaults to "disabled"; false keeps a busy button fully visible.
+  final bool? dimmed;
 
   final Widget child;
   final VoidCallback? onTap;
@@ -344,15 +433,15 @@ class _RoundButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final enabled = onTap != null;
+    final dim = dimmed ?? onTap == null;
     return Tooltip(
       message: tooltip,
       child: Opacity(
-        opacity: enabled ? 1 : 0.35,
+        opacity: dim ? 0.35 : 1,
         child: Material(
           color: color,
           shape: const CircleBorder(),
-          elevation: enabled ? 8 : 0,
+          elevation: dim ? 0 : 8,
           child: InkWell(
             customBorder: const CircleBorder(),
             onTap: onTap,

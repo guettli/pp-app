@@ -23,11 +23,15 @@ built with Flutter. Native successor of the web app
 
 1. Worlds of 8 phrases, easy first. A world opens once the previous one has
    on average one star per phrase.
-2. The child sees a picture, taps it (or 🔊) to hear the phrase (device TTS),
-   then taps 🎤 and speaks.
+2. The child sees a picture, the phone says the phrase (device TTS, 👂), then
+   listens by itself (🎤 red, "your turn"). No button is needed: recording
+   stops after 1 s of silence once the child has spoken
+   (`lib/phonetics/endpointer.dart`), after 5 s without speech, or at the
+   time limit (6–12 s, by phrase length). Tapping 🎤 stops early.
 3. The rocket flies as high as the pronunciation was clear. 3 stars = the
-   planet is reached. Recording stops by tap or after 4–10 s, depending on
-   the phrase length.
+   planet is reached. 🎤 repeats the round (hear, then speak), 🔊 or the
+   picture only repeats the phrase, ➡ goes to the next phrase, which starts
+   by itself.
 4. Every expected sound is shown as a chip: green = right, orange = close,
    red = missing / wrong.
 

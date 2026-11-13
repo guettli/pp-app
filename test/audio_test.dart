@@ -59,13 +59,13 @@ void main() {
   });
 
   group('recordingLimit', () {
-    test('short phrases get 4 s', () {
-      expect(recordingLimit('Hund'), const Duration(seconds: 4));
+    test('short phrases get 6 s (reaction time + speaking)', () {
+      expect(recordingLimit('Hund'), const Duration(seconds: 6));
     });
-    test('long phrases get more, at most 10 s', () {
+    test('long phrases get more, at most 12 s', () {
       final long = recordingLimit('Kann ich die Rechnung haben?');
-      expect(long, greaterThan(const Duration(seconds: 5)));
-      expect(recordingLimit('a' * 500), const Duration(seconds: 10));
+      expect(long, greaterThan(const Duration(seconds: 7)));
+      expect(recordingLimit('a' * 500), const Duration(seconds: 12));
     });
   });
 }

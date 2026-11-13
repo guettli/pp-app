@@ -19,6 +19,8 @@ class S {
   String get next => _t['next']!;
   String get needMic => _t['needMic']!;
   String get tryAgain => _t['tryAgain']!;
+  String get yourTurn => _t['yourTurn']!;
+  String get notHeard => _t['notHeard']!;
   String get worldDone => _t['worldDone']!;
   String get ok => _t['ok']!;
   String get loading => _t['loading']!;
@@ -33,6 +35,8 @@ class S {
       'next': 'Weiter',
       'needMic': 'Bitte erlaube das Mikrofon.',
       'tryAgain': 'Das hat nicht geklappt. Versuch es noch einmal.',
+      'yourTurn': 'Jetzt du!',
+      'notHeard': 'Ich habe nichts gehört. Tippe auf 🎤 und sprich nach.',
       'worldDone': 'Geschafft!',
       'newStars': '{n} neue Sterne gesammelt.',
       'ok': 'Super',
@@ -46,6 +50,8 @@ class S {
       'next': 'Next',
       'needMic': 'Please allow the microphone.',
       'tryAgain': 'That did not work. Please try again.',
+      'yourTurn': 'Your turn!',
+      'notHeard': 'I did not hear anything. Tap 🎤 and say it after me.',
       'worldDone': 'Well done!',
       'newStars': '{n} new stars collected.',
       'ok': 'Great',
@@ -59,6 +65,8 @@ class S {
       'next': 'Suivant',
       'needMic': 'Autorise le microphone, s’il te plaît.',
       'tryAgain': 'Ça n’a pas marché. Essaie encore.',
+      'yourTurn': 'À toi !',
+      'notHeard': 'Je n’ai rien entendu. Touche 🎤 et répète.',
       'worldDone': 'Bravo !',
       'newStars': '{n} nouvelles étoiles.',
       'ok': 'Super',
@@ -72,6 +80,8 @@ class S {
       'next': 'Avanti',
       'needMic': 'Per favore consenti il microfono.',
       'tryAgain': 'Non ha funzionato. Riprova.',
+      'yourTurn': 'Tocca a te!',
+      'notHeard': 'Non ho sentito niente. Tocca 🎤 e ripeti.',
       'worldDone': 'Bravo!',
       'newStars': '{n} nuove stelle raccolte.',
       'ok': 'Evviva',
@@ -85,6 +95,8 @@ class S {
       'next': 'Siguiente',
       'needMic': 'Por favor, permite el micrófono.',
       'tryAgain': 'No ha funcionado. Inténtalo otra vez.',
+      'yourTurn': '¡Te toca!',
+      'notHeard': 'No he oído nada. Toca 🎤 y repite.',
       'worldDone': '¡Muy bien!',
       'newStars': '{n} estrellas nuevas.',
       'ok': 'Genial',
