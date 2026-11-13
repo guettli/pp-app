@@ -1,8 +1,10 @@
-/// Longest recording for [text]. Kids speak slowly, and a cut-off tail would
-/// count as missing sounds, so long phrases get more time.
+/// Hard cap for one recording of [text]. Normally the endpointer stops
+/// earlier (child finished); the cap includes the child's reaction time
+/// after the phone has said the phrase. Kids speak slowly, and a cut-off
+/// tail would count as missing sounds, so long phrases get more time.
 Duration recordingLimit(String text) {
-  final ms = 2500 + 120 * text.runes.length;
-  return Duration(milliseconds: ms.clamp(4000, 10000));
+  final ms = 4000 + 120 * text.runes.length;
+  return Duration(milliseconds: ms.clamp(6000, 12000));
 }
 
 /// Stars to add to the session total: only the improvement over the best
