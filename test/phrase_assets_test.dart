@@ -12,8 +12,6 @@ void main() {
   final cmp = PhonemeComparer.fromJson(
     File('assets/panphon/panphon_features.json').readAsStringSync(),
   );
-  // No Fluent 3D image exists for these; the app shows the system emoji.
-  const missingEmoji = {'👪', '👫', '💏'};
 
   for (final lang in languageNames.keys) {
     group(lang, () {
@@ -28,6 +26,18 @@ void main() {
         expect(phrases, isNotEmpty);
         for (var i = 1; i < phrases.length; i++) {
           expect(phrases[i].level, greaterThanOrEqualTo(phrases[i - 1].level));
+        }
+      });
+
+      test('one word per picture, no duplicates', () {
+        expect(phrases.map((p) => p.emoji).toSet().length, phrases.length);
+        expect(phrases.map((p) => p.text).toSet().length, phrases.length);
+      });
+
+      test('no optional sounds or notes in the IPA', () {
+        // "(ə)" etc. cannot be scored: the child would lose points either way
+        for (final p in phrases) {
+          expect(p.ipa, isNot(matches(RegExp(r'[()ᵑ]'))), reason: p.text);
         }
       });
 
@@ -58,7 +68,6 @@ void main() {
       test('every picture is bundled', () {
         final missing = phrases
             .map((p) => p.emoji)
-            .where((e) => !missingEmoji.contains(e))
             .where((e) => !File('assets/emoji/${emojiKey(e)}.png').existsSync())
             .toSet();
         expect(missing, isEmpty);

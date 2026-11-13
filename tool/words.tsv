@@ -1,0 +1,179 @@
+# Curated words for kids: concrete things everybody names the same way when
+# they see the picture. One concept per line:
+# emoji<TAB>de-DE<TAB>en-GB<TAB>fr-FR<TAB>it-IT<TAB>es-ES
+# "-" = leave out in that language (the picture suggests two words there).
+# Rules: no abstract words, no phrases, no emoji that suggests two different
+# words in one of the languages (e.g. 🥕 Karotte/Möhre, 🐙 Krake/Oktopus).
+# Animals
+🦄	Einhorn	unicorn	licorne	unicorno	unicornio
+🦜	Papagei	parrot	perroquet	pappagallo	loro
+🐿️	Eichhörnchen	squirrel	écureuil	scoiattolo	ardilla
+🦘	Känguru	kangaroo	kangourou	canguro	canguro
+🐤	Küken	chick	poussin	pulcino	pollito
+🦩	Flamingo	flamingo	flamant rose	fenicottero	flamenco
+🐶	Hund	dog	chien	cane	perro
+🐱	Katze	cat	chat	gatto	gato
+🐭	Maus	mouse	souris	topo	ratón
+🐮	Kuh	cow	vache	mucca	vaca
+🐷	Schwein	pig	cochon	maiale	cerdo
+🐴	Pferd	horse	cheval	cavallo	caballo
+🐑	Schaf	sheep	mouton	pecora	oveja
+🐔	Huhn	chicken	poule	gallina	gallina
+🦆	Ente	duck	canard	anatra	pato
+🐟	Fisch	fish	poisson	pesce	pez
+🐸	Frosch	frog	grenouille	rana	rana
+🐝	Biene	bee	abeille	ape	abeja
+🐌	Schnecke	snail	escargot	lumaca	caracol
+🦋	Schmetterling	butterfly	papillon	farfalla	mariposa
+🐘	Elefant	elephant	éléphant	elefante	elefante
+🦁	Löwe	lion	lion	leone	león
+🐯	Tiger	tiger	tigre	tigre	tigre
+🐵	Affe	monkey	singe	scimmia	mono
+🐻	Bär	bear	ours	orso	oso
+🦒	Giraffe	giraffe	girafe	giraffa	jirafa
+🦓	Zebra	zebra	zèbre	zebra	cebra
+🐍	Schlange	snake	serpent	serpente	serpiente
+🐊	Krokodil	crocodile	crocodile	coccodrillo	cocodrilo
+🐰	Hase	rabbit	lapin	coniglio	conejo
+🦔	Igel	hedgehog	hérisson	riccio	erizo
+🦉	Eule	owl	-	gufo	búho
+🐧	Pinguin	penguin	pingouin	pinguino	pingüino
+🐳	Wal	whale	baleine	balena	ballena
+🐬	Delfin	dolphin	dauphin	delfino	delfín
+🦈	Hai	shark	requin	squalo	tiburón
+🕷️	Spinne	spider	araignée	ragno	araña
+🐞	Marienkäfer	ladybird	coccinelle	coccinella	mariquita
+🦊	Fuchs	fox	renard	volpe	zorro
+🐺	Wolf	wolf	loup	lupo	lobo
+🐐	Ziege	goat	chèvre	capra	cabra
+🐫	Kamel	camel	chameau	cammello	camello
+🐼	Panda	panda	panda	panda	panda
+🐦	Vogel	bird	oiseau	uccello	pájaro
+# Food
+🥥	Kokosnuss	coconut	noix de coco	noce di cocco	coco
+🍿	Popcorn	popcorn	pop-corn	popcorn	palomitas
+🍎	Apfel	apple	pomme	mela	manzana
+🍌	Banane	banana	banane	banana	plátano
+🍐	Birne	pear	poire	pera	pera
+🍓	Erdbeere	strawberry	fraise	fragola	fresa
+🍒	Kirschen	cherries	cerises	ciliegie	cerezas
+🍋	Zitrone	lemon	citron	limone	limón
+🍍	Ananas	pineapple	ananas	ananas	piña
+🍅	Tomate	tomato	tomate	pomodoro	tomate
+🥔	Kartoffel	potato	pomme de terre	patata	patata
+🥒	Gurke	cucumber	concombre	cetriolo	pepino
+🍞	Brot	bread	pain	pane	pan
+🧀	Käse	cheese	fromage	formaggio	queso
+🥚	Ei	egg	œuf	uovo	huevo
+🥛	Milch	milk	lait	latte	leche
+🍦	Eis	ice cream	glace	gelato	helado
+🍕	Pizza	pizza	pizza	pizza	pizza
+🍯	Honig	honey	miel	miele	miel
+🍫	Schokolade	chocolate	chocolat	cioccolato	chocolate
+🍄	Pilz	mushroom	champignon	fungo	seta
+# Body
+👁️	Auge	eye	œil	occhio	ojo
+👂	Ohr	ear	oreille	orecchio	oreja
+👃	Nase	nose	nez	naso	nariz
+🦷	Zahn	tooth	dent	dente	diente
+✋	Hand	hand	main	mano	mano
+🦵	Bein	leg	jambe	gamba	pierna
+❤️	Herz	heart	cœur	cuore	corazón
+# Clothes
+👞	Schuh	shoe	chaussure	scarpa	zapato
+👗	Kleid	dress	robe	vestito	vestido
+🧦	Socken	socks	chaussettes	calzini	calcetines
+🧤	Handschuhe	gloves	gants	guanti	guantes
+🧣	Schal	scarf	écharpe	sciarpa	bufanda
+🎩	Hut	hat	chapeau	cappello	sombrero
+👓	Brille	glasses	lunettes	occhiali	gafas
+👑	Krone	crown	couronne	corona	corona
+💍	Ring	ring	bague	anello	anillo
+# Home and toys
+🔦	Taschenlampe	torch	lampe de poche	torcia	linterna
+🧺	Korb	basket	panier	cestino	cesta
+🛁	Badewanne	bath	baignoire	vasca	bañera
+🏠	Haus	house	maison	casa	casa
+🚪	Tür	door	porte	porta	puerta
+🛏️	Bett	bed	lit	letto	cama
+🪑	Stuhl	chair	chaise	sedia	silla
+🔑	Schlüssel	key	clé	chiave	llave
+📖	Buch	book	livre	libro	libro
+✏️	Bleistift	pencil	crayon	matita	lápiz
+✂️	Schere	scissors	ciseaux	forbici	tijeras
+☂️	Regenschirm	umbrella	parapluie	ombrello	paraguas
+🎈	Luftballon	balloon	-	palloncino	globo
+🎁	Geschenk	present	cadeau	regalo	regalo
+🕯️	Kerze	candle	bougie	candela	vela
+🔔	Glocke	bell	cloche	campana	campana
+🧸	Teddy	teddy bear	nounours	orsacchiotto	osito
+🪁	Drachen	kite	cerf-volant	aquilone	cometa
+🥄	Löffel	spoon	cuillère	cucchiaio	cuchara
+🪥	Zahnbürste	toothbrush	brosse à dents	spazzolino	cepillo de dientes
+🧹	Besen	broom	balai	scopa	escoba
+🪣	Eimer	bucket	seau	secchio	cubo
+🔨	Hammer	hammer	marteau	martello	martillo
+🪜	Leiter	ladder	échelle	scala	escalera
+🎲	Würfel	dice	dé	dado	dado
+🤖	Roboter	robot	robot	robot	robot
+👻	-	ghost	fantôme	fantasma	fantasma
+⚽	Fußball	football	ballon	pallone	balón
+🥁	Trommel	drum	tambour	tamburo	tambor
+🎸	Gitarre	guitar	guitare	chitarra	guitarra
+🎺	Trompete	trumpet	trompette	tromba	trompeta
+🎻	Geige	violin	violon	violino	violín
+⚓	Anker	anchor	ancre	ancora	ancla
+🧲	Magnet	magnet	aimant	calamita	imán
+⛄	Schneemann	snowman	bonhomme de neige	pupazzo di neve	muñeco de nieve
+🎃	Kürbis	pumpkin	citrouille	zucca	calabaza
+🪶	Feder	feather	plume	piuma	pluma
+🦴	Knochen	bone	os	osso	hueso
+🐚	Muschel	shell	coquillage	conchiglia	concha
+# Nature
+🌷	Tulpe	tulip	tulipe	tulipano	tulipán
+☀️	Sonne	sun	soleil	sole	sol
+🌙	Mond	moon	lune	luna	luna
+⭐	Stern	star	étoile	stella	estrella
+☁️	Wolke	cloud	nuage	nuvola	nube
+🌈	Regenbogen	rainbow	arc-en-ciel	arcobaleno	arcoíris
+🔥	Feuer	fire	feu	fuoco	fuego
+❄️	Schneeflocke	snowflake	flocon	fiocco di neve	copo de nieve
+⚡	Blitz	lightning	éclair	fulmine	rayo
+🌳	Baum	tree	arbre	albero	árbol
+🌵	Kaktus	cactus	cactus	cactus	cactus
+🌴	Palme	palm tree	palmier	palma	palmera
+🌹	Rose	rose	rose	rosa	rosa
+🌻	Sonnenblume	sunflower	tournesol	girasole	girasol
+🍁	Blatt	leaf	feuille	foglia	hoja
+⛰️	Berg	mountain	montagne	montagna	montaña
+🌋	Vulkan	volcano	volcan	vulcano	volcán
+🌊	Welle	wave	vague	onda	ola
+# Vehicles
+🚗	Auto	car	voiture	macchina	coche
+🚌	Bus	bus	bus	autobus	autobús
+🚆	Zug	train	train	treno	tren
+✈️	Flugzeug	plane	avion	aereo	avión
+🚢	Schiff	boat	bateau	nave	barco
+🚲	Fahrrad	bike	vélo	bici	bici
+🚀	Rakete	rocket	fusée	razzo	cohete
+🚁	Hubschrauber	helicopter	hélicoptère	elicottero	helicóptero
+🚜	Traktor	tractor	tracteur	trattore	tractor
+🚕	Taxi	taxi	taxi	taxi	taxi
+🛴	Roller	scooter	trottinette	monopattino	patinete
+🚑	Krankenwagen	ambulance	ambulance	ambulanza	ambulancia
+# People
+👶	Baby	baby	bébé	bambino	bebé
+👵	Oma	-	mamie	nonna	abuela
+👴	Opa	-	papi	nonno	abuelo
+👸	Prinzessin	princess	princesse	principessa	princesa
+# Numbers
+1️⃣	eins	one	un	uno	uno
+2️⃣	zwei	two	deux	due	dos
+3️⃣	drei	three	trois	tre	tres
+4️⃣	vier	four	quatre	quattro	cuatro
+5️⃣	fünf	five	cinq	cinque	cinco
+6️⃣	sechs	six	six	sei	seis
+7️⃣	sieben	seven	sept	sette	siete
+8️⃣	acht	eight	huit	otto	ocho
+9️⃣	neun	nine	neuf	nove	nueve
+🔟	zehn	ten	dix	dieci	diez

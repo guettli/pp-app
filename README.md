@@ -15,7 +15,10 @@ built with Flutter. Native successor of the web app
 - **Offline, no server, no AI token.** Speech recognition runs on the phone.
   The recording never leaves the device.
 - Five study languages: German (de-DE), British English (en-GB), French
-  (fr-FR), Italian (it-IT), Spanish (es-ES), 816 phrases each (from pp).
+  (fr-FR), Italian (it-IT), Spanish (es-ES), about 165 words each.
+- Only concrete things kids know (animals, food, body, toys, vehicles,
+  numbers …) with a picture that makes everybody think of the same word.
+  The list is curated in `tool/words.tsv`.
 - Android first (the target group: kids in developing countries on cheap
   phones). iOS is scaffolded but not built or tested yet.
 
@@ -69,10 +72,20 @@ dagger call -m ci build-apk export --path build/phoneme-party.apk
 Data generation (only needed when the source data changes):
 
 ```sh
-python3 tool/build_phrases.py ../pp > emojis.txt      # assets/phrases/*.json
+# assets/phrases/*.json from tool/words.tsv; IPA from English Wiktionary,
+# corrections in tool/ipa_overrides.tsv (cache dir avoids re-fetching)
+python3 tool/build_words.py ~/.cache/pp-app-wiktionary
 python3 tool/fetch_emoji.py <fluentui-emoji clone> emojis.txt   # assets/emoji/
 dagger call -m ci panphon-features export --path assets/panphon/panphon_features.json
 ```
+
+Word list rules (`tool/words.tsv`): one concept per line, a concrete thing a
+3–8 year old knows, and an emoji that suggests exactly one word in every
+language. If a picture suggests two words in one language (🦉 hibou/chouette,
+👻 Geist/Gespenst), that cell is `-` and the word is left out there.
+Every picture was also checked as the Fluent 3D image itself (🧽 looks
+like cheese, so it is not in the list). Plural
+when the picture shows several (🍒 Kirschen).
 
 Every merge to `main` publishes a GitHub release `v<major>.<minor>.<run>`
 (major/minor from `pubspec.yaml`, the workflow run number is also the
@@ -119,7 +132,8 @@ ignored).
 ## Licenses
 
 - Code: MIT (see `LICENSE`).
-- Phrases and IPA: from [guettli/pp](https://github.com/guettli/pp) (MIT).
+- Word list: own (MIT). IPA: [Wiktionary](https://en.wiktionary.org)
+  (CC BY-SA 4.0), a few entries corrected by hand (`tool/ipa_overrides.tsv`).
 - Pictures: [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji)
   3D (MIT); 🇮🇹 from Noto Emoji region flags (public domain).
 - Phonetic features: [PanPhon](https://github.com/dmort27/panphon) (MIT).
