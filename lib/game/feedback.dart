@@ -9,8 +9,8 @@ import 'dart:typed_data';
 /// child is asked to try again, kindly.
 const praise = <String, List<List<String>>>{
   'de': [
-    ['Nochmal!', 'Versuch es noch einmal!', 'Hör gut zu!', 'Gleich noch mal!'],
-    ['Gut!', 'Schon fast!', 'Weiter so!', 'Nicht schlecht!'],
+    ['Noch mal!', 'Versuch es noch einmal!', 'Hör gut zu!', 'Gleich noch mal!'],
+    ['Gut!', 'Fast geschafft!', 'Weiter so!', 'Nicht schlecht!'],
     ['Sehr gut!', 'Gut gemacht!', 'Schön!', 'Prima!', 'Klasse!'],
     [
       'Super!',
@@ -44,7 +44,7 @@ const praise = <String, List<List<String>>>{
       'On recommence !',
     ],
     ['Bien !', 'Presque !', 'Continue !', 'Pas mal !'],
-    ['Très bien !', 'Bravo !', 'Joli !', 'Chouette !', 'Bien joué !'],
+    ['Très bien !', 'Bravo !', 'Bien dit !', 'Chouette !', 'Bien joué !'],
     [
       'Super !',
       'Génial !',
@@ -57,35 +57,61 @@ const praise = <String, List<List<String>>>{
   'it': [
     ['Ancora una volta!', 'Riprova!', 'Ascolta bene!', 'Ancora!'],
     ['Bene!', 'Quasi!', 'Continua così!', 'Non male!'],
-    ['Molto bene!', 'Bravo!', 'Bello!', 'Ottimo!', 'Ben fatto!'],
+    ['Molto bene!', 'Ottimo lavoro!', 'Che bello!', 'Ottimo!', 'Ben fatto!'],
     [
       'Super!',
       'Fantastico!',
       'Meraviglioso!',
       'Perfetto!',
       'Wow!',
-      'Grandioso!',
+      'Eccellente!',
     ],
   ],
   'es': [
-    ['¡Otra vez!', '¡Inténtalo de nuevo!', '¡Escucha bien!', '¡Una vez más!'],
+    [
+      '¡Vamos otra vez!',
+      '¡Inténtalo de nuevo!',
+      '¡Escucha bien!',
+      '¡Una vez más!',
+    ],
     ['¡Bien!', '¡Casi!', '¡Sigue así!', '¡No está mal!'],
-    ['¡Muy bien!', '¡Bien hecho!', '¡Bonito!', '¡Estupendo!', '¡Bravo!'],
+    ['¡Muy bien!', '¡Bien hecho!', '¡Qué bien!', '¡Estupendo!', '¡Bravo!'],
     [
       '¡Súper!',
       '¡Genial!',
       '¡Maravilloso!',
       '¡Fantástico!',
-      '¡Guau!',
+      '¡Hala!',
       '¡Perfecto!',
     ],
   ],
 };
 
+/// Said after 0 stars when there is no further try: kind, and on we go.
+const movingOn = <String, List<String>>{
+  'de': ['Weiter geht\'s!', 'Komm, das nächste!', 'Auf zum nächsten!'],
+  'en': ['Let\'s try the next one!', 'On we go!', 'Next one!'],
+  'fr': ['On continue !', 'Allez, le suivant !', 'On passe au suivant !'],
+  'it': ['Andiamo avanti!', 'Proviamo il prossimo!', 'Avanti!'],
+  'es': ['¡Sigamos!', '¡Vamos con el siguiente!', '¡Adelante!'],
+};
+
 /// A random praise for [stars] in [lang] (e.g. "de-DE"), never [avoid].
-String pickPraise(String lang, int stars, math.Random rng, {String? avoid}) {
-  final all = praise[lang.split('-').first] ?? praise['en']!;
-  final choices = all[stars.clamp(0, 3)].where((p) => p != avoid).toList();
+/// With [onward] (0 stars and no try left) a "let's go on" instead of
+/// "try again".
+String pickPraise(
+  String lang,
+  int stars,
+  math.Random rng, {
+  String? avoid,
+  bool onward = false,
+}) {
+  final base = lang.split('-').first;
+  final code = praise.containsKey(base) ? base : 'en';
+  final list = stars <= 0 && onward
+      ? movingOn[code]!
+      : praise[code]![stars.clamp(0, 3)];
+  final choices = list.where((p) => p != avoid).toList();
   return choices[rng.nextInt(choices.length)];
 }
 
@@ -179,7 +205,9 @@ Float32List _render(
     for (var i = 0; i < len && start + i < out.length; i++) {
       final t = i / _rate;
       // quick attack, bell-like decay
-      final env = math.min(1.0, i / (_rate * 0.005)) * math.exp(-5 * t);
+      // fade out over the last 8 ms, so a cut note does not click
+      final fade = math.min(1.0, (len - i) / (_rate * 0.008));
+      final env = math.min(1.0, i / (_rate * 0.005)) * math.exp(-5 * t) * fade;
       final w = 2 * math.pi * hz * t;
       var v = math.sin(w);
       if (bright) v += 0.3 * math.sin(2 * w) + 0.1 * math.sin(3 * w);

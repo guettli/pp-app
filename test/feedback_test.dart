@@ -33,6 +33,24 @@ void main() {
     expect(seen, praise['de']![3].toSet());
   });
 
+  test('no "try again" when the game moves on', () {
+    final rng = math.Random(3);
+    for (final lang in studyLanguages) {
+      final code = lang.split('-').first;
+      expect(movingOn[code], isNotNull, reason: lang);
+      for (var i = 0; i < 20; i++) {
+        final p = pickPraise(lang, 0, rng, onward: true);
+        expect(movingOn[code], contains(p));
+        expect(praise[code]![0], isNot(contains(p)));
+      }
+    }
+    // onward only matters for 0 stars
+    expect(
+      praise['de']![3],
+      contains(pickPraise('de-DE', 3, rng, onward: true)),
+    );
+  });
+
   test('unknown languages fall back to English', () {
     expect(praise['en']![2], contains(pickPraise('xx', 2, math.Random(0))));
   });
@@ -40,6 +58,7 @@ void main() {
   test('one more try after 0 stars, then the game moves on', () {
     expect(afterResult(0, 1), AfterResult.retry);
     expect(afterResult(0, 2), AfterResult.next);
+    expect(afterResult(0, 3), AfterResult.next);
     for (final stars in [1, 2, 3]) {
       expect(afterResult(stars, 1), AfterResult.next);
     }
@@ -58,7 +77,15 @@ void main() {
       }
       expect(sounds.length, greaterThan(3), reason: '$stars stars');
     }
+    for (final s in [pling(rng), fanfare(rng)]) {
+      expect(peakOf(s), closeTo(0.5, 1e-6));
+      expect(s.any((v) => v.isNaN), isFalse);
+    }
     expect(pling(rng).length / 16000, closeTo(0.3, 0.01));
     expect(fanfare(rng).length / 16000, inInclusiveRange(1, 2));
+    // no click: every melody ends in silence
+    for (var stars = 0; stars <= 3; stars++) {
+      expect(jingle(stars, rng).last.abs(), lessThan(1e-3));
+    }
   });
 }

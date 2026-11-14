@@ -63,6 +63,15 @@ class _PlayScreenState extends State<PlayScreen>
   /// Incremented when the child takes over (listen again, replay), so the
   /// running feedback stops where it is.
   int _feedbackId = 0;
+
+  /// The app is in the background: nothing may start by itself.
+  bool _paused = false;
+
+  /// The last word is done and the dialog is open: the round is over.
+  bool _worldDone = false;
+
+  /// Praise in the world-done dialog, slightly after the fanfare.
+  Timer? _donePraise;
   late final List<Phrase> _phrases = widget.app.book.world(widget.world);
   late final AnimationController _bob = AnimationController(
     vsync: this,
@@ -122,6 +131,12 @@ class _PlayScreenState extends State<PlayScreen>
     // speak() completes when the phrase has been said, so listening can
     // start right after it
     _tts.awaitSpeakCompletion(true);
+    // melodies must not pause the replay or the praise
+    _sfx.setAudioContext(
+      AudioContext(
+        android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none),
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _play());
   }
 
@@ -135,6 +150,7 @@ class _PlayScreenState extends State<PlayScreen>
     _tts.stop();
     _replayId++;
     _advance?.cancel();
+    _donePraise?.cancel();
     _player.dispose();
     _sfx.dispose();
     _bob.dispose();
@@ -145,7 +161,14 @@ class _PlayScreenState extends State<PlayScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Not on `inactive`: the permission dialog causes that.
-    if (state == AppLifecycleState.paused) _abort();
+    if (state == AppLifecycleState.paused) {
+      _paused = true;
+      _abort();
+    } else if (state == AppLifecycleState.resumed && _paused) {
+      _paused = false;
+      // the word stays on screen; go on from there
+      _scheduleAdvance(_round);
+    }
   }
 
   bool get _idle => _phase == _Phase.ready || _phase == _Phase.result;
@@ -155,19 +178,50 @@ class _PlayScreenState extends State<PlayScreen>
   Future<void> _speak() async {
     if (!_idle) return;
     final round = _round;
-    _feedbackId++;
+    final id = ++_feedbackId;
     _advance?.cancel();
     await _stopReplay();
-    await _tts.stop();
-    await _tts.speak(_phrase.text);
-    _scheduleAdvance(round);
+    await _speakText(_phrase.text);
+    if (id == _feedbackId) _scheduleAdvance(round);
   }
+
+  /// Speaks [text]; returns when done, or after a timeout if the TTS
+  /// engine is missing or stuck, and never throws.
+  Future<void> _speakText(String text) async {
+    try {
+      await _tts.stop();
+      await _tts
+          .speak(text)
+          .timeout(
+            Duration(seconds: 3 + text.length ~/ 4),
+            onTimeout: () => null,
+          );
+    } catch (e, st) {
+      debugPrint('tts failed: $e\n$st');
+    }
+  }
+
+  /// Stops everything that would go on by itself after a word.
+  void _cancelFlow() {
+    _feedbackId++;
+    _advance?.cancel();
+  }
+
+  /// Sounds are only allowed while nothing is being said or recorded.
+  bool get _quiet =>
+      _phase == _Phase.ready ||
+      _phase == _Phase.result ||
+      _phase == _Phase.thinking;
 
   /// Plays a synthesised sound (melody, pling).
   Future<void> _playSfx(Float32List sound) async {
+    if (!_quiet || _paused) return;
     try {
       await _sfx.stop();
+      // a round may have started meanwhile: never play into the mic
+      if (!mounted || !_quiet) return;
       await _sfx.play(BytesSource(wavBytes(sound), mimeType: 'audio/wav'));
+      if (!mounted || !_quiet) await _sfx.stop();
     } catch (e, st) {
       debugPrint('sound failed: $e\n$st');
     }
@@ -181,13 +235,19 @@ class _PlayScreenState extends State<PlayScreen>
     unawaited(_playSfx(jingle(stars, _rng)));
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (gone()) return;
-    final text = pickPraise(_lang, stars, _rng, avoid: _lastPraise);
+    // after the last try the game moves on: do not ask for another one
+    final text = pickPraise(
+      _lang,
+      stars,
+      _rng,
+      avoid: _lastPraise,
+      onward: afterResult(stars, _attempts) == AfterResult.next,
+    );
     _lastPraise = text;
-    await _tts
-        .speak(text)
-        .timeout(const Duration(seconds: 4), onTimeout: () => null);
+    await _speakText(text);
     if (gone()) return;
     await _replay(advanceAfter: false);
+    if (gone()) return;
     _scheduleAdvance(round);
   }
 
@@ -195,12 +255,17 @@ class _PlayScreenState extends State<PlayScreen>
   /// Nothing happens if the child started something else meanwhile.
   void _scheduleAdvance(int round) {
     _advance?.cancel();
-    if (!_current(round) || _phase != _Phase.result) return;
+    bool stale() =>
+        !_current(round) ||
+        _phase != _Phase.result ||
+        _paused ||
+        _worldDone ||
+        _result == null;
+    if (stale()) return;
+    final id = _feedbackId;
     _advance = Timer(const Duration(milliseconds: 900), () {
       final result = _result;
-      if (!_current(round) || _phase != _Phase.result || result == null) {
-        return;
-      }
+      if (stale() || id != _feedbackId || result == null) return;
       if (_replaying) return; // the replay schedules again when it ends
       switch (afterResult(result.stars, _attempts)) {
         case AfterResult.retry:
@@ -213,8 +278,7 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// The funny-voice button: replay now, go on afterwards.
   void _onReplayTap() {
-    _feedbackId++;
-    _advance?.cancel();
+    _cancelFlow();
     _replay();
   }
 
@@ -280,6 +344,7 @@ class _PlayScreenState extends State<PlayScreen>
   /// The picture of phrase [i] flies from the big picture into its slot.
   /// [isNew]: the slot was empty before, so it stays empty until landing.
   void _flyToSlot(int i, {required bool isNew}) {
+    final round = _round;
     final from = _rectOf(_emojiKey);
     final to = _rectOf(_slotKeys[i]);
     if (from == null || to == null) return;
@@ -291,7 +356,7 @@ class _PlayScreenState extends State<PlayScreen>
     });
     _fly.forward(from: 0).then((_) {
       if (!mounted) return;
-      _playSfx(pling(_rng));
+      if (_current(round) && _phase == _Phase.result) _playSfx(pling(_rng));
       setState(() {
         _flying = null;
         _flightPath = null;
@@ -302,15 +367,16 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// The phone says the phrase, then listens until the child has spoken.
   Future<void> _play() async {
-    if (!_idle || !mounted) return;
+    if (!_idle || !mounted || _worldDone) return;
     final round = ++_round;
     final back = _phase;
     setState(() {
       _phase = _Phase.starting;
       _lastAudio = null;
     });
-    _advance?.cancel();
+    _cancelFlow();
     try {
+      await _sfx.stop();
       await _stopReplay();
       // Ask before speaking, so the dialog does not cover the phrase.
       if (!await _recorder.hasPermission()) {
@@ -399,7 +465,7 @@ class _PlayScreenState extends State<PlayScreen>
         phrase.text,
         cmp.stars,
       );
-      if (!mounted) return;
+      if (!_current(round)) return; // aborted (background) meanwhile
       setState(() {
         _phase = _Phase.result;
         _result = cmp;
@@ -417,7 +483,9 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// Stops whatever runs (app went to the background) without scoring.
   Future<void> _abort() async {
-    _advance?.cancel();
+    _cancelFlow();
+    _donePraise?.cancel();
+    await _tts.stop();
     await _sfx.stop();
     await _stopReplay(); // also in the result phase, which counts as idle
     if (_idle) return;
@@ -454,8 +522,13 @@ class _PlayScreenState extends State<PlayScreen>
   }
 
   void _next() {
-    _advance?.cancel();
+    if (_worldDone) return;
+    _cancelFlow();
     if (_index + 1 >= _phrases.length) {
+      // end the round, so nothing of it goes on behind the dialog
+      _worldDone = true;
+      _round++;
+      _tts.stop();
       _stopReplay();
       _showWorldDone();
       return;
@@ -474,8 +547,8 @@ class _PlayScreenState extends State<PlayScreen>
     _playSfx(fanfare(_rng));
     final text = pickPraise(_lang, 3, _rng, avoid: _lastPraise);
     _lastPraise = text;
-    Future<void>.delayed(const Duration(milliseconds: 1400), () {
-      if (mounted) _tts.speak(text);
+    _donePraise = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted && !_paused) _speakText(text);
     });
     showDialog<void>(
       context: context,
