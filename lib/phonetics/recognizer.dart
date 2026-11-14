@@ -15,7 +15,14 @@ class Recognition {
   String get ipa => phonemes.map((p) => p.symbol).join();
 }
 
-class PhoneRecognizer {
+/// Turns speech into phonemes; [PhoneRecognizer] on the device, a fake in
+/// tests.
+abstract class Recognizer {
+  /// [audio]: mono 16 kHz samples in [-1, 1].
+  Future<Recognition> recognize(Float32List audio);
+}
+
+class PhoneRecognizer implements Recognizer {
   PhoneRecognizer._(this._session, this._tokens);
 
   static const modelAsset = 'assets/models/model.onnx';
@@ -33,7 +40,7 @@ class PhoneRecognizer {
     return PhoneRecognizer._(session, tokens);
   }
 
-  /// [audio]: mono 16 kHz samples in [-1, 1].
+  @override
   Future<Recognition> recognize(Float32List audio) async {
     final feats = extractFbank(audio);
     final frames = feats.length ~/ numMelBins;

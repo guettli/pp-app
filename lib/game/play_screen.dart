@@ -5,14 +5,10 @@
 // collection at the bottom. Then the game goes on by itself: next word, or
 // after 0 stars one more try at the same word.
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
-import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
-import 'package:record/record.dart';
 
 import '../app_state.dart';
 import '../data/phrases.dart';
@@ -23,6 +19,7 @@ import '../ui/emoji_image.dart';
 import '../ui/strings.dart';
 import 'rocket_launch.dart';
 import 'feedback.dart';
+import 'game_io.dart';
 import 'rules.dart';
 import 'voice_effects.dart';
 import 'world_scene.dart';
@@ -45,13 +42,14 @@ class PlayScreen extends StatefulWidget {
 
 class _PlayScreenState extends State<PlayScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
-  final _recorder = AudioRecorder();
-  final _tts = FlutterTts();
-  final _player = AudioPlayer();
+  late final MicSource _recorder;
+  late final Speaker _tts;
+  late final SoundOut _player;
 
-  /// Melodies; separate from [_player] so they may overlap the replay.
-  final _sfx = AudioPlayer();
-  final _rng = math.Random();
+  /// Melodies; separate from [_player] so they may overlap the replay, and
+  /// they do not take the audio focus, so they never pause the praise.
+  late final SoundOut _sfx;
+  late final math.Random _rng;
   String? _lastPraise;
 
   /// Tries of the current word (one retry after 0 stars).
@@ -96,9 +94,8 @@ class _PlayScreenState extends State<PlayScreen>
   /// Incremented to cancel a running replay.
   int _replayId = 0;
 
-  /// Android plays the WAV from memory. audioplayers writes it to a temp
-  /// file on iOS, and recordings must not be stored, so no replay there yet.
-  final bool _canReplay = Platform.isAndroid;
+  /// See [GameIo.canReplay].
+  late final bool _canReplay;
 
   final _stackKey = GlobalKey();
   final _emojiKey = GlobalKey();
@@ -126,17 +123,14 @@ class _PlayScreenState extends State<PlayScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    final io = widget.app.io;
+    _recorder = io.mic();
+    _tts = io.speaker();
+    _player = io.player();
+    _sfx = io.player(duck: false);
+    _rng = io.random();
+    _canReplay = io.canReplay;
     _tts.setLanguage(_lang);
-    _tts.setSpeechRate(0.4);
-    // speak() completes when the phrase has been said, so listening can
-    // start right after it
-    _tts.awaitSpeakCompletion(true);
-    // melodies must not pause the replay or the praise
-    _sfx.setAudioContext(
-      AudioContext(
-        android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none),
-      ),
-    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _play());
   }
 
@@ -192,10 +186,7 @@ class _PlayScreenState extends State<PlayScreen>
       await _tts.stop();
       await _tts
           .speak(text)
-          .timeout(
-            Duration(seconds: 3 + text.length ~/ 4),
-            onTimeout: () => null,
-          );
+          .timeout(Duration(seconds: 3 + text.length ~/ 4), onTimeout: () {});
     } catch (e, st) {
       debugPrint('tts failed: $e\n$st');
     }
@@ -220,7 +211,7 @@ class _PlayScreenState extends State<PlayScreen>
       await _sfx.stop();
       // a round may have started meanwhile: never play into the mic
       if (!mounted || !_quiet) return;
-      await _sfx.play(BytesSource(wavBytes(sound), mimeType: 'audio/wav'));
+      await _sfx.play(wavBytes(sound));
       if (!mounted || !_quiet) await _sfx.stop();
     } catch (e, st) {
       debugPrint('sound failed: $e\n$st');
@@ -310,10 +301,8 @@ class _PlayScreenState extends State<PlayScreen>
       await _player.stop();
       if (cancelled()) return;
       final effected = applyVoiceEffect(_effect, audio);
-      final done = _player.onPlayerComplete.first;
-      await _player.play(
-        BytesSource(wavBytes(effected), mimeType: 'audio/wav'),
-      );
+      final done = _player.onComplete.first;
+      await _player.play(wavBytes(effected));
       if (cancelled()) {
         await _player.stop();
         return;
@@ -393,12 +382,14 @@ class _PlayScreenState extends State<PlayScreen>
           .speak(_phrase.text)
           .timeout(
             Duration(seconds: 3 + _phrase.text.length ~/ 4),
-            onTimeout: () => null, // no TTS engine: listen anyway
+            onTimeout: () {}, // no TTS engine: listen anyway
           );
       // let the speaker's echo fade before the mic opens
       await Future<void>.delayed(const Duration(milliseconds: 250));
       if (!_current(round)) return;
-      // never record our own replay or melody
+      // never record our own voice, replay or melody (also a TTS engine
+      // that timed out above)
+      await _tts.stop();
       await _player.stop();
       await _sfx.stop();
       await _listen(round);
@@ -411,15 +402,7 @@ class _PlayScreenState extends State<PlayScreen>
   Future<void> _listen(int round) async {
     _buffer.clear();
     final ep = _endpointer = Endpointer();
-    final stream = await _recorder.startStream(
-      const RecordConfig(
-        encoder: AudioEncoder.pcm16bits,
-        sampleRate: 16000,
-        numChannels: 1,
-        autoGain: true,
-        noiseSuppress: true,
-      ),
-    );
+    final stream = await _recorder.start();
     if (!_current(round)) {
       await _recorder.stop();
       return;
