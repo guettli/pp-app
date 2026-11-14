@@ -18,6 +18,7 @@ class VoiceListener {
   Completer<VoiceTake?>? _done;
   VoiceTake? _take;
   Timer? _limit;
+  Future<void>? _starting;
 
   bool get listening => _done != null;
 
@@ -28,15 +29,25 @@ class VoiceListener {
     void Function(VoiceTake take, VoiceFrame frame)? onFrame,
   }) async {
     await cancel();
+    // A start cancelled meanwhile stops the mic when it is up; that must
+    // happen before this start, or it would stop the new recording.
+    await _starting;
     final done = _done = Completer<VoiceTake?>();
+    final starting = Completer<void>();
+    _starting = starting.future;
     _take = take;
     final meter = VoiceMeter();
     try {
-      final stream = await mic.start(voiceProcessing: false);
-      if (_done != done) {
-        // cancelled while the mic was starting
-        await _quietly(mic.stop);
-        return null;
+      final Stream<Uint8List> stream;
+      try {
+        stream = await mic.start(voiceProcessing: false);
+        if (_done != done) {
+          // cancelled while the mic was starting
+          await _quietly(mic.stop);
+          return null;
+        }
+      } finally {
+        starting.complete();
       }
       _sub = stream.listen(
         (chunk) {

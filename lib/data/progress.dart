@@ -49,12 +49,21 @@ class Progress {
   double pitchBest({required bool low}) =>
       _prefs.getDouble(low ? 'pitch|low' : 'pitch|high') ?? 0;
 
-  /// Stores [semitones] (distance, positive) if it is a new best.
+  /// Stores [semitones] (distance, positive) if it is a new best. More
+  /// than [maxPitchRecord] is a tracking error, not a voice.
   Future<bool> recordPitch(double semitones, {required bool low}) async {
+    if (semitones > maxPitchRecord) return false;
     if (semitones <= pitchBest(low: low)) return false;
     await _prefs.setDouble(low ? 'pitch|low' : 'pitch|high', semitones);
     return true;
   }
+
+  static const maxPitchRecord = 15.0;
+
+  /// The child's own voice (Hz) as last measured, for when it cannot be
+  /// measured today.
+  double? get pitchBase => _prefs.getDouble('pitch|base');
+  Future<void> setPitchBase(double hz) => _prefs.setDouble('pitch|base', hz);
 
   String? get studyLang => _prefs.getString('studyLang');
   Future<void> setStudyLang(String lang) => _prefs.setString('studyLang', lang);

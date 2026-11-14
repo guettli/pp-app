@@ -33,3 +33,41 @@ Uint8List pcm16(List<double> samples) {
   }
   return b.buffer.asUint8List();
 }
+
+/// A child-like voice at about [hz]: the period wobbles from cycle to
+/// cycle ([jitter], fraction), a slow vibrato ([vibrato], semitones), breath
+/// noise ([breath], relative to the voice) and a weak fundamental (the
+/// second harmonic is the loudest), as in breathy or shaky voices.
+Float32List childVoice(
+  double hz,
+  double seconds, {
+  double amp = 0.3,
+  double jitter = 0.02,
+  double vibrato = 0.5,
+  double breath = 0.3,
+  int seed = 7,
+}) {
+  final rng = math.Random(seed);
+  final n = (seconds * 16000).round();
+  final out = Float32List(n);
+  var phase = 0.0;
+  var f = hz;
+  for (var i = 0; i < n; i++) {
+    final t = i / 16000;
+    // a new wobble at the start of each cycle
+    if (phase >= 1) {
+      phase -= 1;
+      final v = math.pow(2, vibrato * math.sin(2 * math.pi * 5 * t) / 12);
+      f = hz * v * (1 + jitter * (rng.nextDouble() * 2 - 1));
+    }
+    var s = 0.4 * math.sin(2 * math.pi * phase);
+    s += 1.0 * math.sin(2 * math.pi * 2 * phase) / 2;
+    for (var h = 3; h <= 6; h++) {
+      s += math.sin(2 * math.pi * h * phase) / h;
+    }
+    s += breath * (rng.nextDouble() * 2 - 1);
+    out[i] = amp * s / 2;
+    phase += f / 16000;
+  }
+  return out;
+}

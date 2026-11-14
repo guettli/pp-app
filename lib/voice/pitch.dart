@@ -18,14 +18,21 @@ class VoiceFrame {
   bool get voiced => pitch != null;
 }
 
-/// YIN pitch estimate of [frame] (mono, [sampleRate]), or null if no clear
+/// YIN pitch estimate of [frame] (mono, [sampleRate]), or null if no
 /// period between [minHz] and [maxHz] is found.
+///
+/// Children's voices are often breathy or shaky: if no dip of the
+/// normalised difference reaches [threshold], the deepest one still counts
+/// when it is below [looseThreshold]. (A check for octave errors at half
+/// the period changed nothing on shaky, creaky or weak-fundamental test
+/// voices, so there is none; VoiceTake folds single octave jumps back.)
 double? yinPitch(
   Float32List frame, {
   int sampleRate = 16000,
   double minHz = 70,
-  double maxHz = 1100,
+  double maxHz = 1600,
   double threshold = 0.15,
+  double looseThreshold = 0.35,
 }) {
   final maxTau = (sampleRate / minHz).floor();
   final minTau = (sampleRate / maxHz).floor().clamp(2, maxTau);
@@ -47,39 +54,63 @@ double? yinPitch(
     running += d[tau];
     cmnd[tau] = running == 0 ? 1 : d[tau] * tau / running;
   }
-  // the first dip below the threshold, followed down to its minimum
+  // the local minimum of the dip that [tau] is in
+  int bottom(int tau) {
+    while (tau + 1 <= maxTau && cmnd[tau + 1] < cmnd[tau]) {
+      tau++;
+    }
+    return tau;
+  }
+
+  int? best;
+  // the first dip below the threshold
   for (var tau = minTau; tau <= maxTau; tau++) {
     if (cmnd[tau] < threshold) {
-      while (tau + 1 <= maxTau && cmnd[tau + 1] < cmnd[tau]) {
-        tau++;
-      }
-      // parabolic interpolation around the minimum
-      final a = cmnd[tau - 1], b = cmnd[tau], c = cmnd[tau + 1];
-      final den = a - 2 * b + c;
-      final shift = den == 0 ? 0.0 : (0.5 * (a - c) / den).clamp(-1.0, 1.0);
-      return sampleRate / (tau + shift);
+      best = bottom(tau);
+      break;
     }
   }
-  return null;
+  // none: the deepest dip, if it is clear enough
+  if (best == null) {
+    var deepest = minTau;
+    for (var tau = minTau; tau <= maxTau; tau++) {
+      if (cmnd[tau] < cmnd[deepest]) deepest = tau;
+    }
+    if (cmnd[deepest] >= looseThreshold) return null;
+    best = deepest;
+  }
+  final tau = best;
+  // parabolic interpolation around the minimum
+  final a = cmnd[tau - 1], b = cmnd[tau], c = cmnd[tau + 1];
+  final den = a - 2 * b + c;
+  final shift = den == 0 ? 0.0 : (0.5 * (a - c) / den).clamp(-1.0, 1.0);
+  return sampleRate / (tau + shift);
 }
 
 /// Turns a stream of 16-bit PCM chunks into [VoiceFrame]s every 20 ms,
 /// analysing the last 64 ms (enough periods for a low voice).
 ///
 /// A frame is voiced only if it is loud enough: above [minLevel] and
-/// [noiseFactor] times the background measured in the first [calibration].
+/// [noiseFactor] times the background measured in the first [calibration]
+/// (at most [maxNoise]).
 class VoiceMeter {
   VoiceMeter({
     this.sampleRate = 16000,
     this.calibration = const Duration(milliseconds: 200),
     this.minLevel = 0.01,
     this.noiseFactor = 3,
+    this.maxNoise = 0.01,
   });
 
   final int sampleRate;
   final Duration calibration;
   final double minLevel;
   final double noiseFactor;
+
+  /// The background is measured in the first frames, but a child may
+  /// already be saying "Aaa" then. No room is louder than this, so the
+  /// voice is never taken for background noise.
+  final double maxNoise;
 
   int get _hop => sampleRate ~/ 50;
   int get _window => sampleRate * 64 ~/ 1000;
@@ -93,7 +124,8 @@ class VoiceMeter {
   double _noiseSum = 0;
   int _noiseFrames = 0;
 
-  double get _noise => _noiseFrames == 0 ? 0 : _noiseSum / _noiseFrames;
+  double get _noise =>
+      _noiseFrames == 0 ? 0 : math.min(maxNoise, _noiseSum / _noiseFrames);
   double get threshold => math.max(minLevel, _noise * noiseFactor);
 
   /// Feeds little-endian 16-bit PCM; returns the frames completed by it.
@@ -140,9 +172,12 @@ class VoiceMeter {
     if (_frames <= calibration.inMilliseconds ~/ 20) {
       _noiseSum += rms;
       _noiseFrames++;
+      // louder than any room: the child started right away
+      if (rms < maxNoise * noiseFactor) return VoiceFrame(rms, null);
+    } else if (rms < threshold) {
       return VoiceFrame(rms, null);
     }
-    if (rms < threshold || end < _window) return VoiceFrame(rms, null);
+    if (end < _window) return VoiceFrame(rms, null);
     final frame = Float32List.fromList(_samples.sublist(end - _window, end));
     return VoiceFrame(rms, yinPitch(frame, sampleRate: sampleRate));
   }

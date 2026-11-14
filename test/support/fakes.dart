@@ -123,8 +123,17 @@ class FakeMic implements MicSource {
 
   bool get recording => _ctrl != null;
 
+  /// [hasPermission] throws (a broken platform channel).
+  bool permissionThrows = false;
+
+  /// How long [start] takes (the real one opens the audio device).
+  Duration startup = Duration.zero;
+
   @override
-  Future<bool> hasPermission() async => permission;
+  Future<bool> hasPermission() async {
+    if (permissionThrows) throw StateError('no permission service');
+    return permission;
+  }
 
   /// What the last start asked for.
   bool? voiceProcessing;
@@ -136,6 +145,7 @@ class FakeMic implements MicSource {
   @override
   Future<Stream<Uint8List>> start({bool voiceProcessing = true}) async {
     await stop();
+    if (startup > Duration.zero) await Future<void>.delayed(startup);
     this.voiceProcessing = voiceProcessing;
     final audio = script?.call();
     if (audio != null) return _play(audio);

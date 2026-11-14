@@ -72,7 +72,12 @@ class VoiceRun {
   }
 }
 
-Future<VoiceRun> open(WidgetTester t, VoiceGame game, Tries tries) async {
+Future<VoiceRun> open(
+  WidgetTester t,
+  VoiceGame game,
+  Tries tries, {
+  void Function(FakeDevices dev)? prepare,
+}) async {
   SharedPreferences.setMockInitialValues({});
   final progress = await Progress.load();
   final t0 = t.binding.clock.now();
@@ -80,6 +85,7 @@ Future<VoiceRun> open(WidgetTester t, VoiceGame game, Tries tries) async {
   final dev = FakeDevices(log);
   var n = 0;
   dev.mic.script = () => tries[(n++).clamp(0, tries.length - 1)];
+  prepare?.call(dev);
   final rec = FakeRecognizer(() => '');
   final app = AppState(rec, comparer, progress, book, io: dev.io);
   final nav = GlobalKey<NavigatorState>();
@@ -229,6 +235,108 @@ void main() {
     t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await r.wait(const Duration(seconds: 5));
     expect(r.tries, 1, reason: 'waits for a tap');
+  });
+
+  testWidgets('the child starts right away, without a pause', (t) async {
+    final r = await open(t, VoiceGame.hold, [
+      [...voice(250, 4), ...noise(2)],
+    ]);
+    await r.until(() => r.said.length >= 2, reason: 'praise');
+    expect(
+      r.progress.holdBest('de-DE', lines.sounds[0].shown).inMilliseconds,
+      closeTo(4000, 300),
+    );
+    r.expectClean();
+  });
+
+  testWidgets('a tap after a too short sound: that sound once more', (t) async {
+    final r = await open(t, VoiceGame.hold, [aaa(250, 1), aaa(250, 4)]);
+    await r.until(() => r.said.length >= 2, reason: 'result');
+    await t.tap(find.byTooltip('Speak'));
+    await t.pump();
+    await r.until(() => r.tries == 2);
+    final first = lines.holdSay(lines.sounds[0]);
+    expect(r.said.where((s) => s == first), hasLength(2));
+    r.expectClean();
+  });
+
+  testWidgets('back on the final dialog: it stays, and opens only once', (
+    t,
+  ) async {
+    final r = await open(t, VoiceGame.pitch, [
+      aaa(240, 1.5),
+      aaa(170, 1.5),
+      aaa(450, 1.5),
+    ]);
+    await r.until(() => r.dialog.evaluate().isNotEmpty);
+    await t.binding.handlePopRoute();
+    await t.pump();
+    expect(r.dialog, findsOneWidget);
+    await t.tap(find.byTooltip('Speak'), warnIfMissed: false);
+    await r.wait(const Duration(seconds: 5));
+    expect(r.dialog, findsOneWidget);
+    expect(r.tries, 3);
+  });
+
+  testWidgets('own voice too short: once more, then a typical voice', (
+    t,
+  ) async {
+    final r = await open(t, VoiceGame.pitch, [
+      aaa(240, 0.25),
+      aaa(240, 0.25),
+      aaa(180, 1.5), // the bear
+      aaa(450, 1.5),
+    ]);
+    await r.until(() => r.dialog.evaluate().isNotEmpty);
+    expect(r.said.where((s) => s == lines.pitchNormal), hasLength(2));
+    // 180 Hz against a typical child (260 Hz): 6.4 semitones lower
+    expect(r.progress.pitchBest(low: true), closeTo(6.4, 0.3));
+    r.expectClean();
+    await r.wait(const Duration(seconds: 3)); // the fanfare
+  });
+
+  testWidgets('background while the phone speaks: the mic never opens', (
+    t,
+  ) async {
+    final r = await open(t, VoiceGame.hold, [aaa(250, 4)]);
+    await r.until(() => r.dev.speaker.speaking);
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await t.pump();
+    await r.wait(const Duration(seconds: 10));
+    expect(r.tries, 0);
+    expect(r.running, isEmpty);
+  });
+
+  testWidgets('background while the mic starts: it goes off again', (t) async {
+    final r = await open(t, VoiceGame.hold, [aaa(250, 4)]);
+    r.dev.mic.startup = const Duration(milliseconds: 300);
+    await r.until(() => r.log.started('tts').isNotEmpty);
+    await r.until(() => !r.dev.speaker.speaking);
+    await r.wait(const Duration(milliseconds: 400)); // inside the start
+    t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await t.pump();
+    await r.wait(const Duration(seconds: 2));
+    expect(r.dev.mic.recording, isFalse);
+    expect(r.running, isEmpty);
+  });
+
+  testWidgets('the permission check fails: a message, no dead screen', (
+    t,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final r = await open(
+      t,
+      VoiceGame.hold,
+      [aaa(250, 4)],
+      prepare: (dev) {
+        dev.mic.permissionThrows = true;
+      },
+    );
+    await r.wait(const Duration(milliseconds: 500));
+    expect(find.byType(SnackBar), findsOneWidget);
+    r.dev.mic.permissionThrows = false;
+    await t.tap(find.byTooltip('Speak'));
+    await r.until(() => r.tries == 1, reason: 'works after a tap');
   });
 
   testWidgets('closing the screen while holding stops the mic', (t) async {

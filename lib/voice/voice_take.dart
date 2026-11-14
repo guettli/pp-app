@@ -52,6 +52,16 @@ class VoiceTake {
   /// Pitch of the last few voiced frames, for a live display (Hz).
   double? get livePitch => median(_recent);
 
+  /// A pitch about an octave from the sound so far is a tracking error
+  /// (a voice does not jump an octave within a sound): moved back.
+  double _fold(double p) {
+    if (_pitches.length < 5) return p;
+    final m = pitch!;
+    final st = semitones(m, p);
+    if (st.abs() > 10 && st.abs() < 14) return st > 0 ? p / 2 : p * 2;
+    return p;
+  }
+
   /// Feeds the next 20 ms frame.
   void add(VoiceFrame f) {
     if (_done) return;
@@ -65,8 +75,9 @@ class VoiceTake {
       }
       if (started) {
         _lastVoiced = i;
-        _pitches.add(f.pitch!);
-        _recent.add(f.pitch!);
+        final p = _fold(f.pitch!);
+        _pitches.add(p);
+        _recent.add(p);
         if (_recent.length > 5) _recent.removeAt(0);
       }
     } else {
@@ -85,8 +96,8 @@ class VoiceTake {
   void finish() => _done = true;
 }
 
-/// Stars for holding a sound: 3 s, 5 s, 8 s. Children of 5 to 8 hold a
-/// vowel for about 8 to 12 s at most.
+/// Stars for holding a sound: 3 s, 5 s, 8 s. Children of 4 to 8 hold a
+/// vowel for about 6 to 12 s at most.
 int holdStars(Duration held) {
   final s = held.inMilliseconds / 1000;
   if (s >= 8) return 3;
@@ -96,19 +107,26 @@ int holdStars(Duration held) {
 }
 
 /// Stars for speaking lower than the own voice by [semitones] (negative
-/// when lower). The low range is narrower than the high one.
+/// when lower). The low range is narrower than the high one: 5 below is
+/// near the floor of a small child's voice, while a squeak goes high. The
+/// first star needs more than the difference between a short and a held
+/// "A" (about 1 to 2 semitones).
 int lowStars(double semitones) {
   final down = -semitones;
   if (down >= 5) return 3;
-  if (down >= 3) return 2;
-  if (down >= 1.5) return 1;
+  if (down >= 3.5) return 2;
+  if (down >= 2) return 1;
   return 0;
 }
 
 /// Stars for speaking higher than the own voice by [semitones].
 int highStars(double semitones) {
-  if (semitones >= 7) return 3;
-  if (semitones >= 4) return 2;
-  if (semitones >= 2) return 1;
+  if (semitones >= 8) return 3;
+  if (semitones >= 5) return 2;
+  if (semitones >= 3) return 1;
   return 0;
 }
+
+/// A plausible own voice (Hz): children speak at about 200 to 450 Hz,
+/// grown-ups lower; outside this range it is a tracking error.
+bool plausibleVoice(double hz) => hz >= 75 && hz <= 700;

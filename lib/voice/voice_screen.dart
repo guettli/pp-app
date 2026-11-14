@@ -68,6 +68,15 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
   bool _newRecord = false;
   String? _lastPraise;
 
+  /// What comes after the shown result.
+  AfterResult _after = AfterResult.next;
+
+  /// The own voice must be held this long to count (a stable pitch).
+  static const _baselineMin = Duration(milliseconds: 400);
+
+  /// When the own voice cannot be measured: a typical child's (Hz).
+  static const _typicalChild = 260.0;
+
   /// Best stars per step in this round, for the summary.
   late final List<int> _stars = List.filled(_steps, 0);
 
@@ -110,8 +119,8 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     _onward?.cancel();
     _donePraise?.cancel();
     _listener.dispose();
-    _tts.stop();
-    _sfx.dispose();
+    _quietly(_tts.stop);
+    _quietly(_sfx.dispose);
     _float.dispose();
     super.dispose();
   }
@@ -192,7 +201,15 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       _newRecord = false;
     });
     await _quietly(_sfx.stop);
-    if (!await _listener.mic.hasPermission()) {
+    bool allowed;
+    try {
+      allowed = await _listener.mic.hasPermission();
+    } catch (e, st) {
+      debugPrint('permission check failed: $e\n$st');
+      _fail(id, (s) => s.tryAgain);
+      return;
+    }
+    if (!allowed) {
       _fail(id, (s) => s.needMic);
       return;
     }
@@ -203,6 +220,8 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     if (!_current(id)) return;
     await _quietly(_tts.stop);
     await _quietly(_sfx.stop);
+    // paused or closed meanwhile: the mic must not open
+    if (!_current(id)) return;
     final take = VoiceTake(
       // low and high: a short "A" is enough
       maxHeld: _hold ? const Duration(seconds: 15) : const Duration(seconds: 3),
@@ -219,7 +238,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     );
     if (!_current(id) || heard == null) return;
     if (heard.heardNothing || heard.pitch == null) {
-      _fail(id, (s) => s.notHeard);
+      _fail(id, (s) => s.notHeardVoice);
       return;
     }
     _attempts++;
@@ -247,7 +266,16 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
         take.held,
       );
     } else if (_pitchStep == _PitchStep.normal) {
-      _baseline = take.pitch;
+      final hz = take.pitch!;
+      if (take.held >= _baselineMin && plausibleVoice(hz)) {
+        _baseline = hz;
+        await progress.setPitchBase(hz);
+      } else if (_attempts < 2) {
+        stars = 0; // "once more", without stars on screen
+      } else {
+        // never stuck before the bear: the voice of last time, or a child's
+        _baseline = progress.pitchBase ?? _typicalChild;
+      }
     } else {
       st = semitones(_baseline!, take.pitch!);
       final low = _pitchStep == _PitchStep.low;
@@ -256,12 +284,17 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       if (far > 0) record = await progress.recordPitch(far, low: low);
     }
     if (!_current(id)) return;
-    if (stars != null) _stars[_step] = math.max(_stars[_step], stars);
+    final judged = stars != null && (_hold || _pitchStep != _PitchStep.normal);
+    if (judged) _stars[_step] = math.max(_stars[_step], stars);
+    final after = stars == null
+        ? AfterResult.next
+        : afterResult(stars, _attempts);
     setState(() {
       _phase = _Phase.result;
       _result = st;
-      _resultStars = stars;
+      _resultStars = judged ? stars : null;
       _newRecord = record;
+      _after = after;
     });
     if (stars == 3 && _hold) _float.forward(from: 0);
     // the own voice is not judged: a friendly "good" and on
@@ -269,9 +302,6 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     unawaited(_sound(jingle(shown, _rng)));
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (!_current(id)) return;
-    final after = stars == null
-        ? AfterResult.next
-        : afterResult(stars, _attempts);
     var text = pickPraise(
       _lang,
       shown,
@@ -284,16 +314,21 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     await _say(text);
     if (!_current(id)) return;
     _onward = Timer(const Duration(milliseconds: 900), () {
-      if (!_current(id) || _phase != _Phase.result) return;
-      if (after == AfterResult.retry) {
-        _start();
-      } else {
-        _nextStep();
-      }
+      if (_current(id) && _phase == _Phase.result) _goOn();
     });
   }
 
+  /// After a result: the same step once more, or the next one.
+  void _goOn() {
+    if (_after == AfterResult.retry) {
+      _start();
+    } else {
+      _nextStep();
+    }
+  }
+
   void _nextStep() {
+    if (_over) return;
     if (_step + 1 >= _steps) {
       _finish();
       return;
@@ -317,24 +352,16 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
         _flow++;
         _onward?.cancel();
         _quietly(_tts.stop);
-        _nextStep();
+        _goOn();
       case _Phase.speaking:
         break;
     }
   }
 
+  /// 🔊: hear what to do again (before trying).
   Future<void> _again() async {
-    if (!_idle) return;
-    final id = ++_flow;
-    _onward?.cancel();
+    if (_phase != _Phase.ready) return;
     await _say(_instruction(), pitch: _ttsPitch());
-    if (_current(id) && _phase == _Phase.result) _nextStepLater(id);
-  }
-
-  void _nextStepLater(int id) {
-    _onward = Timer(const Duration(milliseconds: 900), () {
-      if (_current(id) && _phase == _Phase.result) _nextStep();
-    });
   }
 
   void _finish() {
@@ -367,39 +394,43 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: [
-            const EmojiImage('🏆', size: 48),
-            const SizedBox(width: 12),
-            Text(s.worldDone),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (final r in rows)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(width: 64, child: Center(child: r.label)),
-                    _StarRow(stars: r.stars, size: 28),
-                  ],
-                ),
-              ),
-          ],
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () {
-              Navigator.of(ctx).pop();
-              Navigator.of(context).pop();
-            },
-            child: Text(s.ok),
+      // the back button must not close it: the game is over
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: Row(
+            children: [
+              const EmojiImage('🏆', size: 48),
+              const SizedBox(width: 12),
+              Flexible(child: Text(s.worldDone)),
+            ],
           ),
-        ],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final r in rows)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(width: 64, child: Center(child: r.label)),
+                      _StarRow(stars: r.stars, size: 28),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              },
+              child: Text(s.ok),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -456,7 +487,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       children: [
         RoundButton(
           tooltip: s.listen,
-          onTap: _idle ? _again : null,
+          onTap: _phase == _Phase.ready ? _again : null,
           color: const Color(0xFF3D5AFE),
           child: const EmojiImage('🔊', size: 40),
         ),
@@ -584,7 +615,12 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     );
   }
 
-  String _seconds(double s) => s.toStringAsFixed(1);
+  /// "5.5" in English, "5,5" in the other languages.
+  String _seconds(double s) {
+    final t = s.toStringAsFixed(1);
+    final code = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
+    return code == 'en' ? t : t.replaceAll('.', ',');
+  }
 
   // --- low and high ---------------------------------------------------
 
@@ -656,7 +692,10 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
               ),
             AnimatedPositioned(
               duration: const Duration(milliseconds: 120),
-              top: (st == null ? zero : y(st)) + 40 - 48,
+              top: ((st == null ? zero : y(st)) + 40 - 48).clamp(
+                0.0,
+                math.max(0.0, c.maxHeight - 96),
+              ),
               left: c.maxWidth / 2 - 48,
               child: EmojiImage(animal, size: 96),
             ),

@@ -80,6 +80,77 @@ void main() {
     });
   });
 
+  group('real voices', () {
+    for (final hz in [180.0, 260.0, 400.0, 650.0]) {
+      test('a shaky, breathy $hz Hz voice: no octave errors, held through', () {
+        final t = take(
+          meter([...noise(0.4), ...childVoice(hz, 4), ...noise(1)]),
+        );
+        expect(t.pitch, closeTo(hz, hz * 0.03));
+        expect(t.held.inMilliseconds, closeTo(4000, 200));
+      });
+    }
+
+    test('very breathy: still held, still the right pitch', () {
+      final t = take(
+        meter([
+          ...noise(0.4),
+          ...childVoice(300, 4, breath: 0.5, jitter: 0.03),
+          ...noise(1),
+        ]),
+      );
+      expect(t.pitch, closeTo(300, 12));
+      expect(t.held.inMilliseconds, greaterThan(3500));
+    });
+
+    test('every other cycle weaker (a creaky voice): not an octave lower', () {
+      const hz = 220.0;
+      final f = Float32List(1024);
+      for (var i = 0; i < f.length; i++) {
+        final cycle = (i * hz / 16000).floor();
+        final amp = cycle.isEven ? 0.3 : 0.18;
+        f[i] = amp * math.sin(2 * math.pi * hz * i / 16000);
+      }
+      expect(yinPitch(f), closeTo(hz, 5));
+    });
+
+    for (final fundamental in [0.3, 0.15, 0.05]) {
+      test('a weak fundamental ($fundamental): not an octave higher', () {
+        const hz = 200.0;
+        final f = Float32List(1024);
+        for (var i = 0; i < f.length; i++) {
+          final t = i / 16000;
+          f[i] =
+              0.3 *
+              (fundamental * math.sin(2 * math.pi * hz * t) +
+                  math.sin(2 * math.pi * 2 * hz * t) +
+                  0.5 * math.sin(2 * math.pi * 3 * hz * t));
+        }
+        expect(yinPitch(f), closeTo(hz, 5));
+      });
+    }
+
+    test('a pitch an octave off within one sound is moved back', () {
+      final t = VoiceTake();
+      for (var i = 0; i < 60; i++) {
+        t.add(VoiceFrame(0.2, i % 4 == 3 ? 125 : 250));
+      }
+      expect(t.pitch, closeTo(250, 1));
+      expect(t.livePitch, closeTo(250, 1));
+    });
+
+    test('a squeak above 1100 Hz is not taken an octave lower', () {
+      final f = Float32List.sublistView(voice(1300, 0.1), 0, 1024);
+      expect(yinPitch(f), closeTo(1300, 30));
+    });
+
+    test('the child starts right away: the voice is not taken for noise', () {
+      final t = take(meter([...voice(250, 4), ...noise(1)]));
+      expect(t.started, isTrue);
+      expect(t.held.inMilliseconds, closeTo(4000, 250));
+    });
+  });
+
   group('VoiceTake', () {
     test('a long "Aaaa" is held for its length', () {
       final t = take(meter([...noise(0.5), ...voice(250, 4), ...noise(1)]));
@@ -137,8 +208,8 @@ void main() {
       ].map((s) => holdStars(Duration(milliseconds: (s * 1000).round()))),
       [0, 1, 2, 3],
     );
-    expect(<double>[-1, -1.5, -3, -5, 2].map(lowStars), [0, 1, 2, 3, 0]);
-    expect(<double>[1, 2, 4, 7, -3].map(highStars), [0, 1, 2, 3, 0]);
+    expect(<double>[-1, -2, -3.5, -5, 2].map(lowStars), [0, 1, 2, 3, 0]);
+    expect(<double>[1, 3, 5, 8, -3].map(highStars), [0, 1, 2, 3, 0]);
     expect(semitones(200, 400), closeTo(12, 1e-9));
     expect(median([3.0, 1, 2]), 2);
     expect(median(<double>[]), isNull);
