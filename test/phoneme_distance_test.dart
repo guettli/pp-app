@@ -82,28 +82,35 @@ void main() {
     expect(sim('/pɛ̃/', 'pɛ', 'fr-FR'), greaterThan(0.8));
   });
 
-  group('glides next to their vowel', () {
+  group('glides in the recognition', () {
+    List<String> drop(String ipa, String lang) =>
+        PhonemeComparer.dropGlides(cmp.tokenize(ipa, lang).$1);
+
     test('diphthong written as vowel-glide-vowel', () {
       // ZIPA hears "Ei" as a-j-i
       expect(cmp.compare('/aɪ̯/', 'aji', 'de-DE').stars, 3);
       expect(cmp.compare('/haɪ̯/', 'haji', 'de-DE').stars, 3);
-      expect(cmp.compare('/tuː/', 'tuːw', 'en-GB').stars, 3);
+      expect(cmp.compare('/haʊ̯s/', 'hawus', 'de-DE').stars, 3);
     });
 
     test('glides before other vowels stay', () {
-      expect(cmp.tokenize('/ˈkja.ve/', 'it-IT').$1, contains('j'));
-      expect(cmp.tokenize('/ˈweso/', 'es-ES').$1, contains('w'));
-      expect(cmp.tokenize('/ˈwɔ.vo/', 'it-IT').$1, contains('w'));
-      expect(cmp.tokenize('/jɛs/', 'en-GB').$1, contains('j'));
+      expect(drop('kjave', 'it-IT'), contains('j'));
+      expect(drop('weso', 'es-ES'), contains('w'));
+      expect(drop('jɛs', 'en-GB'), contains('j'));
       // Spanish ʝ and Italian ʎ are often heard as j after i
-      expect(cmp.tokenize('sija', 'es-ES').$1, contains('j'));
-      expect(cmp.tokenize('putijajo', 'it-IT').$1, contains('j'));
+      expect(drop('sija', 'es-ES'), contains('j'));
+      expect(drop('putijajo', 'it-IT'), contains('j'));
       // w between two u-like vowels (abuela heard as "ɑʊwulɤ")
-      expect(cmp.tokenize('ɑʊwulɤ', 'es-ES').$1, contains('w'));
+      expect(drop('ɑʊwulɤ', 'es-ES'), contains('w'));
+      // a long glide is not a glide token
+      expect(drop('ajːi', 'it-IT'), contains('jː'));
     });
 
-    test('a glide is not dropped across a word boundary', () {
-      expect(cmp.tokenize('/bi jɛs/', 'en-GB').$1, contains('j'));
+    test('a glide the target asks for still has to be said', () {
+      // French "fille": "fi" is not "fij"
+      expect(cmp.tokenize('/fij/', 'fr-FR').$1, contains('j'));
+      expect(cmp.compare('/fij/', 'fi', 'fr-FR').stars, lessThan(3));
+      expect(cmp.compare('/fij/', 'fij', 'fr-FR').stars, 3);
     });
 
     test('a missing sound still costs', () {

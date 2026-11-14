@@ -21,6 +21,10 @@ for path in sys.argv[1:]:
         dist = collections.Counter(stars)
         print(f"{voice:36} {sum(stars) / len(stars):.2f} stars  "
               + " ".join(f"{s}★:{dist[s]}" for s in range(4)))
+    deaf = [r for r in rows if r.get("notHeard")]
+    if deaf:
+        print(f"{len(deaf)} not heard (the app would say \"nothing heard\"): "
+              + ", ".join(f"{r['voice']}/{r['p']}" for r in deaf[:20]))
     bad = [(k, v) for k, v in sorted(by_word.items()) if max(r["stars"] for r in v) <= 1]
     print(f"{len(bad)} words with at most 1 star from every voice:")
     for (lang, word), v in bad:

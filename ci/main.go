@@ -328,7 +328,8 @@ var ttsVoices = []string{
 // voice (tool/tts_check). Words that get few stars although they were
 // pronounced correctly point to a wrong IPA in the word list.
 func (m *Ci) TtsCheck(
-	// Hugging Face repo of another ZIPA model to compare (default: the app's).
+	// Hugging Face repo of another ZIPA model to compare (default: the app's,
+	// pinned). Fetched from "main" without checksum: for experiments only.
 	// +optional
 	model string,
 	// Synthesis options for experiments, e.g. "gain=1 lead=0.4 tail=0.8 noise=0.002".
@@ -341,8 +342,9 @@ func (m *Ci) TtsCheck(
 	// tool/tts_check/load_recordings.py).
 	// +optional
 	recordings *dagger.Directory,
-) *dagger.File {
-	if recordings == nil {
+) (*dagger.File, error) {
+	realRecordings := recordings != nil
+	if !realRecordings {
 		recordings = dag.Directory()
 	}
 	modelDir := m.Model()
@@ -360,15 +362,20 @@ func (m *Ci) TtsCheck(
 		WithExec([]string{"apk", "add", "--no-cache", "curl"}).
 		WithExec([]string{"mkdir", "/voices"}).
 		WithWorkdir("/voices")
+	matched := 0
 	for _, v := range ttsVoices {
 		if voice != "" && !strings.Contains(v, voice) {
 			continue
 		}
-		parts := regexp.MustCompile("/").Split(v, -1)
+		matched++
+		parts := strings.Split(v, "/")
 		name := parts[1] + "-" + parts[2] + "-" + parts[3]
-		url := "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/" + v + "/" + name
+		url := "https://huggingface.co/rhasspy/piper-voices/resolve/375a0fe641dea077c2a47b4e9a056d6da521eed3/" + v + "/" + name
 		voices = voices.WithExec([]string{"sh", "-c",
 			"curl -fsSL -o " + name + ".onnx " + url + ".onnx && curl -fsSL -o " + name + ".onnx.json " + url + ".onnx.json"})
+	}
+	if matched == 0 && !realRecordings {
+		return nil, fmt.Errorf("no voice matches %q", voice)
 	}
 	run := `set -e
 . /opt/venv/bin/activate
@@ -388,7 +395,7 @@ dart run tool/tts_check/check.dart score /work /model/tokens.txt /work/report.js
 		WithDirectory("/rec", recordings).
 		WithEnvVariable("TTS_OPTIONS", options).
 		WithExec([]string{"sh", "-c", run}).
-		File("/work/report.json")
+		File("/work/report.json"), nil
 }
 
 // TtsRescore scores the recognitions of a TtsCheck report again with the

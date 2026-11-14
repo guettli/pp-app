@@ -42,6 +42,7 @@ for onnx in sorted(voices.glob("*.onnx")):
         audio = np.concatenate([pad(opt["lead"]), audio * opt["gain"], pad(opt["tail"])])
         (d / f"{n}.f32").write_bytes(audio.tobytes())
         index.append({"lang": lang, "voice": voice_name, "file": f"{lang}/{voice_name}/{n}.f32",
-                      "p": w["p"], "e": w["e"], "ipa": w["ipa"]})
+                      "p": w["p"], "e": w["e"], "ipa": w["ipa"],
+                      "alt": [a["ipa"] for a in w.get("alt", [])]})
     print(voice_name, len(words), "words", file=sys.stderr)
 (out / "index.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")

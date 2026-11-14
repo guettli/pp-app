@@ -17,6 +17,8 @@ names = [o.name for o in sess.get_outputs()]
 key = next((n for n in ("log_probs", "logits") if n in names), names[0])
 for item in json.loads((work / "index.json").read_text(encoding="utf-8")):
     f = work / item["file"]
+    if not f.with_suffix(".fb").exists():  # not heard by the endpointer
+        continue
     feats = np.fromfile(f.with_suffix(".fb"), dtype=np.float32).reshape(1, -1, 80)
     if feats.shape[1] < 10:
         continue

@@ -25,5 +25,7 @@ for n, item in enumerate(json.loads((rec / "recordings.json").read_text(encoding
     f = f"{item['lang']}/rec/{n}.f32"
     (out / f).parent.mkdir(parents=True, exist_ok=True)
     (out / f).write_bytes(audio.tobytes())
+    item.setdefault("voice", "recording")
+    item.setdefault("e", "")
     index.append({**item, "file": f})
 (out / "index.json").write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")

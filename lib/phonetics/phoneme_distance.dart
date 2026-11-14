@@ -153,7 +153,7 @@ class PhonemeComparer {
       }
       w++;
     }
-    return _dropGlides(phonemes, words);
+    return (phonemes, words);
   }
 
   static const _glideVowels = {
@@ -162,38 +162,32 @@ class PhonemeComparer {
   };
   static const _vowels = 'aeiouyæøœɑɒɔəɛɜɪʊʏɐʌɤɯɨʉ';
 
-  /// Drops a glide that only spells the second half of a diphthong
-  /// ("aji" -> "ai") or a vowel's off-glide at the end of a word ("tuːw").
+  /// Drops a glide in a recognition that only spells the second half of a
+  /// diphthong ("aji" -> "ai", "hawus" -> "haus").
   /// The recogniser often writes the diphthong in "Ei" /aɪ̯/ as a-j-i; in a
-  /// word of two sounds that one extra sound would cost two stars. Applied
-  /// to target and recognition alike. A glide before another vowel stays
+  /// word of two sounds that one extra sound would cost two stars. Only
+  /// applied to the recognition: a glide the target asks for (French
+  /// "fille" /fij/) still has to be said. A glide before another vowel stays
   /// ("kja", Spanish "siʝa" heard as "sija").
-  static (List<String>, List<int>) _dropGlides(
-    List<String> phonemes,
-    List<int> words,
-  ) {
+  static List<String> dropGlides(List<String> phonemes) {
     String base(int i) => String.fromCharCode(phonemes[i].runes.first);
-    bool sameWord(int i, int j) =>
-        j >= 0 && j < phonemes.length && words[i] == words[j];
-    final p = <String>[], w = <int>[];
+    final out = <String>[];
     for (var i = 0; i < phonemes.length; i++) {
       final own = _glideVowels[phonemes[i]];
       if (own != null) {
-        final prev = sameWord(i, i - 1) ? base(i - 1) : null;
-        final next = sameWord(i, i + 1) ? base(i + 1) : null;
+        final prev = i > 0 ? base(i - 1) : null;
+        final next = i + 1 < phonemes.length ? base(i + 1) : null;
         final diphthong =
             prev != null &&
             _vowels.contains(prev) &&
             !own.contains(prev) &&
             next != null &&
             own.contains(next);
-        final offGlide = prev != null && own.contains(prev) && next == null;
-        if (diphthong || offGlide) continue;
+        if (diphthong) continue;
       }
-      p.add(phonemes[i]);
-      w.add(words[i]);
+      out.add(phonemes[i]);
     }
-    return (p, w);
+    return out;
   }
 
   /// Whether [phoneme] (a token from [tokenize]) has articulatory features.
@@ -228,7 +222,7 @@ class PhonemeComparer {
 
   Comparison compare(String targetIpa, String actualIpa, String lang) {
     final (t, tw) = tokenize(targetIpa, lang);
-    final (a, _) = tokenize(actualIpa, lang);
+    final a = dropGlides(tokenize(actualIpa, lang).$1);
     final m = t.length, n = a.length;
     final dp = List.generate(m + 1, (_) => List<double>.filled(n + 1, 0));
     for (var i = 1; i <= m; i++) {
