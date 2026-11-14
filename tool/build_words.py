@@ -4,7 +4,7 @@
 IPA comes from English Wiktionary (like guettli/pp): the pronunciation of
 the word in the study language's section, preferring Received Pronunciation
 for en-GB and Spain for es-ES. Multi-word entries are looked up as a whole
-first, then word by word. tool/ipa_overrides.tsv wins over Wiktionary.
+first, then word by word. A cell "a|b" makes "b" an accepted alternative. tool/ipa_overrides.tsv wins over Wiktionary.
 
 Usage: python3 tool/build_words.py <cache dir>
 Prints every word whose IPA could not be found and exits 1 in that case.
@@ -196,23 +196,32 @@ def main() -> int:
     for lang in LANGS:
         out = []
         for emoji, words in rows:
-            word = words[lang]
-            if word == "-":
+            if words[lang] == "-":
                 continue
-            ipa = overrides.get((lang, word)) or ipa_for(word, lang, cache)
-            if not ipa or re.search(r"[()ᵑ]", ipa):
-                # optional sounds "(ə)" cannot be scored: needs an override
-                missing.append(f"{lang}\t{word}\t{ipa or ''}")
-                continue
-            out.append(
-                {
-                    "p": word,
+            # "a|b": the app says a, b is accepted too
+            accepted = []
+            for word in words[lang].split("|"):
+                ipa = overrides.get((lang, word)) or ipa_for(word, lang, cache)
+                if not ipa or re.search(r"[()ᵑ]", ipa):
+                    # optional sounds "(ə)" cannot be scored: needs an override
+                    missing.append(f"{lang}\t{word}\t{ipa or ''}")
+                    break
+                accepted.append({"p": word, "ipa": ipa})
+            else:
+                first, *alt = accepted
+                entry = {
+                    **first,
                     "e": emoji,
-                    "ipa": ipa,
-                    "lvl": level(ipa),
-                    "tr": {l: w for l, w in words.items() if l != lang and w != "-"},
+                    "lvl": level(first["ipa"]),
+                    "tr": {
+                        l: w.split("|")[0]
+                        for l, w in words.items()
+                        if l != lang and w != "-"
+                    },
                 }
-            )
+                if alt:
+                    entry["alt"] = alt
+                out.append(entry)
         out.sort(key=lambda p: (p["lvl"], p["p"]))
         (ROOT / f"assets/phrases/{lang}.json").write_text(
             json.dumps(out, ensure_ascii=False, separators=(",", ":")) + "\n",

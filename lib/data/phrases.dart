@@ -28,6 +28,7 @@ class Phrase {
     required this.ipa,
     required this.level,
     this.translations = const {},
+    this.alternatives = const [],
   });
 
   factory Phrase.fromJson(Map<String, dynamic> j) => Phrase(
@@ -37,6 +38,10 @@ class Phrase {
     level: j['lvl'] as int,
     translations: (j['tr'] as Map<String, dynamic>? ?? {})
         .cast<String, String>(),
+    alternatives: [
+      for (final a in (j['alt'] as List? ?? []).cast<Map<String, dynamic>>())
+        (text: a['p'] as String, ipa: a['ipa'] as String),
+    ],
   );
 
   final String text;
@@ -46,6 +51,16 @@ class Phrase {
   /// Difficulty 0..1000 (from guettli/pp).
   final int level;
   final Map<String, String> translations;
+
+  /// Other common words for the same picture (e.g. Möhre for Karotte). The
+  /// app says [text], but any of them is accepted.
+  final List<({String text, String ipa})> alternatives;
+
+  /// [text] and all [alternatives].
+  List<({String text, String ipa})> get accepted => [
+    (text: text, ipa: ipa),
+    ...alternatives,
+  ];
 }
 
 class PhraseBook {

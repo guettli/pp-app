@@ -80,9 +80,11 @@ dagger call -m ci panphon-features export --path assets/panphon/panphon_features
 ```
 
 Word list rules (`tool/words.tsv`): one concept per line, a concrete thing a
-3–8 year old knows, and an emoji that suggests exactly one word in every
-language. If a picture suggests two words in one language (🦉 hibou/chouette,
-👻 Geist/Gespenst), that cell is `-` and the word is left out there.
+3–8 year old knows, and an emoji that makes everybody think of the same
+thing. If a picture has two common words in one language, both are listed as
+`Karotte|Möhre`: the app says the first one, and the others are accepted too
+(the child may know only the other word). A cell `-` leaves the word out in
+that language.
 Every picture was also checked as the Fluent 3D image itself (🧽 looks
 like cheese, so it is not in the list). Plural
 when the picture shows several (🍒 Kirschen).
