@@ -9,8 +9,9 @@
 //    Recordings stay in memory, as in the app; only IPA and stars are
 //    printed.
 import 'dart:async';
+import 'dart:typed_data';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:phoneme_party/app_state.dart';
@@ -27,6 +28,15 @@ void report(String name, IoLog log) {
   for (final e in log.events) {
     debugPrint('IOLOG $name $e');
   }
+}
+
+/// Closes the play screen and lets the players wind down, so nothing of
+/// it runs on after the test.
+Future<void> close(Game game) async {
+  game.nav.currentState!.popUntil((r) => r.isFirst);
+  await game.wait(const Duration(seconds: 2));
+  await game.t.pumpWidget(const SizedBox());
+  await game.wait(const Duration(milliseconds: 500));
 }
 
 /// The real recognizer, printing what it heard.
@@ -92,6 +102,7 @@ void main() {
       expect(game.running.where((i) => i.device != 'sfx'), isEmpty);
     } finally {
       report('world', log);
+      await close(game);
     }
   });
 
@@ -136,6 +147,7 @@ void main() {
       say?.cancel();
       await child.stop();
       report('loopback', log);
+      await close(game);
     }
   });
 }

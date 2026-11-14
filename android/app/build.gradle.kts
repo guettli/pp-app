@@ -88,7 +88,8 @@ flutter {
 }
 
 dependencies {
-    // integration_test on a phone: tool/device_test.sh
-    androidTestImplementation("androidx.test:runner:1.6.2")
-    androidTestImplementation("androidx.test:rules:1.6.1")
+    // integration_test on a phone: tool/device_test.sh. The versions the
+    // integration_test plugin brings (Gradle wants them consistent).
+    androidTestImplementation("androidx.test:runner:1.3.0")
+    androidTestImplementation("androidx.test:rules:1.2.0")
 }

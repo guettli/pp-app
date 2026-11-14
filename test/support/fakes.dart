@@ -244,10 +244,21 @@ class FakeOut implements SoundOut {
   Timer? _timer;
   int plays = 0;
 
+  /// Like audioplayers, the player takes a moment to prepare; a [stop]
+  /// meanwhile cancels the start.
+  static const startup = Duration(milliseconds: 100);
+  bool starting = false;
+  bool _cancelStart = false;
+
   @override
   Future<void> play(Uint8List wav) async {
     await stop();
     plays++;
+    starting = true;
+    _cancelStart = false;
+    await Future<void>.delayed(startup);
+    starting = false;
+    if (_cancelStart) return;
     final ms = (wav.length - 44) ~/ 2 * 1000 ~/ 16000;
     log.on(name, '${ms}ms');
     _timer = Timer(Duration(milliseconds: ms), () {
@@ -259,6 +270,7 @@ class FakeOut implements SoundOut {
 
   @override
   Future<void> stop() async {
+    if (starting) _cancelStart = true;
     if (_timer == null) return;
     _timer!.cancel();
     _timer = null;

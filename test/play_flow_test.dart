@@ -306,11 +306,26 @@ void flows(bool ios) {
     final (g, _) = await start(t, iosTts: ios);
     await g.until(() => g.replays == 1);
     await g.tap('Funny voice');
+    await g.wait(FakeOut.startup * 2);
     expect(g.replays, 2);
     expect(g.log.intervals('replay').first.to, isNotNull);
     await g.until(() => g.recordings == 2);
     expect(g.said.last, g.words[1].text);
     g.expectClean();
+  });
+
+  testWidgets('Next while the replay starts, then closing the screen', (
+    t,
+  ) async {
+    final (g, f) = await start(t, iosTts: ios);
+    await g.until(() => f.dev.player.starting);
+    await g.tap('Next');
+    await g.until(() => g.recordings == 2);
+    expect(g.replays, 0, reason: 'the start was cancelled');
+    g.nav.currentState!.pop();
+    // fails here if the replay's wait for its end became an unhandled error
+    await g.wait(const Duration(seconds: 2));
+    expect(g.running, isEmpty);
   });
 
   testWidgets('a stuck TTS engine does not stop the game', (t) async {

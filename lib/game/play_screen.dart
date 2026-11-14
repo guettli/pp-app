@@ -301,7 +301,12 @@ class _PlayScreenState extends State<PlayScreen>
       await _player.stop();
       if (cancelled()) return;
       final effected = applyVoiceEffect(_effect, audio);
-      final done = _player.onComplete.first;
+      // may never come (stopped, then the player is disposed): then the
+      // stream closes, which must not become an unhandled error
+      final done = _player.onComplete.first.then<void>(
+        (_) {},
+        onError: (Object _) {},
+      );
       await _player.play(wavBytes(effected));
       if (cancelled()) {
         await _player.stop();
