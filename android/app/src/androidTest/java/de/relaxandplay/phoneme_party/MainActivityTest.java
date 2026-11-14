@@ -1,0 +1,14 @@
+package de.relaxandplay.phoneme_party;
+
+import androidx.test.rule.ActivityTestRule;
+import dev.flutter.plugins.integration_test.FlutterTestRunner;
+import org.junit.Rule;
+import org.junit.runner.RunWith;
+
+// Runs the Dart tests in integration_test/ on a phone (tool/device_test.sh).
+@RunWith(FlutterTestRunner.class)
+public class MainActivityTest {
+  @Rule
+  public ActivityTestRule<MainActivity> rule =
+      new ActivityTestRule<>(MainActivity.class, true, false);
+}

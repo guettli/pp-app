@@ -2,14 +2,24 @@ import 'package:flutter/services.dart';
 
 import 'data/phrases.dart';
 import 'data/progress.dart';
+import 'game/game_io.dart';
 import 'phonetics/phoneme_distance.dart';
 import 'phonetics/recognizer.dart';
 
 /// Everything the game needs, loaded once at start.
 class AppState {
-  AppState._(this.recognizer, this.comparer, this.progress, this.book);
+  AppState(
+    this.recognizer,
+    this.comparer,
+    this.progress,
+    this.book, {
+    required this.io,
+  });
 
-  final PhoneRecognizer recognizer;
+  final Recognizer recognizer;
+
+  /// Microphone, TTS and players (fakes in tests).
+  final GameIo io;
   final PhonemeComparer comparer;
   final Progress progress;
   PhraseBook book;
@@ -21,7 +31,7 @@ class AppState {
     );
     final book = await PhraseBook.load(progress.studyLang ?? 'de-DE');
     final recognizer = await PhoneRecognizer.load();
-    return AppState._(recognizer, comparer, progress, book);
+    return AppState(recognizer, comparer, progress, book, io: GameIo.device());
   }
 
   Future<void> switchLanguage(String lang) async {

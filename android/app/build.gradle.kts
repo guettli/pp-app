@@ -37,6 +37,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appLabel"] = "Phoneme Party"
     }
 
     signingConfigs {
@@ -60,6 +62,17 @@ android {
     }
 
     buildTypes {
+        // Debug and test builds install next to the release app (another
+        // id and name), so testing never touches a child's progress.
+        debug {
+            applicationIdSuffix = ".test"
+            manifestPlaceholders["appLabel"] = "PP Test"
+        }
+        // the Flutter plugin makes profile from debug: keep it apart too
+        getByName("profile") {
+            applicationIdSuffix = ".profile"
+            manifestPlaceholders["appLabel"] = "PP Profile"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
@@ -77,4 +90,11 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // integration_test on a phone: tool/device_test.sh. The versions the
+    // integration_test plugin brings (Gradle wants them consistent).
+    androidTestImplementation("androidx.test:runner:1.3.0")
+    androidTestImplementation("androidx.test:rules:1.2.0")
 }
