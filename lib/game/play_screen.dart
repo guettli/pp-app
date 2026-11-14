@@ -16,6 +16,7 @@ import '../phonetics/endpointer.dart';
 import '../phonetics/phoneme_distance.dart';
 import '../phonetics/recognizer.dart';
 import '../ui/emoji_image.dart';
+import '../ui/round_button.dart';
 import '../ui/strings.dart';
 import 'rocket_launch.dart';
 import 'feedback.dart';
@@ -708,7 +709,7 @@ class _PlayScreenState extends State<PlayScreen>
                   ? AnimatedScale(
                       scale: _replaying ? 1.2 : 1,
                       duration: const Duration(milliseconds: 200),
-                      child: _RoundButton(
+                      child: RoundButton(
                         tooltip: s.funnyVoice,
                         size: 64,
                         onTap: _onReplayTap,
@@ -770,7 +771,7 @@ class _PlayScreenState extends State<PlayScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _RoundButton(
+        RoundButton(
           tooltip: s.listen,
           onTap: _idle ? _speak : null,
           color: const Color(0xFF3D5AFE),
@@ -779,7 +780,7 @@ class _PlayScreenState extends State<PlayScreen>
         AnimatedScale(
           scale: listening ? 1.0 + _level * 0.35 : 1.0,
           duration: const Duration(milliseconds: 80),
-          child: _RoundButton(
+          child: RoundButton(
             tooltip: listening ? s.yourTurn : s.speak,
             size: 110,
             onTap: busy || _phase == _Phase.speaking ? null : _onMic,
@@ -792,7 +793,7 @@ class _PlayScreenState extends State<PlayScreen>
             child: micChild,
           ),
         ),
-        _RoundButton(
+        RoundButton(
           tooltip: s.next,
           onTap: _phase == _Phase.result ? _next : null,
           color: const Color(0xFF00C853),
@@ -833,51 +834,6 @@ class _Flight extends AnimatedWidget {
         child: Transform.rotate(
           angle: t * 2 * math.pi,
           child: FittedBox(child: EmojiImage(emoji, size: from.height)),
-        ),
-      ),
-    );
-  }
-}
-
-class _RoundButton extends StatelessWidget {
-  const _RoundButton({
-    required this.child,
-    required this.onTap,
-    required this.color,
-    required this.tooltip,
-    this.size = 76,
-    this.dimmed,
-  });
-
-  /// Defaults to "disabled"; false keeps a busy button fully visible.
-  final bool? dimmed;
-
-  final Widget child;
-  final VoidCallback? onTap;
-  final Color color;
-  final String tooltip;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final dim = dimmed ?? onTap == null;
-    return Tooltip(
-      message: tooltip,
-      child: Opacity(
-        opacity: dim ? 0.35 : 1,
-        child: Material(
-          color: color,
-          shape: const CircleBorder(),
-          elevation: dim ? 0 : 8,
-          child: InkWell(
-            customBorder: const CircleBorder(),
-            onTap: onTap,
-            child: SizedBox(
-              width: size,
-              height: size,
-              child: Center(child: child),
-            ),
-          ),
         ),
       ),
     );

@@ -25,6 +25,11 @@ class S {
   String get ok => _t['ok']!;
   String get funnyVoice => _t['funnyVoice']!;
   String get loading => _t['loading']!;
+  String get holdTitle => _t['holdTitle']!;
+  String get pitchTitle => _t['pitchTitle']!;
+  String get best => _t['best']!;
+  String get notHeardVoice => _t['notHeardVoice']!;
+  String get newRecord => _t['newRecord']!;
   String newStars(int n) => _t['newStars']!.replaceAll('{n}', '$n');
 
   static const _all = {
@@ -43,6 +48,12 @@ class S {
       'ok': 'Super',
       'funnyVoice': 'Lustige Stimme',
       'loading': 'Lade Spracherkennung …',
+      'holdTitle': 'Lange Laute',
+      'pitchTitle': 'Tief und hoch',
+      'best': 'Rekord',
+      'newRecord': 'Neuer Rekord!',
+      'notHeardVoice':
+          'Ich habe nichts gehört. Tippe auf 🎤 und versuch es noch einmal.',
     },
     'en': {
       'chooseLanguage': 'Which language do you practise?',
@@ -59,6 +70,11 @@ class S {
       'ok': 'Great',
       'funnyVoice': 'Funny voice',
       'loading': 'Loading speech recognition …',
+      'holdTitle': 'Long sounds',
+      'pitchTitle': 'Low and high',
+      'best': 'Best',
+      'newRecord': 'New record!',
+      'notHeardVoice': 'I did not hear anything. Tap 🎤 and try again.',
     },
     'fr': {
       'chooseLanguage': 'Quelle langue pratiques-tu ?',
@@ -75,6 +91,11 @@ class S {
       'ok': 'Super',
       'funnyVoice': 'Voix rigolote',
       'loading': 'Chargement de la reconnaissance vocale …',
+      'holdTitle': 'Sons longs',
+      'pitchTitle': 'Grave et aigu',
+      'best': 'Record',
+      'newRecord': 'Nouveau record !',
+      'notHeardVoice': 'Je n’ai rien entendu. Touche 🎤 et réessaie.',
     },
     'it': {
       'chooseLanguage': 'Quale lingua pratichi?',
@@ -91,6 +112,11 @@ class S {
       'ok': 'Evviva',
       'funnyVoice': 'Voce buffa',
       'loading': 'Caricamento del riconoscimento vocale …',
+      'holdTitle': 'Suoni lunghi',
+      'pitchTitle': 'Basso e alto',
+      'best': 'Record',
+      'newRecord': 'Nuovo record!',
+      'notHeardVoice': 'Non ho sentito niente. Tocca 🎤 e riprova.',
     },
     'es': {
       'chooseLanguage': '¿Qué idioma practicas?',
@@ -107,6 +133,11 @@ class S {
       'ok': 'Genial',
       'funnyVoice': 'Voz graciosa',
       'loading': 'Cargando el reconocimiento de voz …',
+      'holdTitle': 'Sonidos largos',
+      'pitchTitle': 'Grave y agudo',
+      'best': 'Récord',
+      'newRecord': '¡Nuevo récord!',
+      'notHeardVoice': 'No he oído nada. Toca 🎤 e inténtalo otra vez.',
     },
   };
 }

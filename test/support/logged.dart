@@ -21,8 +21,8 @@ class LoggedMic implements MicSource {
   Future<bool> hasPermission() => inner.hasPermission();
 
   @override
-  Future<Stream<Uint8List>> start() async {
-    final s = await inner.start();
+  Future<Stream<Uint8List>> start({bool voiceProcessing = true}) async {
+    final s = await inner.start(voiceProcessing: voiceProcessing);
     if (!_on) log.on('mic', 'real');
     _on = true;
     onStart?.call();
@@ -52,13 +52,13 @@ class LoggedSpeaker implements Speaker {
   Future<void> setLanguage(String lang) => inner.setLanguage(lang);
 
   @override
-  Future<void> speak(String text) async {
+  Future<void> speak(String text, {double pitch = 1}) async {
     final id = ++_id;
     if (_on) log.off('tts');
     log.on('tts', text);
     _on = true;
     try {
-      await inner.speak(text);
+      await inner.speak(text, pitch: pitch);
     } finally {
       if (id == _id && _on) {
         log.off('tts');

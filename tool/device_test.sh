@@ -1,5 +1,6 @@
 #!/bin/sh
-# Runs integration_test/flow_test.dart on the phone connected via adb.
+# Runs integration_test/ (all_test.dart, or the file given) on the phone
+# connected via adb.
 #
 # Builds the test app in dagger (ci DeviceTestApks), installs it next to the
 # release app (id ...phoneme_party.test, name "PP Test", own storage), runs

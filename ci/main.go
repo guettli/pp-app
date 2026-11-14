@@ -246,7 +246,7 @@ if echo "$b" | grep -q "android.permission.INTERNET"; then echo "release APK mus
 // with an integration test as entry point, and the instrumentation runner.
 // Test code is only ever compiled into these, never into BuildApk.
 func (m *Ci) DeviceTestApks(
-	// +default="integration_test/flow_test.dart"
+	// +default="integration_test/all_test.dart"
 	target string,
 ) *dagger.Directory {
 	c := m.base().
