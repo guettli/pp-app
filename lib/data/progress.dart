@@ -32,6 +32,30 @@ class Progress {
   bool worldOpen(PhraseBook book, int world) =>
       world == 0 || worldStars(book, world - 1) >= book.world(world - 1).length;
 
+  /// Longest time [sound] was held in the voice game (per study language).
+  Duration holdBest(String lang, String sound) =>
+      Duration(milliseconds: _prefs.getInt('hold|$lang|$sound') ?? 0);
+
+  /// Stores [held] if it is a new best; returns whether it was.
+  Future<bool> recordHold(String lang, String sound, Duration held) async {
+    if (held <= holdBest(lang, sound)) return false;
+    await _prefs.setInt('hold|$lang|$sound', held.inMilliseconds);
+    return true;
+  }
+
+  /// Furthest the child went from its own voice, in semitones: [low] the
+  /// most below (a positive number), otherwise the most above. Only the
+  /// numbers are kept, never a recording.
+  double pitchBest({required bool low}) =>
+      _prefs.getDouble(low ? 'pitch|low' : 'pitch|high') ?? 0;
+
+  /// Stores [semitones] (distance, positive) if it is a new best.
+  Future<bool> recordPitch(double semitones, {required bool low}) async {
+    if (semitones <= pitchBest(low: low)) return false;
+    await _prefs.setDouble(low ? 'pitch|low' : 'pitch|high', semitones);
+    return true;
+  }
+
   String? get studyLang => _prefs.getString('studyLang');
   Future<void> setStudyLang(String lang) => _prefs.setString('studyLang', lang);
 }

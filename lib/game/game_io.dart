@@ -13,7 +13,11 @@ import 'package:record/record.dart';
 /// The microphone: 16 kHz mono little-endian 16-bit PCM.
 abstract class MicSource {
   Future<bool> hasPermission();
-  Future<Stream<Uint8List>> start();
+
+  /// [voiceProcessing]: automatic gain and noise suppression, good for
+  /// words. Off for the voice games: a long steady vowel would be taken
+  /// for noise and faded out.
+  Future<Stream<Uint8List>> start({bool voiceProcessing = true});
   Future<void> stop();
   Future<void> dispose();
 }
@@ -21,7 +25,9 @@ abstract class MicSource {
 /// Text to speech. [speak] completes when the text has been said.
 abstract class Speaker {
   Future<void> setLanguage(String lang);
-  Future<void> speak(String text);
+
+  /// [pitch]: 1 is normal, 0.5 very low, 2 very high.
+  Future<void> speak(String text, {double pitch = 1});
   Future<void> stop();
 }
 
@@ -75,15 +81,16 @@ class RecordMic implements MicSource {
   Future<bool> hasPermission() => _recorder.hasPermission();
 
   @override
-  Future<Stream<Uint8List>> start() => _recorder.startStream(
-    const RecordConfig(
-      encoder: AudioEncoder.pcm16bits,
-      sampleRate: 16000,
-      numChannels: 1,
-      autoGain: true,
-      noiseSuppress: true,
-    ),
-  );
+  Future<Stream<Uint8List>> start({bool voiceProcessing = true}) =>
+      _recorder.startStream(
+        RecordConfig(
+          encoder: AudioEncoder.pcm16bits,
+          sampleRate: 16000,
+          numChannels: 1,
+          autoGain: voiceProcessing,
+          noiseSuppress: voiceProcessing,
+        ),
+      );
 
   @override
   Future<void> stop() async {
@@ -108,8 +115,14 @@ class TtsSpeaker implements Speaker {
     await _tts.setLanguage(lang);
   }
 
+  double _pitch = 1;
+
   @override
-  Future<void> speak(String text) async {
+  Future<void> speak(String text, {double pitch = 1}) async {
+    if (pitch != _pitch) {
+      await _tts.setPitch(pitch);
+      _pitch = pitch;
+    }
     await _tts.speak(text);
   }
 

@@ -126,9 +126,19 @@ class FakeMic implements MicSource {
   @override
   Future<bool> hasPermission() async => permission;
 
+  /// What the last start asked for.
+  bool? voiceProcessing;
+
+  /// If set, each start plays these samples (then silence) instead of
+  /// [child].
+  List<double> Function()? script;
+
   @override
-  Future<Stream<Uint8List>> start() async {
+  Future<Stream<Uint8List>> start({bool voiceProcessing = true}) async {
     await stop();
+    this.voiceProcessing = voiceProcessing;
+    final audio = script?.call();
+    if (audio != null) return _play(audio);
     final what = child();
     // onCancel: without it, cancel() returns a root-zone future that the
     // fake clock never completes
@@ -145,6 +155,21 @@ class FakeMic implements MicSource {
       }
       ctrl.add(_chunk(what, t));
       t += 20;
+    });
+    return ctrl.stream;
+  }
+
+  Stream<Uint8List> _play(List<double> audio) {
+    final ctrl = _ctrl = StreamController<Uint8List>(onCancel: () async {});
+    log.on('mic', 'script');
+    var pos = 0;
+    _timer = Timer.periodic(const Duration(milliseconds: 20), (_) {
+      final b = ByteData(640);
+      for (var i = 0; i < 320; i++, pos++) {
+        final v = pos < audio.length ? audio[pos] : 0.0;
+        b.setInt16(i * 2, (v.clamp(-1, 1) * 32767).round(), Endian.little);
+      }
+      ctrl.add(b.buffer.asUint8List());
     });
     return ctrl.stream;
   }
@@ -171,7 +196,8 @@ class FakeMic implements MicSource {
     _ctrl = null;
     if (c != null) {
       log.off('mic');
-      await c.close();
+      // not awaited: after the listener cancelled, close() never completes
+      unawaited(c.close());
     }
   }
 
@@ -201,8 +227,12 @@ class FakeSpeaker implements Speaker {
   @override
   Future<void> setLanguage(String lang) async => language = lang;
 
+  /// The pitch of each [speak], in order.
+  final pitches = <double>[];
+
   @override
-  Future<void> speak(String text) {
+  Future<void> speak(String text, {double pitch = 1}) {
+    pitches.add(pitch);
     if (speaking) {
       log.problem('tts dropped "$text": still speaking');
       return Future.value();
