@@ -153,7 +153,47 @@ class PhonemeComparer {
       }
       w++;
     }
-    return (phonemes, words);
+    return _dropGlides(phonemes, words);
+  }
+
+  static const _glideVowels = {
+    'j': {'i', 'ɪ', 'y', 'ʏ'},
+    'w': {'u', 'ʊ'},
+  };
+  static const _vowels = 'aeiouyæøœɑɒɔəɛɜɪʊʏɐʌɤɯɨʉ';
+
+  /// Drops a glide that only spells the second half of a diphthong
+  /// ("aji" -> "ai") or a vowel's off-glide at the end of a word ("tuːw").
+  /// The recogniser often writes the diphthong in "Ei" /aɪ̯/ as a-j-i; in a
+  /// word of two sounds that one extra sound would cost two stars. Applied
+  /// to target and recognition alike. A glide before another vowel stays
+  /// ("kja", Spanish "siʝa" heard as "sija").
+  static (List<String>, List<int>) _dropGlides(
+    List<String> phonemes,
+    List<int> words,
+  ) {
+    String base(int i) => String.fromCharCode(phonemes[i].runes.first);
+    bool sameWord(int i, int j) =>
+        j >= 0 && j < phonemes.length && words[i] == words[j];
+    final p = <String>[], w = <int>[];
+    for (var i = 0; i < phonemes.length; i++) {
+      final own = _glideVowels[phonemes[i]];
+      if (own != null) {
+        final prev = sameWord(i, i - 1) ? base(i - 1) : null;
+        final next = sameWord(i, i + 1) ? base(i + 1) : null;
+        final diphthong =
+            prev != null &&
+            _vowels.contains(prev) &&
+            !own.contains(prev) &&
+            next != null &&
+            own.contains(next);
+        final offGlide = prev != null && own.contains(prev) && next == null;
+        if (diphthong || offGlide) continue;
+      }
+      p.add(phonemes[i]);
+      w.add(words[i]);
+    }
+    return (p, w);
   }
 
   /// Whether [phoneme] (a token from [tokenize]) has articulatory features.

@@ -390,3 +390,12 @@ dart run tool/tts_check/check.dart score /work /model/tokens.txt /work/report.js
 		WithExec([]string{"sh", "-c", run}).
 		File("/work/report.json")
 }
+
+// TtsRescore scores the recognitions of a TtsCheck report again with the
+// current scoring code (quick check of a scoring change).
+func (m *Ci) TtsRescore(report *dagger.File) *dagger.File {
+	return m.base().
+		WithFile("/tmp/in.json", report).
+		WithExec([]string{"dart", "run", "tool/tts_check/check.dart", "rescore", "/tmp/in.json", "/tmp/out.json"}).
+		File("/tmp/out.json")
+}
