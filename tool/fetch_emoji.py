@@ -11,6 +11,7 @@ sequence without FE0F, joined by "-" (same key as lib/emoji.dart).
 """
 import json
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -24,6 +25,8 @@ def key(emoji: str) -> str:
 
 
 def main() -> None:
+    if not shutil.which("cwebp"):
+        sys.exit("cwebp not found: install libwebp (apt install webp)")
     repo = pathlib.Path(sys.argv[1])
     wanted = [l.strip() for l in open(sys.argv[2], encoding="utf-8") if l.strip()]
     out = pathlib.Path(__file__).resolve().parent.parent / "assets" / "emoji"
