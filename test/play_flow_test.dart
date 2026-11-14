@@ -227,6 +227,18 @@ void flows(bool ios) {
     expect(g.recordings, 1, reason: 'waits for a tap');
   });
 
+  testWidgets('background while listening, and the TTS fails to stop: the '
+      'mic still goes off', (t) async {
+    final (g, f) = await start(t, iosTts: ios);
+    await g.until(() => f.dev.mic.recording);
+    f.dev.speaker.failStop = true;
+    await g.lifecycle(AppLifecycleState.paused);
+    await g.wait(const Duration(seconds: 1));
+    expect(f.dev.mic.recording, isFalse);
+    expect(f.rec.calls, 0);
+    f.dev.speaker.failStop = false; // let the screen close cleanly
+  });
+
   testWidgets('background while recognizing: the result is dropped', (t) async {
     final (g, f) = await start(
       t,

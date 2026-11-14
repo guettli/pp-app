@@ -15,7 +15,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:phoneme_party/app_state.dart';
+import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/game/game_io.dart';
+import 'package:phoneme_party/game/rules.dart';
 import 'package:phoneme_party/phonetics/recognizer.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -39,17 +41,25 @@ Future<void> close(Game game) async {
   await game.wait(const Duration(milliseconds: 500));
 }
 
-/// The real recognizer, printing what it heard.
+/// The real recognizer, printing what it heard and the stars for [word].
 class PrintingRecognizer implements Recognizer {
-  PrintingRecognizer(this.inner);
+  PrintingRecognizer(this.inner, this.app, this.word);
   final Recognizer inner;
-  final heard = <String>[];
+  final AppState app;
+  final Phrase Function() word;
+
+  /// Stars per answer.
+  final stars = <int>[];
 
   @override
   Future<Recognition> recognize(Float32List audio) async {
     final r = await inner.recognize(audio);
-    heard.add(r.ipa);
-    debugPrint('IOLOG heard ${audio.length / 16000}s "${r.ipa}"');
+    final w = word();
+    final s = scorePhrase(app.comparer, w, r.ipa, app.book.lang).stars;
+    stars.add(s);
+    debugPrint(
+      'IOLOG heard ${w.text}: ${audio.length / 16000}s "${r.ipa}" $s stars',
+    );
     return r;
   }
 }
@@ -59,10 +69,11 @@ void main() {
   late AppState base;
 
   setUpAll(() async {
-    // the test app (…phoneme_party.test) has its own storage
-    (await SharedPreferences.getInstance()).clear();
     base = await AppState.load();
   });
+  // every test starts without progress; the test app
+  // (…phoneme_party.test) has its own storage
+  setUp(() async => (await SharedPreferences.getInstance()).clear());
 
   const step = Duration(milliseconds: 100);
 
@@ -131,17 +142,19 @@ void main() {
       random: GameIo.device().random,
     );
     await child.setLanguage(base.book.lang);
-    final rec = PrintingRecognizer(base.recognizer);
+    final rec = PrintingRecognizer(base.recognizer, base, () => game.current);
     final app = AppState(rec, base.comparer, base.progress, base.book, io: io);
     game = await Game.open(t, app, log, step: step);
     try {
       // three answers, whatever their stars
       await game.until(
-        () => rec.heard.length >= 3,
+        () => rec.stars.length >= 3,
         limit: const Duration(minutes: 2),
         reason: 'three words heard',
       );
-      expect(rec.heard.where((ipa) => ipa.isNotEmpty), isNotEmpty);
+      // a synthetic voice through speaker and mic: not every word gets a
+      // star, but some must, or the way from mic to stars is broken
+      expect(rec.stars.where((s) => s >= 1), isNotEmpty, reason: '$log');
       game.expectClean();
     } finally {
       say?.cancel();

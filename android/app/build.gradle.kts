@@ -68,6 +68,11 @@ android {
             applicationIdSuffix = ".test"
             manifestPlaceholders["appLabel"] = "PP Test"
         }
+        // the Flutter plugin makes profile from debug: keep it apart too
+        getByName("profile") {
+            applicationIdSuffix = ".profile"
+            manifestPlaceholders["appLabel"] = "PP Profile"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")

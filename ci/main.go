@@ -131,12 +131,19 @@ func (m *Ci) FormatWrite() *dagger.Directory {
 		Filter(dagger.DirectoryFilterOpts{Include: []string{"lib/", "test/", "integration_test/"}})
 }
 
+// noTestCodeInLib fails if anything in lib/ names test code: any quoted
+// path (also a conditional import on its own line) into test/,
+// integration_test or a test package. grep's exit 1 (no match) passes;
+// a match or an error (2) fails.
+const noTestCodeInLib = `grep -rnE "['\"](package:(flutter_test|integration_test|test)/|(\.\./)+(test|integration_test)/)" lib; rc=$?
+case $rc in 1) exit 0 ;; 0) echo "lib/ must not use test code" >&2; exit 1 ;; *) exit $rc ;; esac`
+
 // Analyze runs `flutter analyze --fatal-infos` and checks that the app
 // never imports test code (fakes, test helpers), so none of it can end up
 // in the release APK.
 func (m *Ci) Analyze(ctx context.Context) (string, error) {
 	return m.base().
-		WithExec([]string{"sh", "-c", `if grep -rnE "^(import|export) .*(test/|integration_test|flutter_test)" lib; then echo "lib/ must not import test code" >&2; exit 1; fi`}).
+		WithExec([]string{"sh", "-c", noTestCodeInLib}).
 		WithExec([]string{"flutter", "analyze", "--fatal-infos"}).
 		Stdout(ctx)
 }
@@ -218,10 +225,21 @@ printf 'storeFile=/home/ci/upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPas
 		}
 		args = append(args, "--build-name", name, "--build-number", strconv.Itoa(buildNumber))
 	}
+	apk := "/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk"
 	return c.
 		WithExec(args).
-		File("/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk"), nil
+		WithExec([]string{"sh", "-c", releaseApkCheck, "check", apk}).
+		File(apk), nil
 }
+
+// releaseApkCheck makes sure the release APK is the real app: its id and
+// name (not the test app's), and no INTERNET permission, so nothing can
+// leave the phone.
+const releaseApkCheck = `set -e
+b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")
+echo "$b" | grep -q "^package: name='de.relaxandplay.phoneme_party' " || { echo "wrong package id" >&2; exit 1; }
+echo "$b" | grep -q "^application-label:'Phoneme Party'$" || { echo "wrong app name" >&2; exit 1; }
+if echo "$b" | grep -q "android.permission.INTERNET"; then echo "release APK must not ask for INTERNET" >&2; exit 1; fi`
 
 // DeviceTestApks builds what tool/device_test.sh installs on a phone: the
 // app (debug, id ...phoneme_party.test, so it sits next to the release app)

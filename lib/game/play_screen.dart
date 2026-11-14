@@ -483,21 +483,33 @@ class _PlayScreenState extends State<PlayScreen>
   Future<void> _abort() async {
     _cancelFlow();
     _donePraise?.cancel();
-    await _tts.stop();
-    await _sfx.stop();
-    await _stopReplay(); // also in the result phase, which counts as idle
-    if (_idle) return;
-    _round++;
-    _timer?.cancel();
-    await _tts.stop();
-    if (_phase == _Phase.listening) {
-      // first the subscription, so the end of the stream is not taken as
-      // the child having finished
-      await _sub?.cancel();
-      _sub = null;
-      await _recorder.stop();
+    final wasIdle = _idle; // the result phase counts as idle: it stays
+    if (!wasIdle) {
+      _round++;
+      _timer?.cancel();
+      if (_phase == _Phase.listening) {
+        // The microphone first, whatever fails later. The subscription
+        // before the recorder, so the end of the stream is not taken as
+        // the child having finished.
+        final sub = _sub;
+        _sub = null;
+        await _quietly(() async => sub?.cancel());
+        await _quietly(_recorder.stop);
+      }
+      if (mounted) setState(() => _phase = _Phase.ready);
     }
-    if (mounted) setState(() => _phase = _Phase.ready);
+    await _quietly(_tts.stop);
+    await _quietly(_sfx.stop);
+    await _quietly(_stopReplay);
+  }
+
+  /// Runs [f]; a failing device must not stop the rest of a clean-up.
+  Future<void> _quietly(Future<void> Function() f) async {
+    try {
+      await f();
+    } catch (e, st) {
+      debugPrint('clean-up failed: $e\n$st');
+    }
   }
 
   /// Big button: listening -> done talking; idle -> new round.

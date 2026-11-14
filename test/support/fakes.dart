@@ -228,8 +228,14 @@ class FakeSpeaker implements Speaker {
     }
   }
 
+  /// [stop] throws (an engine that broke).
+  bool failStop = false;
+
   @override
-  Future<void> stop() async => _end(complete: completesOnStop);
+  Future<void> stop() async {
+    if (failStop) throw StateError('tts engine gone');
+    _end(complete: completesOnStop);
+  }
 }
 
 /// Plays as long as the WAV lasts (16 kHz mono 16-bit, 44 byte header).
