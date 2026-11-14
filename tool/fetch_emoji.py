@@ -4,14 +4,16 @@
 Usage: python3 tool/fetch_emoji.py <fluentui-emoji checkout> <emojis.txt>
 
 The checkout may be a sparse/blobless clone; image paths are taken from
-`git ls-tree` and the PNGs are downloaded individually. Output:
-assets/emoji/<codepoints>.png where <codepoints> is the lowercase hex
+`git ls-tree` and the PNGs are downloaded individually and converted to WebP
+(needs `cwebp` from libwebp; 1.3 MB instead of 5.4 MB for ~170 images, no
+visible difference at 256 px). Output: assets/emoji/<codepoints>.webp where <codepoints> is the lowercase hex
 sequence without FE0F, joined by "-" (same key as lib/emoji.dart).
 """
 import json
 import pathlib
 import subprocess
 import sys
+import tempfile
 import urllib.request
 
 RAW = "https://raw.githubusercontent.com/microsoft/fluentui-emoji/main/"
@@ -50,9 +52,12 @@ def main() -> None:
         if not cands:
             missing.append(e)
             continue
-        dest = out / f"{k}.png"
+        dest = out / f"{k}.webp"
         if not dest.exists():
-            urllib.request.urlretrieve(RAW + urllib.request.quote(cands[0]), dest)
+            with tempfile.NamedTemporaryFile(suffix=".png") as png:
+                urllib.request.urlretrieve(RAW + urllib.request.quote(cands[0]), png.name)
+                subprocess.run(["cwebp", "-quiet", "-q", "90", "-alpha_q", "100", "-m", "6",
+                                png.name, "-o", str(dest)], check=True)
     print(f"{len(wanted) - len(missing)} images, missing: {' '.join(missing)}")
 
 

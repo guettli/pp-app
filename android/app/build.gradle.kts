@@ -50,6 +50,15 @@ android {
         }
     }
 
+    // Compress the native libraries in the APK (ONNX Runtime, Flutter): the
+    // download gets ~27 MB smaller, which matters on slow or paid mobile
+    // data. Android extracts them on install (~45 MB extra on the device).
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.findByName("release")

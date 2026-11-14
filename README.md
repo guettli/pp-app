@@ -137,7 +137,7 @@ ignored).
 - Word list: own (MIT). IPA: [Wiktionary](https://en.wiktionary.org)
   (CC BY-SA 4.0), a few entries corrected by hand (`tool/ipa_overrides.tsv`).
 - Pictures: [Microsoft Fluent Emoji](https://github.com/microsoft/fluentui-emoji)
-  3D (MIT); 🇮🇹 from Noto Emoji region flags (public domain).
+  3D (MIT), converted to WebP; 🇮🇹 from Noto Emoji region flags (public domain).
 - Phonetic features: [PanPhon](https://github.com/dmort27/panphon) (MIT).
 - Model: [ZIPA](https://github.com/lingjzhu/zipa)
   `anyspeech/zipa-small-crctc-ns-700k`, **CC BY-NC-SA 4.0** (non-commercial).

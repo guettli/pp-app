@@ -17,7 +17,7 @@ class EmojiImage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Image.asset(
-      'assets/emoji/${emojiKey(emoji)}.png',
+      'assets/emoji/${emojiKey(emoji)}.webp',
       width: size,
       height: size,
       filterQuality: FilterQuality.medium,
