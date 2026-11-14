@@ -5,7 +5,6 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/data/phrases.dart';
-import 'package:phoneme_party/game/rules.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/ui/emoji_image.dart';
 
@@ -64,7 +63,9 @@ void main() {
               w.ipa,
               lang,
             ).replaceAll(' ', '');
-            final c = scorePhrase(cmp, p, ideal, lang);
+            // each word on its own, so a broken alternative cannot hide
+            // behind a better matching one
+            final c = cmp.compare(w.ipa, ideal, lang);
             if (c.stars != 3) failed.add('${w.text} (${c.score})');
           }
         }

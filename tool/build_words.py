@@ -208,11 +208,11 @@ def main() -> int:
                     break
                 accepted.append({"p": word, "ipa": ipa})
             else:
-                main, *alt = accepted
+                first, *alt = accepted
                 entry = {
-                    **main,
+                    **first,
                     "e": emoji,
-                    "lvl": level(main["ipa"]),
+                    "lvl": level(first["ipa"]),
                     "tr": {
                         l: w.split("|")[0]
                         for l, w in words.items()

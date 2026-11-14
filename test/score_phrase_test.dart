@@ -44,4 +44,21 @@ void main() {
   test('a different word gets no stars', () {
     expect(scorePhrase(cmp, carrot, 'hʊnt', 'de-DE').stars, 0);
   });
+
+  test('every one of several alternatives is accepted', () {
+    final granny = Phrase.fromJson({
+      'p': 'grandma',
+      'e': '👵',
+      'ipa': '/ˈɡɹænmɑː/',
+      'lvl': 1,
+      'alt': [
+        {'p': 'granny', 'ipa': '/ˈɡɹæni/'},
+        {'p': 'nan', 'ipa': '/næn/'},
+      ],
+    });
+    for (final said in ['ɡɹænmɑː', 'ɡɹæni', 'næn']) {
+      expect(scorePhrase(cmp, granny, said, 'en-GB').stars, 3, reason: said);
+    }
+    expect(scorePhrase(cmp, granny, 'ʃuːz', 'en-GB').stars, lessThan(2));
+  });
 }
