@@ -97,6 +97,28 @@ artifact.
 The ONNX model is downloaded during `build-apk` (pinned Hugging Face revision,
 checked by sha256) and never committed.
 
+### Pronunciation check
+
+`tool/tts_check` speaks every word with two [Piper](https://github.com/rhasspy/piper)
+voices per language, runs the app's own recognition pipeline (silence
+trimming, level normalisation, fbank, ZIPA, CTC decoding, scoring) on it and
+reports the stars per word:
+
+```sh
+dagger call -m ci tts-check export --path report.json        # ~20 min
+python3 tool/tts_check/summary.py report.json
+# variants: --voice thorsten, --options "gain=0.15 noise=0",
+#   --model anyspeech/zipa-small-crctc-ns-700k,
+#   --recordings <dir with recordings.json> (real recordings)
+dagger call -m ci tts-rescore --report report.json export --path new.json
+```
+
+A word that gets few stars from every voice although it was pronounced
+correctly points to a wrong IPA in the word list or a weakness of the
+scoring. Synthesized adult speech is not a child, so the numbers are a
+relative measure (model A vs. B, scoring before/after a change), not the
+stars a child will get. Piper varies slightly between runs (±0.1 stars).
+
 ### Signing
 
 Android only installs an update if it is signed with the same key as the
@@ -140,6 +162,6 @@ ignored).
   3D (MIT), converted to WebP; 🇮🇹 from Noto Emoji region flags (public domain).
 - Phonetic features: [PanPhon](https://github.com/dmort27/panphon) (MIT).
 - Model: [ZIPA](https://github.com/lingjzhu/zipa)
-  `anyspeech/zipa-small-crctc-ns-700k`, **CC BY-NC-SA 4.0** (non-commercial).
-  A CC BY 4.0 alternative with slightly lower accuracy is
-  `anyspeech/zipa-small-crctc-500k` (switch in `ci/main.go`).
+  `anyspeech/zipa-small-crctc-500k`, CC BY 4.0. (The noisy-student variant
+  `-ns-700k` is CC BY-NC-SA; it scored the same on real recordings and worse
+  on synthesized speech, see "Pronunciation check".)
