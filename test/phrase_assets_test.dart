@@ -75,7 +75,9 @@ void main() {
       test('every picture is bundled', () {
         final missing = phrases
             .map((p) => p.emoji)
-            .where((e) => !File('assets/emoji/${emojiKey(e)}.png').existsSync())
+            .where(
+              (e) => !File('assets/emoji/${emojiKey(e)}.webp').existsSync(),
+            )
             .toSet();
         expect(missing, isEmpty);
       });
