@@ -58,6 +58,38 @@ void main() {
     });
   });
 
+  group('normalizePeak', () {
+    test('quiet speech is boosted to the peak', () {
+      final n = normalizePeak(Float32List.fromList([0.1, -0.05, 0.02]));
+      expect(n[0], closeTo(0.5, 1e-6));
+      expect(n[1], closeTo(-0.25, 1e-6));
+    });
+
+    test('loud audio is left alone', () {
+      final a = Float32List.fromList([0.9, -0.5]);
+      expect(identical(normalizePeak(a), a), isTrue);
+    });
+
+    test('the gain is capped, silence stays silence', () {
+      expect(
+        normalizePeak(Float32List.fromList([0.001]))[0],
+        closeTo(0.03, 1e-6),
+      );
+      expect(normalizePeak(Float32List(10)).every((s) => s == 0), isTrue);
+    });
+  });
+
+  test('quiet speech keeps its soft beginning', () {
+    // 1 s silence, 300 ms soft onset (below trimSilence's threshold),
+    // 500 ms speech, 1 s silence
+    final a = Float32List(44800);
+    for (var i = 16000; i < 28800; i++) {
+      a[i] = (i.isEven ? 1 : -1) * (i < 20800 ? 0.015 : 0.05);
+    }
+    expect(trimSilence(a).length, 8000 + 2 * 2400); // onset lost
+    expect(prepareForRecognition(a).length, 12800 + 2 * 2400);
+  });
+
   group('recordingLimit', () {
     test('short phrases get 6 s (reaction time + speaking)', () {
       expect(recordingLimit('Hund'), const Duration(seconds: 6));

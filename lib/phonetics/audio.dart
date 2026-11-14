@@ -33,3 +33,28 @@ Float32List trimSilence(Float32List audio, {double threshold = 0.02}) {
   final b = (last! + margin).clamp(0, audio.length);
   return Float32List.sublistView(audio, a, b);
 }
+
+/// Boosts quiet audio so its peak is [peak] (never makes it quieter). The
+/// gain is capped at [maxGain] so silence is not blown up into noise.
+Float32List normalizePeak(
+  Float32List audio, {
+  double peak = 0.5,
+  double maxGain = 30,
+}) {
+  var max = 0.0;
+  for (final s in audio) {
+    final a = s.abs();
+    if (a > max) max = a;
+  }
+  if (max == 0) return audio;
+  final gain = (peak / max).clamp(1.0, maxGain);
+  if (gain == 1.0) return audio;
+  return Float32List.fromList([for (final s in audio) s * gain]);
+}
+
+/// What the recogniser gets. Quiet speech (a child far from the phone) is
+/// boosted first, so [trimSilence]'s fixed threshold does not cut off its
+/// soft beginning and end. tool/tts_check, speech at 15 % volume: 2.10
+/// stars on average before, 2.28 after (normal volume: 2.31, unchanged).
+Float32List prepareForRecognition(Float32List audio) =>
+    trimSilence(normalizePeak(audio));

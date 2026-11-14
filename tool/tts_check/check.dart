@@ -54,7 +54,7 @@ void main(List<String> args) {
   if (args[0] == 'features') {
     for (final item in index) {
       final f = '$work/${item['file']}';
-      final feats = extractFbank(trimSilence(_readF32(f)));
+      final feats = extractFbank(prepareForRecognition(_readF32(f)));
       File(_with(f, '.fb')).writeAsBytesSync(feats.buffer.asUint8List());
     }
     return;
