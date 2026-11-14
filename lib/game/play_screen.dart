@@ -1,9 +1,13 @@
 // One "world" = 8 phrases. For each phrase the child listens, speaks, and
 // launches a rocket: the clearer the pronunciation, the higher it flies.
+// Then the child hears itself as a mouse, bear or robot, and a word with at
+// least one star flies into the world's collection at the bottom.
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:record/record.dart';
@@ -17,6 +21,8 @@ import '../ui/emoji_image.dart';
 import '../ui/strings.dart';
 import 'rocket_launch.dart';
 import 'rules.dart';
+import 'voice_effects.dart';
+import 'world_scene.dart';
 
 /// One round: `starting` (permission, set-up) -> `speaking` (the phone says
 /// the phrase) -> `listening` (hands-free: ends when the child stops
@@ -38,6 +44,7 @@ class _PlayScreenState extends State<PlayScreen>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   final _recorder = AudioRecorder();
   final _tts = FlutterTts();
+  final _player = AudioPlayer();
   late final List<Phrase> _phrases = widget.app.book.world(widget.world);
   late final AnimationController _bob = AnimationController(
     vsync: this,
@@ -53,6 +60,34 @@ class _PlayScreenState extends State<PlayScreen>
   double _level = 0;
   Endpointer? _endpointer;
   int _sessionStars = 0;
+
+  /// The last recording (trimmed), kept in memory only for the funny replay.
+  Float32List? _lastAudio;
+  VoiceEffect _effect = VoiceEffect.robot; // the first replay is the mouse
+  bool _replaying = false;
+
+  /// Incremented to cancel a running replay.
+  int _replayId = 0;
+
+  /// Android plays the WAV from memory. audioplayers writes it to a temp
+  /// file on iOS, and recordings must not be stored, so no replay there yet.
+  final bool _canReplay = Platform.isAndroid;
+
+  final _stackKey = GlobalKey();
+  final _emojiKey = GlobalKey();
+  late final _slotKeys = List.generate(_phrases.length, (_) => GlobalKey());
+  late final AnimationController _fly = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+
+  /// The phrase whose picture is flying into its slot, and the way.
+  int? _flying;
+  bool _flyingIsNew = false;
+  (Rect, Rect)? _flightPath;
+
+  /// The slot that jumps after a landing.
+  int? _bounce;
 
   /// Incremented to abandon a running round (screen closed, app paused).
   int _round = 0;
@@ -80,7 +115,10 @@ class _PlayScreenState extends State<PlayScreen>
     _sub?.cancel();
     _recorder.dispose();
     _tts.stop();
+    _replayId++;
+    _player.dispose();
     _bob.dispose();
+    _fly.dispose();
     super.dispose();
   }
 
@@ -96,8 +134,82 @@ class _PlayScreenState extends State<PlayScreen>
   /// Says the phrase again without recording.
   Future<void> _speak() async {
     if (!_idle) return;
+    await _stopReplay();
     await _tts.stop();
     await _tts.speak(_phrase.text);
+  }
+
+  /// Stops a replay (playing or about to start).
+  Future<void> _stopReplay() async {
+    _replayId++;
+    if (_replaying && mounted) setState(() => _replaying = false);
+    await _player.stop();
+  }
+
+  /// Plays the last recording with the next funny voice.
+  Future<void> _replay() async {
+    final audio = _lastAudio;
+    if (!_canReplay || audio == null || _phase != _Phase.result) return;
+    final id = ++_replayId;
+    // A new round, Next or the background may cancel us at every await.
+    bool cancelled() => !mounted || id != _replayId || _phase != _Phase.result;
+    setState(() {
+      _effect = _effect.next;
+      _replaying = true;
+    });
+    try {
+      await _tts.stop();
+      await _player.stop();
+      if (cancelled()) return;
+      final effected = applyVoiceEffect(_effect, audio);
+      final done = _player.onPlayerComplete.first;
+      await _player.play(
+        BytesSource(wavBytes(effected), mimeType: 'audio/wav'),
+      );
+      if (cancelled()) {
+        await _player.stop();
+        return;
+      }
+      final seconds = effected.length / 16000;
+      await done.timeout(
+        Duration(milliseconds: (seconds * 1000).round() + 1500),
+        onTimeout: () {},
+      );
+    } catch (e, st) {
+      debugPrint('replay failed: $e\n$st');
+    } finally {
+      // a newer replay (tap while playing) owns the flag now
+      if (mounted && id == _replayId) setState(() => _replaying = false);
+    }
+  }
+
+  Rect? _rectOf(GlobalKey key) {
+    final box = key.currentContext?.findRenderObject() as RenderBox?;
+    final stack = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    if (box == null || stack == null || !box.hasSize) return null;
+    return box.localToGlobal(Offset.zero, ancestor: stack) & box.size;
+  }
+
+  /// The picture of phrase [i] flies from the big picture into its slot.
+  /// [isNew]: the slot was empty before, so it stays empty until landing.
+  void _flyToSlot(int i, {required bool isNew}) {
+    final from = _rectOf(_emojiKey);
+    final to = _rectOf(_slotKeys[i]);
+    if (from == null || to == null) return;
+    setState(() {
+      _flying = i;
+      _flyingIsNew = isNew;
+      _flightPath = (from, to);
+      _bounce = null;
+    });
+    _fly.forward(from: 0).then((_) {
+      if (!mounted) return;
+      setState(() {
+        _flying = null;
+        _flightPath = null;
+        _bounce = i;
+      });
+    });
   }
 
   /// The phone says the phrase, then listens until the child has spoken.
@@ -105,8 +217,12 @@ class _PlayScreenState extends State<PlayScreen>
     if (!_idle || !mounted) return;
     final round = ++_round;
     final back = _phase;
-    setState(() => _phase = _Phase.starting);
+    setState(() {
+      _phase = _Phase.starting;
+      _lastAudio = null;
+    });
     try {
+      await _stopReplay();
       // Ask before speaking, so the dialog does not cover the phrase.
       if (!await _recorder.hasPermission()) {
         _fail(back, (s) => s.needMic);
@@ -127,6 +243,7 @@ class _PlayScreenState extends State<PlayScreen>
       // let the speaker's echo fade before the mic opens
       await Future<void>.delayed(const Duration(milliseconds: 250));
       if (!_current(round)) return;
+      await _player.stop(); // never record our own replay
       await _listen(round);
     } catch (e, st) {
       debugPrint('round failed: $e\n$st');
@@ -195,7 +312,10 @@ class _PlayScreenState extends State<PlayScreen>
         _phase = _Phase.result;
         _result = cmp;
         _sessionStars += starsGained(cmp.stars, prev);
+        _lastAudio = audio;
       });
+      if (cmp.stars >= 1) _flyToSlot(_index, isNew: prev < 1);
+      unawaited(_replay());
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
       _fail(_Phase.ready, (s) => s.tryAgain);
@@ -204,6 +324,7 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// Stops whatever runs (app went to the background) without scoring.
   Future<void> _abort() async {
+    await _stopReplay(); // also in the result phase, which counts as idle
     if (_idle) return;
     _round++;
     _timer?.cancel();
@@ -239,6 +360,7 @@ class _PlayScreenState extends State<PlayScreen>
 
   void _next() {
     if (_index + 1 >= _phrases.length) {
+      _stopReplay();
       _showWorldDone();
       return;
     }
@@ -263,7 +385,17 @@ class _PlayScreenState extends State<PlayScreen>
             Text(s.worldDone),
           ],
         ),
-        content: Text(s.newStars(_sessionStars)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DancingScene(
+              emojis: [for (final p in _phrases) p.emoji],
+              collected: _collected(),
+            ),
+            const SizedBox(height: 16),
+            Text(s.newStars(_sessionStars)),
+          ],
+        ),
         actions: [
           FilledButton(
             onPressed: () {
@@ -277,10 +409,19 @@ class _PlayScreenState extends State<PlayScreen>
     );
   }
 
+  /// Which phrases of this world have at least one star (ever).
+  List<bool> _collected() => [
+    for (final p in _phrases) widget.app.progress.stars(_lang, p.text) >= 1,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final collected = _collected();
+    if (_flying != null && _flyingIsNew) {
+      collected[_flying!] = false; // still in the air
+    }
     return Scaffold(
       backgroundColor: const Color(0xFF14143A),
       appBar: AppBar(
@@ -294,6 +435,7 @@ class _PlayScreenState extends State<PlayScreen>
         child: LayoutBuilder(
           builder: (context, c) {
             return Stack(
+              key: _stackKey,
               children: [
                 const Positioned.fill(child: Starfield()),
                 Positioned.fill(
@@ -305,39 +447,18 @@ class _PlayScreenState extends State<PlayScreen>
                 ),
                 Column(
                   children: [
-                    const SizedBox(height: 8),
-                    AnimatedBuilder(
-                      animation: _bob,
-                      builder: (_, child) => Transform.translate(
-                        offset: Offset(0, math.sin(_bob.value * math.pi) * -10),
-                        child: child,
-                      ),
-                      child: GestureDetector(
-                        onTap: _idle ? _speak : null,
-                        child: EmojiImage(
-                          _phrase.emoji,
-                          size: math.min(160, c.maxHeight * 0.22),
+                    // Picture, word and result take what is left above the
+                    // buttons and shrink on small phones.
+                    Expanded(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.topCenter,
+                          child: SizedBox(width: c.maxWidth, child: _top(s, c)),
                         ),
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        _phrase.text,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 34,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                    if (_result != null) ...[
-                      const SizedBox(height: 12),
-                      PhonemeChips(result: _result!),
-                    ],
-                    const Spacer(),
                     AnimatedOpacity(
                       opacity: _phase == _Phase.listening ? 1 : 0,
                       duration: const Duration(milliseconds: 200),
@@ -352,14 +473,100 @@ class _PlayScreenState extends State<PlayScreen>
                     ),
                     const SizedBox(height: 12),
                     _controls(s, scheme),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 16),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: WorldScene(
+                        emojis: [for (final p in _phrases) p.emoji],
+                        collected: collected,
+                        current: _index,
+                        slotKeys: _slotKeys,
+                        bounce: _bounce,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                   ],
                 ),
+                if (_flying != null && _flightPath != null)
+                  _Flight(
+                    animation: _fly,
+                    path: _flightPath!,
+                    emoji: _phrases[_flying!].emoji,
+                  ),
               ],
             );
           },
         ),
       ),
+    );
+  }
+
+  /// Picture (tap: hear it again) with the funny-voice button beside it,
+  /// the word, and the result chips.
+  Widget _top(S s, BoxConstraints c) {
+    final showReplay =
+        _canReplay && _lastAudio != null && _phase == _Phase.result;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const SizedBox(height: 8),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // same width on both sides keeps the picture centred
+            SizedBox(
+              width: 80,
+              child: showReplay
+                  ? AnimatedScale(
+                      scale: _replaying ? 1.2 : 1,
+                      duration: const Duration(milliseconds: 200),
+                      child: _RoundButton(
+                        tooltip: s.funnyVoice,
+                        size: 64,
+                        onTap: _replay,
+                        color: const Color(0xFF7C4DFF),
+                        child: EmojiImage(_effect.emoji, size: 40),
+                      ),
+                    )
+                  : null,
+            ),
+            AnimatedBuilder(
+              animation: _bob,
+              builder: (_, child) => Transform.translate(
+                offset: Offset(0, math.sin(_bob.value * math.pi) * -10),
+                child: child,
+              ),
+              child: GestureDetector(
+                onTap: _idle ? _speak : null,
+                child: EmojiImage(
+                  _phrase.emoji,
+                  key: _emojiKey,
+                  size: math.min(160, c.maxHeight * 0.22),
+                ),
+              ),
+            ),
+            const SizedBox(width: 80),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Text(
+            _phrase.text,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ),
+        if (_result != null) ...[
+          const SizedBox(height: 12),
+          PhonemeChips(result: _result!),
+        ],
+        const SizedBox(height: 8),
+      ],
     );
   }
 
@@ -408,6 +615,38 @@ class _PlayScreenState extends State<PlayScreen>
           ),
         ),
       ],
+    );
+  }
+}
+
+/// A picture on its way from [path].$1 to [path].$2, along an arc.
+class _Flight extends AnimatedWidget {
+  const _Flight({
+    required Animation<double> animation,
+    required this.path,
+    required this.emoji,
+  }) : super(listenable: animation);
+
+  final (Rect, Rect) path;
+  final String emoji;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Curves.easeInOutCubic.transform(
+      (listenable as Animation<double>).value,
+    );
+    final (from, to) = path;
+    final r = Rect.lerp(from, to, t)!;
+    // a little hop sideways and up, then down into the slot
+    final lift = math.sin(t * math.pi) * 80;
+    return Positioned.fromRect(
+      rect: r.shift(Offset(lift * 0.5, -lift)),
+      child: IgnorePointer(
+        child: Transform.rotate(
+          angle: t * 2 * math.pi,
+          child: FittedBox(child: EmojiImage(emoji, size: from.height)),
+        ),
+      ),
     );
   }
 }
