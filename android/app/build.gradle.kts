@@ -37,6 +37,8 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        manifestPlaceholders["appLabel"] = "Phoneme Party"
     }
 
     signingConfigs {
@@ -60,6 +62,12 @@ android {
     }
 
     buildTypes {
+        // Debug and test builds install next to the release app (another
+        // id and name), so testing never touches a child's progress.
+        debug {
+            applicationIdSuffix = ".test"
+            manifestPlaceholders["appLabel"] = "PP Test"
+        }
         release {
             signingConfig = signingConfigs.findByName("release")
                 ?: signingConfigs.getByName("debug")
@@ -77,4 +85,10 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // integration_test on a phone: tool/device_test.sh
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.1")
 }

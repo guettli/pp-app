@@ -1,6 +1,9 @@
 // The whole play screen with fake devices: what happens after the child has
 // spoken, without anyone tapping, and when the child or the phone gets in
 // the way. The fake clock runs the timers, so a world takes a second.
+//
+// Every test runs twice: with flutter_tts as on Android (stop() ends a
+// running speak()) and as on iOS (it does not; the app's timeout must).
 import 'dart:convert';
 import 'dart:io';
 
@@ -9,121 +12,59 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
-import 'package:phoneme_party/game/play_screen.dart';
 import 'package:phoneme_party/game/rules.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'support/fakes.dart';
+import 'support/game.dart';
 
 late PhonemeComparer comparer;
 late PhraseBook book;
 
-/// IPA the fake recognizer answers for a word said badly.
+/// IPA the fake recognizer answers for a word said badly (0 stars).
 const mumble = 'ŋŋ';
 
-class Game {
-  Game(this.t, this.dev, this.nav);
-  final WidgetTester t;
+/// The fakes of one test.
+class Fakes {
+  Fakes(this.dev, this.rec);
   final FakeDevices dev;
-  final GlobalKey<NavigatorState> nav;
-
-  IoLog get log => dev.log;
-  List<Phrase> get words => book.world(0);
-
-  /// Phrases the phone said (not the praise), in order.
-  List<String> get said {
-    final texts = {for (final p in words) p.text};
-    return [
-      for (final s in log.started('tts'))
-        if (texts.contains(s)) s,
-    ];
-  }
-
-  /// Everything the TTS said that is not a phrase: the praise.
-  List<String> get praise {
-    final texts = {for (final p in words) p.text};
-    return [
-      for (final s in log.started('tts'))
-        if (!texts.contains(s)) s,
-    ];
-  }
-
-  int get recordings => log.started('mic').length;
-
-  /// The word the phone said last, which the child is answering.
-  Phrase get current {
-    final texts = said;
-    return words.firstWhere((p) => p.text == texts.last);
-  }
-
-  Finder get dialog => find.byType(AlertDialog);
-  bool showsWord(int n) =>
-      find.textContaining('·  $n/${words.length}').evaluate().isNotEmpty;
-
-  Future<void> wait(Duration d) async {
-    const step = Duration(milliseconds: 50);
-    for (var e = Duration.zero; e < d; e += step) {
-      await t.pump(step);
-    }
-  }
-
-  /// Pumps until [done] (or fails after [limit] of fake time).
-  Future<void> until(
-    bool Function() done, {
-    Duration limit = const Duration(seconds: 30),
-    String? reason,
-  }) async {
-    const step = Duration(milliseconds: 50);
-    for (var e = Duration.zero; e < limit; e += step) {
-      if (done()) return;
-      await t.pump(step);
-    }
-    fail('timed out: ${reason ?? ''}\n$log');
-  }
-
-  Future<void> tap(String tooltip) async {
-    await t.tap(find.byTooltip(tooltip));
-    await t.pump();
-  }
-
-  Future<void> lifecycle(AppLifecycleState s) async {
-    t.binding.handleAppLifecycleStateChanged(s);
-    await t.pump();
-  }
-
-  /// Nothing may ever be audible while the microphone records.
-  void expectNothingRecorded() =>
-      expect(log.soundsWhileRecording(), isEmpty, reason: '$log');
+  final FakeRecognizer rec;
 }
 
-Future<Game> start(
+/// Opens world 0 with fakes. [answer]: what the fake recognizer hears
+/// (default: the word the phone said, 3 stars).
+Future<(Game, Fakes)> start(
   WidgetTester t, {
+  required bool iosTts,
   String Function(Game g)? answer,
   Child Function()? child,
-  bool canReplay = true,
+  bool fromMemory = true,
   bool permission = true,
+  bool ttsHangs = false,
+  Duration recognizing = Duration.zero,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final progress = await Progress.load();
   final t0 = t.binding.clock.now();
   final log = IoLog(() => t.binding.clock.now().difference(t0));
-  final dev = FakeDevices(log, child: child, canReplay: canReplay);
+  final dev = FakeDevices(
+    log,
+    child: child,
+    fromMemory: fromMemory,
+    ttsCompletesOnStop: !iosTts,
+  );
   dev.mic.permission = permission;
+  dev.speaker.hang = ttsHangs;
+  // the recognizer is asked only after the game exists
   late final Game game;
   final rec = FakeRecognizer(
     () => answer == null ? game.current.ipa : answer(game),
+    delay: recognizing,
   );
   final app = AppState(rec, comparer, progress, book, io: dev.io);
-  final nav = GlobalKey<NavigatorState>();
-  await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const Scaffold()));
-  nav.currentState!.push(
-    MaterialPageRoute<void>(builder: (_) => PlayScreen(app: app, world: 0)),
-  );
-  game = Game(t, dev, nav);
-  await t.pump();
-  await t.pump();
-  return game;
+  game = await Game.open(t, app, log);
+  return (game, Fakes(dev, rec));
 }
 
 void main() {
@@ -139,8 +80,7 @@ void main() {
   });
 
   test('the fake answers score as intended', () {
-    final w = book.world(0);
-    for (final p in w) {
+    for (final p in book.world(0)) {
       expect(scorePhrase(comparer, p, p.ipa, 'de-DE').stars, 3, reason: p.text);
       expect(
         scorePhrase(comparer, p, mumble, 'de-DE').stars,
@@ -150,55 +90,69 @@ void main() {
     }
   });
 
+  for (final ios in [false, true]) {
+    group(ios ? 'iOS TTS:' : 'Android TTS:', () => flows(ios));
+  }
+}
+
+void flows(bool ios) {
+  // The world-done praise comes this long after the dialog opened.
+  const donePraise = Duration(milliseconds: 1400);
+  // Longer than any wait the game has by itself (TTS timeout, advance).
+  const quiet = Duration(seconds: 20);
+
   testWidgets('a whole world goes by itself, nothing is recorded but the '
       'child', (t) async {
-    final g = await start(t);
+    final (g, f) = await start(t, iosTts: ios);
     await g.until(
       () => g.dialog.evaluate().isNotEmpty,
       limit: const Duration(minutes: 3),
       reason: 'world-done dialog',
     );
+    await g.wait(donePraise * 2);
     expect(g.said, [for (final p in g.words) p.text]);
     expect(g.recordings, g.words.length);
-    expect(g.dev.player.plays, g.words.length, reason: 'one replay per word');
-    // praise for every word, and never the same twice in a row
+    expect(f.rec.calls, g.words.length);
+    expect(g.replays, g.words.length, reason: 'one replay per word');
+    // once per word and once for the world, never twice the same in a row
     final praise = g.praise;
-    expect(praise.length, greaterThanOrEqualTo(g.words.length));
+    expect(praise, hasLength(g.words.length + 1));
     for (var i = 1; i < praise.length; i++) {
       expect(praise[i], isNot(praise[i - 1]));
     }
-    g.expectNothingRecorded();
+    g.expectClean();
 
     // the round is over: nothing starts behind the dialog
-    final mics = g.recordings, players = g.dev.player.plays;
-    await g.wait(const Duration(seconds: 20));
+    final mics = g.recordings, players = g.replays;
+    await g.wait(quiet);
     expect(g.recordings, mics);
-    expect(g.dev.player.plays, players);
+    expect(g.replays, players);
     expect(g.dialog, findsOneWidget);
-    expect(g.log.intervals().where((i) => i.to == null), isEmpty);
+    expect(g.running, isEmpty);
   });
 
   testWidgets('0 stars: one more try, then on to the next word', (t) async {
-    final g = await start(t, answer: (_) => mumble);
+    final (g, _) = await start(t, iosTts: ios, answer: (_) => mumble);
     await g.until(() => g.recordings == 2, reason: 'retry');
     expect(g.said, [g.words[0].text, g.words[0].text]);
     expect(g.showsWord(1), isTrue);
     await g.until(() => g.recordings == 3, reason: 'next word');
     expect(g.said.last, g.words[1].text);
     expect(g.showsWord(2), isTrue);
-    g.expectNothingRecorded();
+    g.expectClean();
   });
 
   testWidgets('nothing heard: waits for a tap', (t) async {
-    final g = await start(t, child: () => Child.silent);
+    final (g, f) = await start(t, iosTts: ios, child: () => Child.silent);
     await g.until(
       () => g.recordings == 1 && g.log.intervals('mic').single.to != null,
     );
     await g.wait(const Duration(milliseconds: 500));
     expect(find.byType(SnackBar), findsOneWidget);
-    await g.wait(const Duration(seconds: 15));
+    await g.wait(quiet);
     expect(g.recordings, 1);
-    expect(g.dev.player.plays, 0);
+    expect(f.rec.calls, 0);
+    expect(g.replays, 0);
     await g.tap('Speak');
     await g.until(() => g.recordings == 2);
     expect(g.said, [g.words[0].text, g.words[0].text]);
@@ -207,46 +161,91 @@ void main() {
   testWidgets('no microphone permission: nothing is said or recorded', (
     t,
   ) async {
-    final g = await start(t, permission: false);
+    final (g, _) = await start(t, iosTts: ios, permission: false);
     await g.wait(const Duration(milliseconds: 500));
     expect(find.byType(SnackBar), findsOneWidget);
-    await g.wait(const Duration(seconds: 10));
+    await g.wait(quiet);
     expect(g.recordings, 0);
     expect(g.said, isEmpty);
   });
 
+  testWidgets('the child taps the mic to finish early', (t) async {
+    final (g, f) = await start(t, iosTts: ios);
+    await g.until(() => g.recordings == 1);
+    await g.wait(const Duration(milliseconds: 1200)); // after the speech
+    await g.tap('Your turn!');
+    expect(g.log.intervals('mic').single.to, isNotNull);
+    await g.until(() => g.praise.isNotEmpty);
+    expect(f.rec.calls, 1);
+    await g.until(() => g.recordings == 2);
+    expect(g.said.last, g.words[1].text);
+    g.expectClean();
+  });
+
+  for (final how in [Child.micBreaks, Child.micEnds]) {
+    testWidgets('the recording ends early (${how.name}): what was said is '
+        'still scored', (t) async {
+      final (g, f) = await start(t, iosTts: ios, child: () => how);
+      await g.until(() => g.log.intervals('mic').firstOrNull?.to != null);
+      // right away, not only when the recording time limit is up
+      await g.wait(const Duration(milliseconds: 300));
+      expect(f.rec.calls, 1);
+      await g.until(() => g.recordings == 2, reason: 'goes on');
+      expect(g.said.last, g.words[1].text);
+      g.expectClean();
+    });
+  }
+
   testWidgets('background during the praise: everything stops, and it goes '
       'on when the app is back', (t) async {
-    final g = await start(t);
+    final (g, _) = await start(t, iosTts: ios);
     await g.until(() => g.praise.isNotEmpty, reason: 'praise');
     await g.lifecycle(AppLifecycleState.paused);
-    expect(g.log.intervals().where((i) => i.to == null), isEmpty);
-    await g.wait(const Duration(seconds: 20));
+    expect(g.running, isEmpty);
+    await g.wait(quiet);
     expect(g.recordings, 1);
-    expect(g.log.intervals().where((i) => i.to == null), isEmpty);
+    expect(g.running, isEmpty);
     await g.lifecycle(AppLifecycleState.resumed);
     await g.until(() => g.recordings == 2, reason: 'next word after resume');
     expect(g.said.last, g.words[1].text);
-    g.expectNothingRecorded();
+    g.expectClean();
   });
 
   testWidgets('background while listening: the recording is dropped', (
     t,
   ) async {
-    final g = await start(t);
-    await g.until(() => g.dev.mic.recording);
+    final (g, f) = await start(t, iosTts: ios);
+    await g.until(() => f.dev.mic.recording);
+    await g.wait(const Duration(milliseconds: 800)); // the child is talking
     await g.lifecycle(AppLifecycleState.paused);
-    expect(g.dev.mic.recording, isFalse);
-    await g.wait(const Duration(seconds: 20));
-    expect(g.recordings, 1);
+    expect(f.dev.mic.recording, isFalse);
+    await g.wait(quiet);
+    expect(f.rec.calls, 0, reason: 'never scored');
     expect(g.praise, isEmpty);
     await g.lifecycle(AppLifecycleState.resumed);
-    await g.wait(const Duration(seconds: 5));
+    await g.wait(quiet);
     expect(g.recordings, 1, reason: 'waits for a tap');
   });
 
+  testWidgets('background while recognizing: the result is dropped', (t) async {
+    final (g, f) = await start(
+      t,
+      iosTts: ios,
+      recognizing: const Duration(seconds: 2),
+    );
+    await g.until(() => f.rec.calls == 1);
+    await g.lifecycle(AppLifecycleState.paused);
+    await g.wait(quiet);
+    expect(g.praise, isEmpty);
+    expect(g.replays, 0);
+    await g.lifecycle(AppLifecycleState.resumed);
+    await g.wait(quiet);
+    expect(g.recordings, 1, reason: 'waits for a tap');
+    expect(g.praise, isEmpty);
+  });
+
   testWidgets('Next during the praise skips the rest at once', (t) async {
-    final g = await start(t);
+    final (g, _) = await start(t, iosTts: ios);
     await g.until(() => g.praise.isNotEmpty);
     final said = g.praise.last;
     await g.tap('Next');
@@ -256,59 +255,120 @@ void main() {
       reason: 'the praise stops at once',
     );
     await g.until(() => g.recordings == 2);
-    expect(g.dev.player.plays, 0, reason: 'no replay of the old word');
+    expect(g.replays, 0, reason: 'no replay of the old word');
     expect(g.said, [g.words[0].text, g.words[1].text]);
-    g.expectNothingRecorded();
+    g.expectClean();
+    await g.wait(quiet); // iOS: the stopped praise times out
+  });
+
+  testWidgets('Next during the praise of the last word: the dialog opens '
+      'once', (t) async {
+    final (g, _) = await start(t, iosTts: ios);
+    final last = g.words.length;
+    await g.until(
+      () => g.showsWord(last) && g.praise.length == last,
+      limit: const Duration(minutes: 3),
+    );
+    await g.tap('Next');
+    await g.wait(quiet);
+    expect(g.dialog, findsOneWidget);
+    expect(g.recordings, last);
+    expect(g.running, isEmpty);
+    g.expectClean();
+  });
+
+  testWidgets('the mic tapped during the praise: the word once more', (
+    t,
+  ) async {
+    final (g, _) = await start(t, iosTts: ios);
+    await g.until(() => g.praise.isNotEmpty);
+    await g.tap('Speak');
+    await g.until(() => g.recordings == 2);
+    expect(g.said, [g.words[0].text, g.words[0].text]);
+    g.expectClean();
+    await g.wait(quiet); // iOS: the stopped praise times out
   });
 
   testWidgets('listen again during the replay, then it goes on', (t) async {
-    final g = await start(t);
-    await g.until(() => g.dev.player.plays == 1);
+    final (g, _) = await start(t, iosTts: ios);
+    await g.until(() => g.replays == 1);
     await g.tap('Listen');
     expect(g.log.intervals('replay').last.to, isNotNull);
     await g.until(() => g.said.length == 2);
     expect(g.said, [g.words[0].text, g.words[0].text]);
     await g.until(() => g.recordings == 2, reason: 'goes on afterwards');
     expect(g.said.last, g.words[1].text);
-    g.expectNothingRecorded();
+    g.expectClean();
   });
 
-  testWidgets('funny voice tapped again: plays once more, then goes on', (
-    t,
-  ) async {
-    final g = await start(t);
-    await g.until(() => g.dev.player.plays == 1);
-    await g.until(() => g.log.intervals('replay').last.to != null);
+  testWidgets('funny voice tapped during the replay: plays again, then goes '
+      'on', (t) async {
+    final (g, _) = await start(t, iosTts: ios);
+    await g.until(() => g.replays == 1);
     await g.tap('Funny voice');
-    expect(g.dev.player.plays, 2);
+    expect(g.replays, 2);
+    expect(g.log.intervals('replay').first.to, isNotNull);
     await g.until(() => g.recordings == 2);
     expect(g.said.last, g.words[1].text);
-    g.expectNothingRecorded();
+    g.expectClean();
   });
 
   testWidgets('a stuck TTS engine does not stop the game', (t) async {
-    final g = await start(t);
-    g.dev.speaker.hang = true;
+    final (g, _) = await start(t, iosTts: ios, ttsHangs: true);
     await g.until(() => g.recordings == 2, limit: const Duration(minutes: 1));
-    g.expectNothingRecorded();
+    // the app waited for its timeout, then listened anyway
+    final first = g.log.intervals('tts').first;
+    final mic = g.log.intervals('mic').first;
+    expect(mic.from - first.from, greaterThan(const Duration(seconds: 3)));
+    g.expectClean();
   });
 
-  testWidgets('without replay (iOS) it still goes on', (t) async {
-    final g = await start(t, canReplay: false);
+  testWidgets('a player that cannot play from memory never gets the '
+      'recording', (t) async {
+    final (g, _) = await start(t, iosTts: ios, fromMemory: false);
     await g.until(() => g.recordings == 3);
-    expect(g.dev.player.plays, 0);
+    expect(g.replays, 0);
     expect(find.byTooltip('Funny voice'), findsNothing);
-    g.expectNothingRecorded();
+    g.expectClean();
   });
 
-  testWidgets('closing the screen stops everything', (t) async {
-    final g = await start(t);
+  testWidgets('background while the world-done dialog opens: no praise', (
+    t,
+  ) async {
+    final (g, _) = await start(t, iosTts: ios);
+    await g.until(
+      () => g.dialog.evaluate().isNotEmpty,
+      limit: const Duration(minutes: 3),
+    );
+    final praise = g.praise.length;
+    await g.lifecycle(AppLifecycleState.paused);
+    await g.wait(donePraise * 2);
+    expect(g.praise.length, praise);
+    expect(g.running, isEmpty);
+  });
+
+  testWidgets('closing the screen during the praise stops everything', (
+    t,
+  ) async {
+    final (g, _) = await start(t, iosTts: ios);
     await g.until(() => g.praise.isNotEmpty);
     g.nav.currentState!.pop();
     await g.wait(const Duration(seconds: 1));
-    expect(g.log.intervals().where((i) => i.to == null), isEmpty);
-    await g.wait(const Duration(seconds: 20));
+    expect(g.running, isEmpty);
+    await g.wait(quiet);
     expect(g.recordings, 1);
-    expect(t.takeException(), isNull);
+  });
+
+  testWidgets('closing the screen while listening: nothing is scored', (
+    t,
+  ) async {
+    final (g, f) = await start(t, iosTts: ios);
+    await g.until(() => f.dev.mic.recording);
+    g.nav.currentState!.pop();
+    await g.wait(const Duration(seconds: 1));
+    expect(f.dev.mic.recording, isFalse);
+    await g.wait(quiet);
+    expect(f.rec.calls, 0);
+    expect(g.running, isEmpty);
   });
 }

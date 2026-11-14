@@ -94,8 +94,9 @@ class _PlayScreenState extends State<PlayScreen>
   /// Incremented to cancel a running replay.
   int _replayId = 0;
 
-  /// See [GameIo.canReplay].
-  late final bool _canReplay;
+  /// The child's voice is replayed only from memory, see
+  /// [SoundOut.playsFromMemory].
+  bool get _canReplay => _player.playsFromMemory;
 
   final _stackKey = GlobalKey();
   final _emojiKey = GlobalKey();
@@ -126,10 +127,9 @@ class _PlayScreenState extends State<PlayScreen>
     final io = widget.app.io;
     _recorder = io.mic();
     _tts = io.speaker();
-    _player = io.player();
-    _sfx = io.player(duck: false);
+    _player = io.replayPlayer();
+    _sfx = io.soundPlayer();
     _rng = io.random();
-    _canReplay = io.canReplay;
     _tts.setLanguage(_lang);
     WidgetsBinding.instance.addPostFrameCallback((_) => _play());
   }
@@ -407,21 +407,31 @@ class _PlayScreenState extends State<PlayScreen>
       await _recorder.stop();
       return;
     }
-    _sub = stream.listen((chunk) {
-      _buffer.add(chunk);
-      ep.addPcm16(chunk);
-      if (!mounted) return;
-      final db = 20 * math.log(math.max(ep.level, 1e-5)) / math.ln10;
-      setState(() => _level = ((db + 50) / 50).clamp(0.0, 1.0));
-      if (ep.done) _stop();
-    });
+    _sub = stream.listen(
+      (chunk) {
+        _buffer.add(chunk);
+        ep.addPcm16(chunk);
+        if (!mounted) return;
+        final db = 20 * math.log(math.max(ep.level, 1e-5)) / math.ln10;
+        setState(() => _level = ((db + 50) / 50).clamp(0.0, 1.0));
+        if (ep.done) _stop();
+      },
+      // the platform ended the recording (error, mic taken by another
+      // app): score what we have, as if the child had finished
+      onError: (Object e, StackTrace st) {
+        debugPrint('recording failed: $e\n$st');
+        _stop();
+      },
+      onDone: _stop,
+    );
     _timer = Timer(recordingLimit(_phrase.text), _stop);
     setState(() => _phase = _Phase.listening);
   }
 
   /// Ends the recording (child finished, time limit, or tap) and scores it.
   Future<void> _stop() async {
-    if (_phase != _Phase.listening) return;
+    // not after the app went to the background: that drops the recording
+    if (_phase != _Phase.listening || _paused) return;
     final round = _round;
     // Set synchronously: the timer, the endpointer and a tap must not all
     // get past here.
@@ -476,9 +486,11 @@ class _PlayScreenState extends State<PlayScreen>
     _timer?.cancel();
     await _tts.stop();
     if (_phase == _Phase.listening) {
-      await _recorder.stop();
+      // first the subscription, so the end of the stream is not taken as
+      // the child having finished
       await _sub?.cancel();
       _sub = null;
+      await _recorder.stop();
     }
     if (mounted) setState(() => _phase = _Phase.ready);
   }

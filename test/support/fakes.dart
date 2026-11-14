@@ -24,7 +24,12 @@ class IoEvent {
 }
 
 /// [from] until [to] (null: still on).
-typedef Interval = ({String device, Duration from, Duration? to, String what});
+typedef IoInterval = ({
+  String device,
+  Duration from,
+  Duration? to,
+  String what,
+});
 
 class IoLog {
   IoLog(this.now);
@@ -37,9 +42,14 @@ class IoLog {
       events.add(IoEvent(now(), device, true, detail));
   void off(String device) => events.add(IoEvent(now(), device, false, ''));
 
-  List<Interval> intervals([String? device]) {
+  /// Things a fake noticed that the real device would get wrong, e.g. a
+  /// TTS call that Android would drop.
+  final problems = <String>[];
+  void problem(String what) => problems.add('${now().inMilliseconds}ms $what');
+
+  List<IoInterval> intervals([String? device]) {
     final open = <String, IoEvent>{};
-    final out = <Interval>[];
+    final out = <IoInterval>[];
     for (final e in events) {
       if (device != null && e.device != device) continue;
       if (e.on) {
@@ -90,6 +100,13 @@ enum Child {
 
   /// Says nothing.
   silent,
+
+  /// Speaks, then the recording breaks (the stream reports an error and
+  /// ends, as when another app takes the microphone).
+  micBreaks,
+
+  /// Speaks, then the stream just ends (no error).
+  micEnds,
 }
 
 /// Streams 20 ms chunks of 16 kHz PCM in (fake) real time.
@@ -119,6 +136,13 @@ class FakeMic implements MicSource {
     log.on('mic', what.name);
     var t = 0;
     _timer = Timer.periodic(const Duration(milliseconds: 20), (_) {
+      if (t == 1200 && (what == Child.micBreaks || what == Child.micEnds)) {
+        if (what == Child.micBreaks) {
+          ctrl.addError(StateError('microphone taken'));
+        }
+        stop();
+        return;
+      }
       ctrl.add(_chunk(what, t));
       t += 20;
     });
@@ -129,7 +153,7 @@ class FakeMic implements MicSource {
     const n = 320;
     final b = ByteData(n * 2);
     final rng = math.Random(ms);
-    final speech = what == Child.speaks && ms >= 400 && ms < 1100;
+    final speech = what != Child.silent && ms >= 400 && ms < 1100;
     for (var i = 0; i < n; i++) {
       final s = (ms * 16 + i) / 16000;
       var v = (rng.nextDouble() - 0.5) * 0.002;
@@ -155,52 +179,67 @@ class FakeMic implements MicSource {
   Future<void> dispose() => stop();
 }
 
-/// Speaks 60 ms per letter plus 300 ms. With [hang], it never finishes
-/// (a stuck TTS engine).
+/// Speaks 60 ms per letter plus 300 ms, like flutter_tts with
+/// awaitSpeakCompletion:
+/// - [speak] while speaking is dropped and returns at once (Android,
+///   QUEUE_FLUSH); noted as a problem, since the text is never heard.
+/// - [stop] completes a running [speak] on Android, but not on iOS
+///   ([completesOnStop] false): there the caller's timeout has to end it.
+/// - [hang]: a stuck engine that never finishes.
 class FakeSpeaker implements Speaker {
-  FakeSpeaker(this.log, {this.hang = false});
+  FakeSpeaker(this.log, {this.completesOnStop = true, this.hang = false});
 
   final IoLog log;
+  final bool completesOnStop;
   bool hang;
   Completer<void>? _done;
   Timer? _timer;
   String? language;
+
+  bool get speaking => _done != null;
 
   @override
   Future<void> setLanguage(String lang) async => language = lang;
 
   @override
   Future<void> speak(String text) {
-    _end();
+    if (speaking) {
+      log.problem('tts dropped "$text": still speaking');
+      return Future.value();
+    }
     final done = _done = Completer<void>();
     log.on('tts', text);
     if (!hang) {
-      _timer = Timer(Duration(milliseconds: 300 + 60 * text.length), _end);
+      _timer = Timer(Duration(milliseconds: 300 + 60 * text.length), () {
+        _end(complete: true);
+      });
     }
     return done.future;
   }
 
-  void _end() {
+  void _end({required bool complete}) {
     _timer?.cancel();
     _timer = null;
     final d = _done;
     _done = null;
     if (d != null) {
       log.off('tts');
-      d.complete();
+      if (complete) d.complete();
     }
   }
 
   @override
-  Future<void> stop() async => _end();
+  Future<void> stop() async => _end(complete: completesOnStop);
 }
 
 /// Plays as long as the WAV lasts (16 kHz mono 16-bit, 44 byte header).
 class FakeOut implements SoundOut {
-  FakeOut(this.log, this.name);
+  FakeOut(this.log, this.name, {this.playsFromMemory = true});
 
   final IoLog log;
   final String name;
+  @override
+  final bool playsFromMemory;
   final _complete = StreamController<void>.broadcast();
   Timer? _timer;
   int plays = 0;
@@ -238,14 +277,18 @@ class FakeOut implements SoundOut {
 
 /// Answers with the IPA [answer] gives (e.g. the target: 3 stars).
 class FakeRecognizer implements Recognizer {
-  FakeRecognizer(this.answer);
+  FakeRecognizer(this.answer, {this.delay = Duration.zero});
 
   final String Function() answer;
+
+  /// How long recognition takes.
+  final Duration delay;
   int calls = 0;
 
   @override
   Future<Recognition> recognize(Float32List audio) async {
     calls++;
+    if (delay > Duration.zero) await Future<void>.delayed(delay);
     final ipa = answer();
     return Recognition([
       for (final r in ipa.runes) DecodedPhoneme(String.fromCharCode(r), 1, 1),
@@ -255,22 +298,27 @@ class FakeRecognizer implements Recognizer {
 
 /// All fakes of one test, wired into a [GameIo].
 class FakeDevices {
-  FakeDevices(this.log, {Child Function()? child, this.canReplay = true})
-    : mic = FakeMic(log, child ?? () => Child.speaks),
-      speaker = FakeSpeaker(log);
+  FakeDevices(
+    this.log, {
+    Child Function()? child,
+    bool fromMemory = true,
+    bool ttsCompletesOnStop = true,
+  }) : mic = FakeMic(log, child ?? () => Child.speaks),
+       speaker = FakeSpeaker(log, completesOnStop: ttsCompletesOnStop),
+       player = FakeOut(log, 'replay', playsFromMemory: fromMemory),
+       sfx = FakeOut(log, 'sfx', playsFromMemory: fromMemory);
 
   final IoLog log;
   final FakeMic mic;
   final FakeSpeaker speaker;
-  final bool canReplay;
-  late final FakeOut player = FakeOut(log, 'replay');
-  late final FakeOut sfx = FakeOut(log, 'sfx');
+  final FakeOut player;
+  final FakeOut sfx;
 
   GameIo get io => GameIo(
     mic: () => mic,
     speaker: () => speaker,
-    player: ({bool duck = true}) => duck ? player : sfx,
+    replayPlayer: () => player,
+    soundPlayer: () => sfx,
     random: () => math.Random(1),
-    canReplay: canReplay,
   );
 }

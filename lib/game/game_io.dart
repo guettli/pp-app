@@ -25,9 +25,13 @@ abstract class Speaker {
   Future<void> stop();
 }
 
-/// Plays WAV bytes from memory. [play] completes when playback started;
-/// [onComplete] fires when it reached the end.
+/// Plays WAV bytes. [play] completes when playback started; [onComplete]
+/// fires when it reached the end (not on [stop]).
 abstract class SoundOut {
+  /// Whether [play] keeps the bytes in memory. Only then may the child's
+  /// recording be played: recordings must never be written anywhere.
+  bool get playsFromMemory;
+
   Future<void> play(Uint8List wav);
   Future<void> stop();
   Stream<void> get onComplete;
@@ -39,31 +43,29 @@ class GameIo {
   const GameIo({
     required this.mic,
     required this.speaker,
-    required this.player,
+    required this.replayPlayer,
+    required this.soundPlayer,
     required this.random,
-    required this.canReplay,
   });
 
   /// The real devices.
   factory GameIo.device() => GameIo(
     mic: RecordMic.new,
     speaker: TtsSpeaker.new,
-    player: AudioPlayersOut.new,
+    replayPlayer: AudioPlayersOut.new,
+    soundPlayer: () => AudioPlayersOut(takesFocus: false),
     random: math.Random.new,
-    // Android plays the WAV from memory. audioplayers writes it to a temp
-    // file on iOS, and recordings must not be stored, so no replay there.
-    canReplay: Platform.isAndroid,
   );
 
   final MicSource Function() mic;
   final Speaker Function() speaker;
 
-  /// [duck]: false for short sounds that must not pause other audio.
-  final SoundOut Function({bool duck}) player;
-  final math.Random Function() random;
+  /// Plays the child's voice back (funny voice).
+  final SoundOut Function() replayPlayer;
 
-  /// Whether the child's recording may be played back.
-  final bool canReplay;
+  /// Melodies: may overlap the replay and must not pause the praise.
+  final SoundOut Function() soundPlayer;
+  final math.Random Function() random;
 }
 
 class RecordMic implements MicSource {
@@ -118,8 +120,10 @@ class TtsSpeaker implements Speaker {
 }
 
 class AudioPlayersOut implements SoundOut {
-  AudioPlayersOut({bool duck = true}) {
-    if (!duck) {
+  /// [takesFocus]: false for short sounds that must not pause other audio
+  /// (Android audio focus none).
+  AudioPlayersOut({bool takesFocus = true}) {
+    if (!takesFocus) {
       _player.setAudioContext(
         AudioContext(
           android: const AudioContextAndroid(
@@ -131,6 +135,11 @@ class AudioPlayersOut implements SoundOut {
   }
 
   final _player = AudioPlayer();
+
+  /// Android plays a BytesSource from memory; on iOS (and elsewhere)
+  /// audioplayers writes it to a temp file first.
+  @override
+  bool get playsFromMemory => Platform.isAndroid;
 
   @override
   Future<void> play(Uint8List wav) =>

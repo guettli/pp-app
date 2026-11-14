@@ -13,8 +13,8 @@ class AppState {
     this.comparer,
     this.progress,
     this.book, {
-    GameIo? io,
-  }) : io = io ?? GameIo.device();
+    required this.io,
+  });
 
   final Recognizer recognizer;
 
@@ -31,7 +31,7 @@ class AppState {
     );
     final book = await PhraseBook.load(progress.studyLang ?? 'de-DE');
     final recognizer = await PhoneRecognizer.load();
-    return AppState(recognizer, comparer, progress, book);
+    return AppState(recognizer, comparer, progress, book, io: GameIo.device());
   }
 
   Future<void> switchLanguage(String lang) async {

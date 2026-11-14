@@ -119,21 +119,24 @@ func (m *Ci) Shell() *dagger.Container {
 // Format fails if `dart format` would change anything.
 func (m *Ci) Format(ctx context.Context) (string, error) {
 	return m.base().
-		WithExec([]string{"dart", "format", "--output=none", "--set-exit-if-changed", "lib", "test"}).
+		WithExec([]string{"dart", "format", "--output=none", "--set-exit-if-changed", "lib", "test", "integration_test"}).
 		Stdout(ctx)
 }
 
 // FormatWrite returns the source tree after `dart format` (export it over the repo).
 func (m *Ci) FormatWrite() *dagger.Directory {
 	return m.base().
-		WithExec([]string{"dart", "format", "lib", "test"}).
+		WithExec([]string{"dart", "format", "lib", "test", "integration_test"}).
 		Directory("/src").
-		Filter(dagger.DirectoryFilterOpts{Include: []string{"lib/", "test/"}})
+		Filter(dagger.DirectoryFilterOpts{Include: []string{"lib/", "test/", "integration_test/"}})
 }
 
-// Analyze runs `flutter analyze --fatal-infos`.
+// Analyze runs `flutter analyze --fatal-infos` and checks that the app
+// never imports test code (fakes, test helpers), so none of it can end up
+// in the release APK.
 func (m *Ci) Analyze(ctx context.Context) (string, error) {
 	return m.base().
+		WithExec([]string{"sh", "-c", `if grep -rnE "^(import|export) .*(test/|integration_test|flutter_test)" lib; then echo "lib/ must not import test code" >&2; exit 1; fi`}).
 		WithExec([]string{"flutter", "analyze", "--fatal-infos"}).
 		Stdout(ctx)
 }
@@ -218,6 +221,26 @@ printf 'storeFile=/home/ci/upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPas
 	return c.
 		WithExec(args).
 		File("/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk"), nil
+}
+
+// DeviceTestApks builds what tool/device_test.sh installs on a phone: the
+// app (debug, id ...phoneme_party.test, so it sits next to the release app)
+// with an integration test as entry point, and the instrumentation runner.
+// Test code is only ever compiled into these, never into BuildApk.
+func (m *Ci) DeviceTestApks(
+	// +default="integration_test/flow_test.dart"
+	target string,
+) *dagger.Directory {
+	c := m.base().
+		WithDirectory("/src/assets/models", m.Model(), dagger.ContainerWithDirectoryOpts{Owner: "ci"}).
+		WithMountedCache("/home/ci/.gradle", dag.CacheVolume("pp-app-gradle"), dagger.ContainerWithMountedCacheOpts{Owner: "ci"}).
+		WithEnvVariable("GRADLE_OPTS", "-Dorg.gradle.daemon=false").
+		WithExec([]string{"flutter", "build", "apk", "--debug", "--target-platform", "android-arm64,android-x64", "--target", target}).
+		WithWorkdir("/src/android").
+		WithExec([]string{"./gradlew", "-q", "app:assembleAndroidTest", "-Ptarget=/src/" + target})
+	return dag.Directory().
+		WithFile("app.apk", c.File("/src/build/app/outputs/flutter-apk/app-debug.apk")).
+		WithFile("test.apk", c.File("/src/build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk"))
 }
 
 // ReleaseVersion returns the version name for a build number:
