@@ -1,7 +1,9 @@
 // One "world" = 8 phrases. For each phrase the child listens, speaks, and
 // launches a rocket: the clearer the pronunciation, the higher it flies.
-// Then the child hears itself as a mouse, bear or robot, and a word with at
-// least one star flies into the world's collection at the bottom.
+// Then a melody and spoken praise, the child hears itself as a mouse, bear
+// or robot, and a word with at least one star flies into the world's
+// collection at the bottom. Then the game goes on by itself: next word, or
+// after 0 stars one more try at the same word.
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
@@ -20,6 +22,7 @@ import '../phonetics/recognizer.dart';
 import '../ui/emoji_image.dart';
 import '../ui/strings.dart';
 import 'rocket_launch.dart';
+import 'feedback.dart';
 import 'rules.dart';
 import 'voice_effects.dart';
 import 'world_scene.dart';
@@ -45,6 +48,30 @@ class _PlayScreenState extends State<PlayScreen>
   final _recorder = AudioRecorder();
   final _tts = FlutterTts();
   final _player = AudioPlayer();
+
+  /// Melodies; separate from [_player] so they may overlap the replay.
+  final _sfx = AudioPlayer();
+  final _rng = math.Random();
+  String? _lastPraise;
+
+  /// Tries of the current word (one retry after 0 stars).
+  int _attempts = 0;
+
+  /// Goes on to the next word (or the retry) after the feedback.
+  Timer? _advance;
+
+  /// Incremented when the child takes over (listen again, replay), so the
+  /// running feedback stops where it is.
+  int _feedbackId = 0;
+
+  /// The app is in the background: nothing may start by itself.
+  bool _paused = false;
+
+  /// The last word is done and the dialog is open: the round is over.
+  bool _worldDone = false;
+
+  /// Praise in the world-done dialog, slightly after the fanfare.
+  Timer? _donePraise;
   late final List<Phrase> _phrases = widget.app.book.world(widget.world);
   late final AnimationController _bob = AnimationController(
     vsync: this,
@@ -104,6 +131,12 @@ class _PlayScreenState extends State<PlayScreen>
     // speak() completes when the phrase has been said, so listening can
     // start right after it
     _tts.awaitSpeakCompletion(true);
+    // melodies must not pause the replay or the praise
+    _sfx.setAudioContext(
+      AudioContext(
+        android: const AudioContextAndroid(audioFocus: AndroidAudioFocus.none),
+      ),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _play());
   }
 
@@ -116,7 +149,10 @@ class _PlayScreenState extends State<PlayScreen>
     _recorder.dispose();
     _tts.stop();
     _replayId++;
+    _advance?.cancel();
+    _donePraise?.cancel();
     _player.dispose();
+    _sfx.dispose();
     _bob.dispose();
     _fly.dispose();
     super.dispose();
@@ -125,7 +161,14 @@ class _PlayScreenState extends State<PlayScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Not on `inactive`: the permission dialog causes that.
-    if (state == AppLifecycleState.paused) _abort();
+    if (state == AppLifecycleState.paused) {
+      _paused = true;
+      _abort();
+    } else if (state == AppLifecycleState.resumed && _paused) {
+      _paused = false;
+      // the word stays on screen; go on from there
+      _scheduleAdvance(_round);
+    }
   }
 
   bool get _idle => _phase == _Phase.ready || _phase == _Phase.result;
@@ -134,9 +177,109 @@ class _PlayScreenState extends State<PlayScreen>
   /// Says the phrase again without recording.
   Future<void> _speak() async {
     if (!_idle) return;
+    final round = _round;
+    final id = ++_feedbackId;
+    _advance?.cancel();
     await _stopReplay();
-    await _tts.stop();
-    await _tts.speak(_phrase.text);
+    await _speakText(_phrase.text);
+    if (id == _feedbackId) _scheduleAdvance(round);
+  }
+
+  /// Speaks [text]; returns when done, or after a timeout if the TTS
+  /// engine is missing or stuck, and never throws.
+  Future<void> _speakText(String text) async {
+    try {
+      await _tts.stop();
+      await _tts
+          .speak(text)
+          .timeout(
+            Duration(seconds: 3 + text.length ~/ 4),
+            onTimeout: () => null,
+          );
+    } catch (e, st) {
+      debugPrint('tts failed: $e\n$st');
+    }
+  }
+
+  /// Stops everything that would go on by itself after a word.
+  void _cancelFlow() {
+    _feedbackId++;
+    _advance?.cancel();
+  }
+
+  /// Sounds are only allowed while nothing is being said or recorded.
+  bool get _quiet =>
+      _phase == _Phase.ready ||
+      _phase == _Phase.result ||
+      _phase == _Phase.thinking;
+
+  /// Plays a synthesised sound (melody, pling).
+  Future<void> _playSfx(Float32List sound) async {
+    if (!_quiet || _paused) return;
+    try {
+      await _sfx.stop();
+      // a round may have started meanwhile: never play into the mic
+      if (!mounted || !_quiet) return;
+      await _sfx.play(BytesSource(wavBytes(sound), mimeType: 'audio/wav'));
+      if (!mounted || !_quiet) await _sfx.stop();
+    } catch (e, st) {
+      debugPrint('sound failed: $e\n$st');
+    }
+  }
+
+  /// Melody, spoken praise and the funny replay; then on by itself.
+  Future<void> _feedback(int round, int stars) async {
+    final id = ++_feedbackId;
+    bool gone() =>
+        !_current(round) || _phase != _Phase.result || id != _feedbackId;
+    unawaited(_playSfx(jingle(stars, _rng)));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (gone()) return;
+    // after the last try the game moves on: do not ask for another one
+    final text = pickPraise(
+      _lang,
+      stars,
+      _rng,
+      avoid: _lastPraise,
+      onward: afterResult(stars, _attempts) == AfterResult.next,
+    );
+    _lastPraise = text;
+    await _speakText(text);
+    if (gone()) return;
+    await _replay(advanceAfter: false);
+    if (gone()) return;
+    _scheduleAdvance(round);
+  }
+
+  /// After a short pause: the next word, or one more try after 0 stars.
+  /// Nothing happens if the child started something else meanwhile.
+  void _scheduleAdvance(int round) {
+    _advance?.cancel();
+    bool stale() =>
+        !_current(round) ||
+        _phase != _Phase.result ||
+        _paused ||
+        _worldDone ||
+        _result == null;
+    if (stale()) return;
+    final id = _feedbackId;
+    _advance = Timer(const Duration(milliseconds: 900), () {
+      final result = _result;
+      if (stale() || id != _feedbackId || result == null) return;
+      if (_replaying) return; // the replay schedules again when it ends
+      switch (afterResult(result.stars, _attempts)) {
+        case AfterResult.retry:
+          _play();
+        case AfterResult.next:
+          _next();
+      }
+    });
+  }
+
+  /// The funny-voice button: replay now, go on afterwards.
+  void _onReplayTap() {
+    _cancelFlow();
+    _replay();
   }
 
   /// Stops a replay (playing or about to start).
@@ -146,10 +289,15 @@ class _PlayScreenState extends State<PlayScreen>
     await _player.stop();
   }
 
-  /// Plays the last recording with the next funny voice.
-  Future<void> _replay() async {
+  /// Plays the last recording with the next funny voice. With
+  /// [advanceAfter], the game goes on when it has finished.
+  Future<void> _replay({bool advanceAfter = true}) async {
     final audio = _lastAudio;
-    if (!_canReplay || audio == null || _phase != _Phase.result) return;
+    final round = _round;
+    if (!_canReplay || audio == null || _phase != _Phase.result) {
+      if (advanceAfter) _scheduleAdvance(round);
+      return;
+    }
     final id = ++_replayId;
     // A new round, Next or the background may cancel us at every await.
     bool cancelled() => !mounted || id != _replayId || _phase != _Phase.result;
@@ -179,7 +327,10 @@ class _PlayScreenState extends State<PlayScreen>
       debugPrint('replay failed: $e\n$st');
     } finally {
       // a newer replay (tap while playing) owns the flag now
-      if (mounted && id == _replayId) setState(() => _replaying = false);
+      if (mounted && id == _replayId) {
+        setState(() => _replaying = false);
+        if (advanceAfter) _scheduleAdvance(round);
+      }
     }
   }
 
@@ -193,6 +344,7 @@ class _PlayScreenState extends State<PlayScreen>
   /// The picture of phrase [i] flies from the big picture into its slot.
   /// [isNew]: the slot was empty before, so it stays empty until landing.
   void _flyToSlot(int i, {required bool isNew}) {
+    final round = _round;
     final from = _rectOf(_emojiKey);
     final to = _rectOf(_slotKeys[i]);
     if (from == null || to == null) return;
@@ -204,6 +356,7 @@ class _PlayScreenState extends State<PlayScreen>
     });
     _fly.forward(from: 0).then((_) {
       if (!mounted) return;
+      if (_current(round) && _phase == _Phase.result) _playSfx(pling(_rng));
       setState(() {
         _flying = null;
         _flightPath = null;
@@ -214,14 +367,16 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// The phone says the phrase, then listens until the child has spoken.
   Future<void> _play() async {
-    if (!_idle || !mounted) return;
+    if (!_idle || !mounted || _worldDone) return;
     final round = ++_round;
     final back = _phase;
     setState(() {
       _phase = _Phase.starting;
       _lastAudio = null;
     });
+    _cancelFlow();
     try {
+      await _sfx.stop();
       await _stopReplay();
       // Ask before speaking, so the dialog does not cover the phrase.
       if (!await _recorder.hasPermission()) {
@@ -243,7 +398,9 @@ class _PlayScreenState extends State<PlayScreen>
       // let the speaker's echo fade before the mic opens
       await Future<void>.delayed(const Duration(milliseconds: 250));
       if (!_current(round)) return;
-      await _player.stop(); // never record our own replay
+      // never record our own replay or melody
+      await _player.stop();
+      await _sfx.stop();
       await _listen(round);
     } catch (e, st) {
       debugPrint('round failed: $e\n$st');
@@ -282,6 +439,7 @@ class _PlayScreenState extends State<PlayScreen>
   /// Ends the recording (child finished, time limit, or tap) and scores it.
   Future<void> _stop() async {
     if (_phase != _Phase.listening) return;
+    final round = _round;
     // Set synchronously: the timer, the endpointer and a tap must not all
     // get past here.
     final phrase = _phrase;
@@ -307,15 +465,16 @@ class _PlayScreenState extends State<PlayScreen>
         phrase.text,
         cmp.stars,
       );
-      if (!mounted) return;
+      if (!_current(round)) return; // aborted (background) meanwhile
       setState(() {
         _phase = _Phase.result;
         _result = cmp;
         _sessionStars += starsGained(cmp.stars, prev);
         _lastAudio = audio;
+        _attempts++;
       });
       if (cmp.stars >= 1) _flyToSlot(_index, isNew: prev < 1);
-      unawaited(_replay());
+      unawaited(_feedback(round, cmp.stars));
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
       _fail(_Phase.ready, (s) => s.tryAgain);
@@ -324,6 +483,10 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// Stops whatever runs (app went to the background) without scoring.
   Future<void> _abort() async {
+    _cancelFlow();
+    _donePraise?.cancel();
+    await _tts.stop();
+    await _sfx.stop();
     await _stopReplay(); // also in the result phase, which counts as idle
     if (_idle) return;
     _round++;
@@ -359,12 +522,19 @@ class _PlayScreenState extends State<PlayScreen>
   }
 
   void _next() {
+    if (_worldDone) return;
+    _cancelFlow();
     if (_index + 1 >= _phrases.length) {
+      // end the round, so nothing of it goes on behind the dialog
+      _worldDone = true;
+      _round++;
+      _tts.stop();
       _stopReplay();
       _showWorldDone();
       return;
     }
     setState(() {
+      _attempts = 0;
       _index++;
       _phase = _Phase.ready;
       _result = null;
@@ -374,6 +544,12 @@ class _PlayScreenState extends State<PlayScreen>
 
   void _showWorldDone() {
     final s = S.of(context);
+    _playSfx(fanfare(_rng));
+    final text = pickPraise(_lang, 3, _rng, avoid: _lastPraise);
+    _lastPraise = text;
+    _donePraise = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted && !_paused) _speakText(text);
+    });
     showDialog<void>(
       context: context,
       barrierDismissible: false,
@@ -523,7 +699,7 @@ class _PlayScreenState extends State<PlayScreen>
                       child: _RoundButton(
                         tooltip: s.funnyVoice,
                         size: 64,
-                        onTap: _replay,
+                        onTap: _onReplayTap,
                         color: const Color(0xFF7C4DFF),
                         child: EmojiImage(_effect.emoji, size: 40),
                       ),
