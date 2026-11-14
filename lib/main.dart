@@ -1,3 +1,6 @@
+import 'dart:io';
+
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -8,6 +11,21 @@ import 'ui/strings.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (Platform.isIOS) {
+    // audioplayers would switch the whole app to `playback`; the game also
+    // records and speaks, so keep one session for all three, loud speaker.
+    AudioPlayer.global.setAudioContext(
+      AudioContext(
+        iOS: AudioContextIOS(
+          category: AVAudioSessionCategory.playAndRecord,
+          options: const {
+            AVAudioSessionOptions.defaultToSpeaker,
+            AVAudioSessionOptions.mixWithOthers,
+          },
+        ),
+      ),
+    );
+  }
   runApp(const PhonemePartyApp());
 }
 

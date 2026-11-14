@@ -61,4 +61,24 @@ void main() {
     expect(find.byType(EmojiShadow), findsNWidgets(5));
     expect(t.takeException(), isNull);
   });
+
+  testWidgets('the home tile collection fits a small tile', (t) async {
+    // 360 dp phone: 3 tiles per row, about 85 x 55 dp left for the pictures
+    for (final size in [const Size(85, 55), const Size(124, 90)]) {
+      await t.pumpWidget(
+        app(
+          Center(
+            child: SizedBox.fromSize(
+              size: size,
+              child: CollectionGrid(emojis: emojis, collected: collected),
+            ),
+          ),
+        ),
+      );
+      expect(t.takeException(), isNull);
+      final grid = t.getRect(find.byType(Wrap));
+      expect(grid.width, lessThanOrEqualTo(size.width + 0.01));
+      expect(grid.height, lessThanOrEqualTo(size.height + 0.01));
+    }
+  });
 }

@@ -107,21 +107,17 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // the world's collection: found pictures, shadows for the rest
-                    Opacity(
-                      opacity: open ? 1 : 0.4,
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        children: [
-                          for (final p in book.world(w))
-                            Padding(
-                              padding: const EdgeInsets.all(1),
-                              child:
-                                  open &&
-                                      app.progress.stars(book.lang, p.text) >= 1
-                                  ? EmojiImage(p.emoji, size: 24)
-                                  : EmojiShadow(p.emoji, size: 24),
-                            ),
-                        ],
+                    Expanded(
+                      child: Opacity(
+                        opacity: open ? 1 : 0.4,
+                        child: CollectionGrid(
+                          emojis: [for (final p in book.world(w)) p.emoji],
+                          collected: [
+                            for (final p in book.world(w))
+                              open &&
+                                  app.progress.stars(book.lang, p.text) >= 1,
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 6),

@@ -31,11 +31,26 @@ void main() {
     expect(crossingsPerSecond(bear, bear.length / 16000), closeTo(280, 10));
   });
 
-  test('robot keeps the length and changes the sound', () {
-    final a = sine(200, 1600);
+  test('robot multiplies with a 50 Hz sine', () {
+    // a constant input shows the modulator itself
+    final a = Float32List.fromList(List.filled(1600, 0.5));
     final robot = applyVoiceEffect(VoiceEffect.robot, a);
     expect(robot.length, a.length);
-    expect(robot, isNot(equals(scaleToPeak(a, 0.8))));
+    for (final i in [0, 40, 80, 123, 160, 1000]) {
+      expect(
+        robot[i],
+        closeTo(0.8 * math.sin(2 * math.pi * 50 * i / 16000), 1e-4),
+      );
+    }
+  });
+
+  test('the recording itself is not changed', () {
+    for (final e in VoiceEffect.values) {
+      final a = sine(300, 1600, amp: 0.02);
+      final copy = Float32List.fromList(a);
+      applyVoiceEffect(e, a);
+      expect(a, copy);
+    }
   });
 
   test('a quiet recording is played back loud, silence stays silent', () {

@@ -115,6 +115,46 @@ class _Pop extends StatelessWidget {
   }
 }
 
+/// A world's collection in a small box (home screen tile): two rows of
+/// four, sized to fit whatever space the tile has.
+class CollectionGrid extends StatelessWidget {
+  const CollectionGrid({
+    super.key,
+    required this.emojis,
+    required this.collected,
+  });
+
+  final List<String> emojis;
+  final List<bool> collected;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, c) {
+        const perRow = 4;
+        final rows = (emojis.length / perRow).ceil();
+        final size = math.max(
+          4.0,
+          math.min(c.maxWidth / perRow, c.maxHeight / rows) - 2,
+        );
+        return Center(
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 2,
+            runSpacing: 2,
+            children: [
+              for (var i = 0; i < emojis.length; i++)
+                collected[i]
+                    ? EmojiImage(emojis[i], size: size)
+                    : EmojiShadow(emojis[i], size: size),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
 /// The finished world: all found pictures dance in a wave.
 class DancingScene extends StatefulWidget {
   const DancingScene({
