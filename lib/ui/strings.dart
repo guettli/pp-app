@@ -23,6 +23,7 @@ class S {
   String get notHeard => _t['notHeard']!;
   String get worldDone => _t['worldDone']!;
   String get ok => _t['ok']!;
+  String get funnyVoice => _t['funnyVoice']!;
   String get loading => _t['loading']!;
   String newStars(int n) => _t['newStars']!.replaceAll('{n}', '$n');
 
@@ -40,6 +41,7 @@ class S {
       'worldDone': 'Geschafft!',
       'newStars': '{n} neue Sterne gesammelt.',
       'ok': 'Super',
+      'funnyVoice': 'Lustige Stimme',
       'loading': 'Lade Spracherkennung …',
     },
     'en': {
@@ -55,6 +57,7 @@ class S {
       'worldDone': 'Well done!',
       'newStars': '{n} new stars collected.',
       'ok': 'Great',
+      'funnyVoice': 'Funny voice',
       'loading': 'Loading speech recognition …',
     },
     'fr': {
@@ -70,6 +73,7 @@ class S {
       'worldDone': 'Bravo !',
       'newStars': '{n} nouvelles étoiles.',
       'ok': 'Super',
+      'funnyVoice': 'Voix rigolote',
       'loading': 'Chargement de la reconnaissance vocale …',
     },
     'it': {
@@ -85,6 +89,7 @@ class S {
       'worldDone': 'Bravo!',
       'newStars': '{n} nuove stelle raccolte.',
       'ok': 'Evviva',
+      'funnyVoice': 'Voce buffa',
       'loading': 'Caricamento del riconoscimento vocale …',
     },
     'es': {
@@ -100,6 +105,7 @@ class S {
       'worldDone': '¡Muy bien!',
       'newStars': '{n} estrellas nuevas.',
       'ok': 'Genial',
+      'funnyVoice': 'Voz graciosa',
       'loading': 'Cargando el reconocimiento de voz …',
     },
   };

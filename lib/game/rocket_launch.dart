@@ -40,7 +40,7 @@ class _RocketLaunchState extends State<RocketLaunch>
     return LayoutBuilder(
       builder: (context, box) {
         const rocket = 56.0;
-        final bottom = box.maxHeight * 0.30; // above the buttons
+        final bottom = box.maxHeight * 0.38; // above the buttons and the scene
         final top = 70.0;
         final track = math.max(0.0, box.maxHeight - bottom - top - rocket);
         // Map similarity so that 3 stars (>= 0.85) reaches the planet.

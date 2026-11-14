@@ -3,11 +3,12 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../data/phrases.dart';
 import '../game/play_screen.dart';
+import '../game/world_scene.dart';
 import 'emoji_image.dart';
 import 'strings.dart';
 
-/// Language switch + world map. Each world shows the emoji of its first
-/// phrase and the stars collected so far.
+/// Language switch + world map. Each world shows its collection (pictures
+/// with at least one star) and the stars collected so far.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.app});
 
@@ -105,9 +106,23 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                    // the world's collection: found pictures, shadows for the rest
                     Opacity(
-                      opacity: open ? 1 : 0.3,
-                      child: EmojiImage(book.world(w).first.emoji, size: 56),
+                      opacity: open ? 1 : 0.4,
+                      child: Wrap(
+                        alignment: WrapAlignment.center,
+                        children: [
+                          for (final p in book.world(w))
+                            Padding(
+                              padding: const EdgeInsets.all(1),
+                              child:
+                                  open &&
+                                      app.progress.stars(book.lang, p.text) >= 1
+                                  ? EmojiImage(p.emoji, size: 24)
+                                  : EmojiShadow(p.emoji, size: 24),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 6),
                     if (open)
