@@ -1,9 +1,11 @@
 # Curated words for kids: concrete things everybody names the same way when
 # they see the picture. One concept per line:
 # emoji<TAB>de-DE<TAB>en-GB<TAB>fr-FR<TAB>it-IT<TAB>es-ES
-# "-" = leave out in that language (the picture suggests two words there).
-# Rules: no abstract words, no phrases, no emoji that suggests two different
-# words in one of the languages (e.g. 🥕 Karotte/Möhre, 🐙 Krake/Oktopus).
+# "-" = leave out in that language (no clear word there).
+# "a|b" = the app says "a", "b" is accepted too (the picture suggests both).
+# Rules: no abstract words, no phrases; every common word for the picture
+# must be listed (e.g. 🥕 Karotte|Möhre), otherwise a child saying the other
+# one loses stars.
 # Animals
 🦄	Einhorn	unicorn	licorne	unicorno	unicornio
 🦜	Papagei	parrot	perroquet	pappagallo	loro
@@ -34,9 +36,9 @@
 🦓	Zebra	zebra	zèbre	zebra	cebra
 🐍	Schlange	snake	serpent	serpente	serpiente
 🐊	Krokodil	crocodile	crocodile	coccodrillo	cocodrilo
-🐰	Hase	rabbit	lapin	coniglio	conejo
+🐰	Hase|Kaninchen	rabbit|bunny	lapin	coniglio	conejo
 🦔	Igel	hedgehog	hérisson	riccio	erizo
-🦉	Eule	owl	-	gufo	búho
+🦉	Eule	owl	hibou|chouette	gufo	búho
 🐧	Pinguin	penguin	pingouin	pinguino	pingüino
 🐳	Wal	whale	baleine	balena	ballena
 🐬	Delfin	dolphin	dauphin	delfino	delfín
@@ -102,11 +104,11 @@
 ✏️	Bleistift	pencil	crayon	matita	lápiz
 ✂️	Schere	scissors	ciseaux	forbici	tijeras
 ☂️	Regenschirm	umbrella	parapluie	ombrello	paraguas
-🎈	Luftballon	balloon	-	palloncino	globo
+🎈	Luftballon|Ballon	balloon	-	palloncino	globo
 🎁	Geschenk	present	cadeau	regalo	regalo
 🕯️	Kerze	candle	bougie	candela	vela
 🔔	Glocke	bell	cloche	campana	campana
-🧸	Teddy	teddy bear	nounours	orsacchiotto	osito
+🧸	Teddy|Teddybär	teddy bear|teddy	nounours	orsacchiotto	osito
 🪁	Drachen	kite	cerf-volant	aquilone	cometa
 🥄	Löffel	spoon	cuillère	cucchiaio	cuchara
 🪥	Zahnbürste	toothbrush	brosse à dents	spazzolino	cepillo de dientes
@@ -116,7 +118,7 @@
 🪜	Leiter	ladder	échelle	scala	escalera
 🎲	Würfel	dice	dé	dado	dado
 🤖	Roboter	robot	robot	robot	robot
-👻	-	ghost	fantôme	fantasma	fantasma
+👻	Gespenst|Geist	ghost	fantôme	fantasma	fantasma
 ⚽	Fußball	football	ballon	pallone	balón
 🥁	Trommel	drum	tambour	tamburo	tambor
 🎸	Gitarre	guitar	guitare	chitarra	guitarra
@@ -163,8 +165,8 @@
 🚑	Krankenwagen	ambulance	ambulance	ambulanza	ambulancia
 # People
 👶	Baby	baby	bébé	bambino	bebé
-👵	Oma	-	mamie	nonna	abuela
-👴	Opa	-	papi	nonno	abuelo
+👵	Oma	grandma|granny|nan	mamie	nonna	abuela
+👴	Opa	grandad|grandpa	papi	nonno	abuelo
 👸	Prinzessin	princess	princesse	principessa	princesa
 # Numbers
 1️⃣	eins	one	un	uno	uno
@@ -177,3 +179,8 @@
 8️⃣	acht	eight	huit	otto	ocho
 9️⃣	neun	nine	neuf	nove	nueve
 🔟	zehn	ten	dix	dieci	diez
+# Pictures with two common words
+🥕	Karotte|Möhre	carrot	carotte	carota	zanahoria
+🐙	Krake|Oktopus	octopus	pieuvre|poulpe	polpo	pulpo
+🏰	Burg|Schloss	castle	château	castello	castillo
+🍪	Keks	biscuit|cookie	biscuit|cookie	biscotto	galleta

@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/data/phrases.dart';
+import 'package:phoneme_party/game/rules.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/ui/emoji_image.dart';
 
@@ -31,21 +32,24 @@ void main() {
 
       test('one word per picture, no duplicates', () {
         expect(phrases.map((p) => p.emoji).toSet().length, phrases.length);
-        expect(phrases.map((p) => p.text).toSet().length, phrases.length);
+        final words = [
+          for (final p in phrases) ...p.accepted.map((w) => w.text),
+        ];
+        expect(words.toSet().length, words.length);
       });
 
       test('no optional sounds or notes in the IPA', () {
         // "(ə)" etc. cannot be scored: the child would lose points either way
-        for (final p in phrases) {
-          expect(p.ipa, isNot(matches(RegExp(r'[()ᵑ]'))), reason: p.text);
+        for (final w in phrases.expand((p) => p.accepted)) {
+          expect(w.ipa, isNot(matches(RegExp(r'[()ᵑ]'))), reason: w.text);
         }
       });
 
       test('every phoneme has PanPhon features', () {
         final unknown = <String, String>{};
-        for (final p in phrases) {
-          for (final ph in cmp.tokenize(p.ipa, lang).$1) {
-            if (!cmp.isKnown(ph)) unknown.putIfAbsent(ph, () => p.text);
+        for (final w in phrases.expand((p) => p.accepted)) {
+          for (final ph in cmp.tokenize(w.ipa, lang).$1) {
+            if (!cmp.isKnown(ph)) unknown.putIfAbsent(ph, () => w.text);
           }
         }
         expect(unknown, isEmpty);
@@ -55,12 +59,14 @@ void main() {
         // The recogniser outputs plain phones: no stress, no spaces.
         final failed = <String>[];
         for (final p in phrases) {
-          final ideal = PhonemeComparer.normalize(
-            p.ipa,
-            lang,
-          ).replaceAll(' ', '');
-          final c = cmp.compare(p.ipa, ideal, lang);
-          if (c.stars != 3) failed.add('${p.text} (${c.score})');
+          for (final w in p.accepted) {
+            final ideal = PhonemeComparer.normalize(
+              w.ipa,
+              lang,
+            ).replaceAll(' ', '');
+            final c = scorePhrase(cmp, p, ideal, lang);
+            if (c.stars != 3) failed.add('${w.text} (${c.score})');
+          }
         }
         expect(failed, isEmpty);
       });

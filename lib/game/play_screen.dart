@@ -184,7 +184,7 @@ class _PlayScreenState extends State<PlayScreen>
       }
       final audio = trimSilence(pcm16ToFloat(_buffer.takeBytes()));
       final rec = await widget.app.recognizer.recognize(audio);
-      final cmp = widget.app.comparer.compare(phrase.ipa, rec.ipa, _lang);
+      final cmp = scorePhrase(widget.app.comparer, phrase, rec.ipa, _lang);
       final prev = await widget.app.progress.record(
         _lang,
         phrase.text,
