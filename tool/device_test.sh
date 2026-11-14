@@ -37,7 +37,7 @@ adb install -r -t "$apks/app.apk" >/dev/null
 adb install -r -t "$apks/test.apk" >/dev/null
 adb shell pm grant "$app" android.permission.RECORD_AUDIO
 adb shell input keyevent KEYCODE_WAKEUP
-since=$(adb shell date +'%m-%d %H:%M:%S.000')
+since=$(adb shell "date +'%m-%d %H:%M:%S.000'")
 
 runner=$(adb shell pm list instrumentation | sed -n "s/^instrumentation:\([^ ]*\) (target=$app)$/\1/p")
 adb shell am instrument -w -r "$runner" >"$out/instrument.txt" || true
