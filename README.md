@@ -140,6 +140,6 @@ ignored).
   3D (MIT), converted to WebP; 🇮🇹 from Noto Emoji region flags (public domain).
 - Phonetic features: [PanPhon](https://github.com/dmort27/panphon) (MIT).
 - Model: [ZIPA](https://github.com/lingjzhu/zipa)
-  `anyspeech/zipa-small-crctc-ns-700k`, **CC BY-NC-SA 4.0** (non-commercial).
-  A CC BY 4.0 alternative with slightly lower accuracy is
-  `anyspeech/zipa-small-crctc-500k` (switch in `ci/main.go`).
+  `anyspeech/zipa-small-crctc-500k`, CC BY 4.0. (The noisy-student variant
+  `-ns-700k` is CC BY-NC-SA; it scored the same on real recordings and worse
+  on synthesized speech, see "Pronunciation check".)

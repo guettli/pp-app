@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"dagger/ci/internal/dagger"
 )
@@ -49,13 +50,15 @@ const androidCmdlineToolsURL = "https://dl.google.com/android/repository/command
 const flutterArchiveURLTemplate = "https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_%s-stable.tar.xz"
 
 // ZIPA phone recognizer (int8 ONNX). Downloaded at build time, never committed.
-// The -ns- variant is CC BY-NC-SA 4.0 (same as the web app guettli/pp).
+// CC BY 4.0. The -ns-700k variant (CC BY-NC-SA, used by the web app
+// guettli/pp) scored the same on real recordings and worse on synthesized
+// speech (tool/tts_check), so the freely licensed one is used.
 const (
-	modelRepo = "anyspeech/zipa-small-crctc-ns-700k"
+	modelRepo = "anyspeech/zipa-small-crctc-500k"
 	modelFile = "model.int8.onnx"
 	// Pinned so an upstream change cannot silently change recognition.
-	modelRevision = "797523ffb49e31e821a972313813cc4a26d902ef"
-	modelSHA256   = "c0a74847edb1224f90a5a1d20c501f81d841439e0692f8e32d1fe6bd94beaa77"
+	modelRevision = "dfe87c97662606fa6db90ad06f627d4363314744"
+	modelSHA256   = "d0e28b68164e8b1fbd6105100c01798828aa0855000ce9bbbd1a2cec233adf13"
 	tokensSHA256  = "f8e042a0c9130532b22d03ec7cae2f75a23fbec70c450c31a8efb51787b2b8fe"
 )
 
@@ -309,4 +312,81 @@ print(feats.shape)
 // PubspecLock returns the lock file resolved by `flutter pub get`.
 func (m *Ci) PubspecLock() *dagger.File {
 	return m.base().File("/src/pubspec.lock")
+}
+
+// Piper voices for the automatic pronunciation check (two per language).
+var ttsVoices = []string{
+	"de/de_DE/thorsten/medium", "de/de_DE/kerstin/low",
+	"en/en_GB/alba/medium", "en/en_GB/southern_english_female/low",
+	"fr/fr_FR/siwis/medium", "fr/fr_FR/tom/medium",
+	"it/it_IT/paola/medium", "it/it_IT/riccardo/x_low",
+	"es/es_ES/davefx/medium", "es/es_ES/sharvard/medium",
+}
+
+// TtsCheck speaks every word of the word list with Piper voices, runs the
+// app's recognition and scoring on it and returns one JSON row per word and
+// voice (tool/tts_check). Words that get few stars although they were
+// pronounced correctly point to a wrong IPA in the word list.
+func (m *Ci) TtsCheck(
+	// Hugging Face repo of another ZIPA model to compare (default: the app's).
+	// +optional
+	model string,
+	// Synthesis options for experiments, e.g. "gain=1 lead=0.4 tail=0.8 noise=0.002".
+	// +optional
+	options string,
+	// Only voices whose name contains this (e.g. "thorsten"), for quick experiments.
+	// +optional
+	voice string,
+	// Real recordings instead of synthesized speech (see
+	// tool/tts_check/load_recordings.py).
+	// +optional
+	recordings *dagger.Directory,
+) *dagger.File {
+	if recordings == nil {
+		recordings = dag.Directory()
+	}
+	modelDir := m.Model()
+	if model != "" {
+		modelDir = dag.Container().
+			From("alpine:3.21").
+			WithExec([]string{"apk", "add", "--no-cache", "curl"}).
+			WithWorkdir("/out").
+			WithExec([]string{"curl", "-fsSL", "-o", "model.onnx", "https://huggingface.co/" + model + "/resolve/main/" + modelFile}).
+			WithExec([]string{"curl", "-fsSL", "-o", "tokens.txt", "https://huggingface.co/" + model + "/resolve/main/tokens.txt"}).
+			Directory("/out")
+	}
+	voices := dag.Container().
+		From("alpine:3.21").
+		WithExec([]string{"apk", "add", "--no-cache", "curl"}).
+		WithExec([]string{"mkdir", "/voices"}).
+		WithWorkdir("/voices")
+	for _, v := range ttsVoices {
+		if voice != "" && !strings.Contains(v, voice) {
+			continue
+		}
+		parts := regexp.MustCompile("/").Split(v, -1)
+		name := parts[1] + "-" + parts[2] + "-" + parts[3]
+		url := "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/" + v + "/" + name
+		voices = voices.WithExec([]string{"sh", "-c",
+			"curl -fsSL -o " + name + ".onnx " + url + ".onnx && curl -fsSL -o " + name + ".onnx.json " + url + ".onnx.json"})
+	}
+	run := `set -e
+. /opt/venv/bin/activate
+if [ -f /rec/recordings.json ]; then python tool/tts_check/load_recordings.py /rec /work
+else python tool/tts_check/synth.py assets/phrases /voices /work; fi
+dart run tool/tts_check/check.dart features /work
+python tool/tts_check/infer.py /work /model/model.onnx
+dart run tool/tts_check/check.dart score /work /model/tokens.txt /work/report.json`
+	return m.base().
+		WithUser("root").
+		WithExec([]string{"sh", "-c", "apt-get -qq update && apt-get install -y -qq --no-install-recommends python3-venv && " +
+			"python3 -m venv /opt/venv && /opt/venv/bin/pip install --quiet piper-tts==1.3.0 onnxruntime==1.20.1 scipy==1.14.1 numpy==2.1.3 soundfile==0.12.1 && " +
+			"mkdir /work && chown ci /work"}).
+		WithUser("ci").
+		WithDirectory("/voices", voices.Directory("/voices")).
+		WithDirectory("/model", modelDir).
+		WithDirectory("/rec", recordings).
+		WithEnvVariable("TTS_OPTIONS", options).
+		WithExec([]string{"sh", "-c", run}).
+		File("/work/report.json")
 }
