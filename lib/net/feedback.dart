@@ -14,8 +14,9 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// The pp-app feedback service on the vps (guettli/gitops, k8s/plain/vps/
-/// pp-app); it files a GitHub issue in guettli/pp-app.
+/// The pp-app feedback service on the vps (server/feedback; deployed from
+/// guettli/gitops, k8s/plain/vps/pp-app). It stores the report there; it is
+/// not published.
 final feedbackEndpoint = Uri.parse(
   'https://relaxandplay.de/pp-app/api/feedback',
 );

@@ -78,7 +78,7 @@ class S {
       'feedbackHint': 'Was ist passiert? Was wünschen Sie sich?',
       'feedbackSends': 'Wird mitgeschickt (keine Aufnahmen, keine Namen):',
       'feedbackPublic':
-          'Der Text wird als öffentliches GitHub-Issue in guettli/pp-app gespeichert.',
+          'Geht nur an das Phoneme-Party-Team und wird nicht veröffentlicht.',
       'send': 'Senden',
       'feedbackSent': 'Danke! Gesendet.',
       'feedbackQueued': 'Danke! Wird gesendet, sobald Internet da ist.',
@@ -115,7 +115,7 @@ class S {
       'feedbackHint': 'What happened? What would you like?',
       'feedbackSends': 'Also sent (no recordings, no names):',
       'feedbackPublic':
-          'The text becomes a public GitHub issue in guettli/pp-app.',
+          'Goes to the Phoneme Party team only and is not published.',
       'send': 'Send',
       'feedbackSent': 'Thank you! Sent.',
       'feedbackQueued': 'Thank you! It will be sent when there is internet.',
@@ -151,7 +151,7 @@ class S {
       'feedbackHint': 'Que s’est-il passé ? Que souhaitez-vous ?',
       'feedbackSends': 'Envoyé aussi (aucun enregistrement, aucun nom) :',
       'feedbackPublic':
-          'Le texte devient un ticket GitHub public dans guettli/pp-app.',
+          'Envoyé uniquement à l’équipe Phoneme Party, jamais publié.',
       'send': 'Envoyer',
       'feedbackSent': 'Merci ! Envoyé.',
       'feedbackQueued': 'Merci ! Ce sera envoyé dès qu’il y aura internet.',
@@ -187,7 +187,7 @@ class S {
       'feedbackHint': 'Cosa è successo? Cosa desidera?',
       'feedbackSends': 'Inviato anche (nessuna registrazione, nessun nome):',
       'feedbackPublic':
-          'Il testo diventa una issue pubblica su GitHub in guettli/pp-app.',
+          'Va solo al team di Phoneme Party e non viene pubblicato.',
       'send': 'Invia',
       'feedbackSent': 'Grazie! Inviato.',
       'feedbackQueued': 'Grazie! Verrà inviato appena c’è internet.',
@@ -223,7 +223,7 @@ class S {
       'feedbackHint': '¿Qué ha pasado? ¿Qué le gustaría?',
       'feedbackSends': 'También se envía (sin grabaciones ni nombres):',
       'feedbackPublic':
-          'El texto se publica como issue público de GitHub en guettli/pp-app.',
+          'Solo lo recibe el equipo de Phoneme Party; no se publica.',
       'send': 'Enviar',
       'feedbackSent': '¡Gracias! Enviado.',
       'feedbackQueued': '¡Gracias! Se enviará cuando haya internet.',
