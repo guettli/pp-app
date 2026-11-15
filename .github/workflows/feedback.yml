@@ -1,0 +1,35 @@
+name: Feedback service
+
+# The service behind the app's feedback screen (server/feedback): tested in
+# CI's check job (check-fast); here every change on main becomes an image,
+# tagged with the commit time like ghcr.io/guettli/pp. Renovate in
+# guettli/gitops bumps the tag (k8s/plain/vps/pp-app).
+on:
+  push:
+    branches: [main]
+    paths: [server/feedback/**, ci/**, .github/workflows/feedback.yml]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag
+        run: echo "TAG=v$(TZ=UTC git log -1 --date=format-local:%Y.%m.%d.%H%M%S --format=%cd)" >> "$GITHUB_ENV"
+      - name: Publish
+        uses: dagger/dagger-for-github@v8.4.1
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          version: "0.21.8"
+          verb: call
+          module: ci
+          args: >-
+            feedback-publish
+            --address ghcr.io/guettli/pp-app-feedback:${{ env.TAG }}
+            --username ${{ github.actor }}
+            --password env:GHCR_TOKEN
