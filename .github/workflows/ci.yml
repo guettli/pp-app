@@ -98,6 +98,12 @@ jobs:
             --keystore-base-64 env://KEYSTORE_BASE64 \
             --keystore-password env://KEYSTORE_PASSWORD \
             export --path dist/phoneme-party-armv7.apk
+      - name: Build App Bundle (Google Play upload)
+        run: |
+          dagger call -m ci build-aab --build-number "$BUILD_NUMBER" \
+            --keystore-base-64 env://KEYSTORE_BASE64 \
+            --keystore-password env://KEYSTORE_PASSWORD \
+            export --path dist/phoneme-party-google-play.aab
       - name: Version
         id: version
         run: |
@@ -113,9 +119,9 @@ jobs:
           TAG="v$VERSION"
           if gh release view "$TAG" >/dev/null 2>&1; then
             # re-run of the same workflow run: same build number, replace files
-            gh release upload "$TAG" dist/*.apk --clobber
+            gh release upload "$TAG" dist/*.apk dist/*.aab --clobber
           else
-            gh release create "$TAG" dist/*.apk \
+            gh release create "$TAG" dist/*.apk dist/*.aab \
               --target "$GITHUB_SHA" --title "Phoneme Party $VERSION" \
               --generate-notes --latest
           fi

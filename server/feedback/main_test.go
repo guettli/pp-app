@@ -182,3 +182,46 @@ func TestHealthAndMethods(t *testing.T) {
 		t.Fatal(w.Code)
 	}
 }
+
+func TestPruneDeletesOnlyOldReports(t *testing.T) {
+	d := newDir(t, 10)
+	now := time.Date(2027, 12, 1, 0, 0, 0, 0, time.UTC)
+	old := &Report{ID: id1, Kind: "bug", Text: "old", Created: "x"}
+	fresh := &Report{ID: strings.Repeat("b", 32), Kind: "bug", Text: "new", Created: "x"}
+	if err := d.Save(old, now.Add(-Keep-time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.Save(fresh, now.Add(-Keep+time.Hour)); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(d.Path, "notes.txt"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	n, err := d.Prune(now)
+	if err != nil || n != 1 {
+		t.Fatalf("pruned %d, %v", n, err)
+	}
+	got := strings.Join(files(t, d), " ")
+	if strings.Contains(got, id1) || !strings.Contains(got, fresh.ID) || !strings.Contains(got, "notes.txt") {
+		t.Fatalf("left %s", got)
+	}
+}
+
+func TestDeleteByID(t *testing.T) {
+	d := newDir(t, 10)
+	if err := d.Save(&Report{ID: id1, Kind: "bug", Text: "x", Created: "x"}, time.Now()); err != nil {
+		t.Fatal(err)
+	}
+	if found, err := d.Delete(id1); err != nil || !found {
+		t.Fatalf("found %v, %v", found, err)
+	}
+	if found, err := d.Delete(id1); err != nil || found {
+		t.Fatalf("twice: found %v, %v", found, err)
+	}
+	if _, err := d.Delete("../x"); err == nil {
+		t.Fatal("a path is not an id")
+	}
+	if len(files(t, d)) != 0 {
+		t.Fatal(files(t, d))
+	}
+}

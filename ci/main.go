@@ -260,6 +260,53 @@ func (m *Ci) BuildApk(
 	// +default=0
 	buildNumber int,
 ) (*dagger.File, error) {
+	c := m.releaseBuild(keystoreBase64, keystorePassword)
+	args := []string{"flutter", "build", "apk", "--release", "--split-per-abi", "--target-platform", "android-arm64,android-arm"}
+	version, err := m.versionArgs(ctx, buildNumber)
+	if err != nil {
+		return nil, err
+	}
+	apk := "/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk"
+	return c.
+		WithExec(append(args, version...)).
+		WithExec([]string{"sh", "-c", releaseApkCheck, "check", apk}).
+		File(apk), nil
+}
+
+// BuildAab builds the Android App Bundle for the Play Store, signed with
+// the upload key (Google re-signs what it delivers). The bundle is checked
+// like the APK: bundletool turns it into one universal APK, which must have
+// the app's id, name and exactly its permissions; the versionCode must be
+// the build number, and the signature must not be a debug key.
+func (m *Ci) BuildAab(
+	ctx context.Context,
+	// Release keystore (PKCS12/JKS, base64-encoded), key alias "upload".
+	keystoreBase64 *dagger.Secret,
+	// Password of the keystore and the key.
+	keystorePassword *dagger.Secret,
+	// Build number (versionCode), as for BuildApk.
+	buildNumber int,
+) (*dagger.File, error) {
+	if buildNumber <= 0 {
+		return nil, fmt.Errorf("build-number must be > 0")
+	}
+	version, err := m.versionArgs(ctx, buildNumber)
+	if err != nil {
+		return nil, err
+	}
+	bundletool := dag.HTTP(bundletoolURL, dagger.HTTPOpts{Checksum: bundletoolSHA256})
+	aab := "/src/build/app/outputs/bundle/release/app-release.aab"
+	return m.releaseBuild(keystoreBase64, keystorePassword).
+		WithExec(append([]string{"flutter", "build", "appbundle", "--release"}, version...)).
+		WithFile("/home/ci/bundletool.jar", bundletool, dagger.ContainerWithFileOpts{Owner: "ci"}).
+		WithEnvVariable("RELEASE_APK_CHECK", releaseApkCheck).
+		WithExec([]string{"sh", "-c", releaseAabCheck, "check", aab, strconv.Itoa(buildNumber)}).
+		File(aab), nil
+}
+
+// releaseBuild is the base container for release builds, with the upload
+// key in android/key.properties when one is given (else the debug key).
+func (m *Ci) releaseBuild(keystoreBase64, keystorePassword *dagger.Secret) *dagger.Container {
 	c := m.base().
 		WithDirectory("/src/assets/models", m.Model(), dagger.ContainerWithDirectoryOpts{Owner: "ci"}).
 		WithMountedCache("/home/ci/.gradle", dag.CacheVolume("pp-app-gradle"), dagger.ContainerWithMountedCacheOpts{Owner: "ci"}).
@@ -271,25 +318,41 @@ func (m *Ci) BuildApk(
 			WithExec([]string{"sh", "-euc", `echo "$KS_B64" | base64 -d > /home/ci/upload.jks
 printf 'storeFile=/home/ci/upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPassword=%s\n' "$KS_PASS" "$KS_PASS" > android/key.properties`})
 	}
-	args := []string{"flutter", "build", "apk", "--release", "--split-per-abi", "--target-platform", "android-arm64,android-arm"}
-	if buildNumber > 0 {
-		name, err := m.releaseVersion(ctx, buildNumber)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, "--build-name", name, "--build-number", strconv.Itoa(buildNumber))
-	}
-	apk := "/src/build/app/outputs/flutter-apk/app-" + abi + "-release.apk"
-	return c.
-		WithExec(args).
-		WithExec([]string{"sh", "-c", releaseApkCheck, "check", apk}).
-		File(apk), nil
+	return c
 }
+
+// versionArgs: --build-name/--build-number for a build number, none for 0.
+func (m *Ci) versionArgs(ctx context.Context, buildNumber int) ([]string, error) {
+	if buildNumber <= 0 {
+		return nil, nil
+	}
+	name, err := m.releaseVersion(ctx, buildNumber)
+	if err != nil {
+		return nil, err
+	}
+	return []string{"--build-name", name, "--build-number", strconv.Itoa(buildNumber)}, nil
+}
+
+const (
+	bundletoolURL    = "https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar"
+	bundletoolSHA256 = "sha256:a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29"
+)
+
+// releaseAabCheck: $1 the bundle, $2 the expected versionCode.
+const releaseAabCheck = `set -e
+cd "$(mktemp -d)"
+keytool -printcert -jarfile "$1" > cert.txt 2>&1 || true
+if grep -q "Not a signed jar" cert.txt || ! grep -q "^Owner:" cert.txt; then echo "bundle is not signed" >&2; exit 1; fi
+if grep -q "CN=Android Debug" cert.txt; then echo "bundle is signed with a debug key" >&2; exit 1; fi
+java -jar /home/ci/bundletool.jar build-apks --bundle="$1" --output=u.apks --mode=universal
+unzip -q u.apks universal.apk
+b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging universal.apk)
+echo "$b" | grep -q "^package: name='de.relaxandplay.phoneme_party' versionCode='$2' " || { echo "wrong package id or versionCode (want $2)" >&2; echo "$b" | head -1 >&2; exit 1; }
+sh -c "$RELEASE_APK_CHECK" check universal.apk`
 
 // releaseApkCheck makes sure the release APK is the real app: its id and
 // name (not the test app's), and exactly the permissions we mean: the
-// microphone, the internet (feedback a grown-up sends, content updates;
-// see lib/net/) and the one Android adds by itself. A plugin that brings
+// microphone, the internet (feedback a grown-up sends; see lib/net/) and the one Android adds by itself. A plugin that brings
 // in another permission fails the build.
 const releaseApkCheck = `set -e
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")
