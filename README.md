@@ -38,6 +38,21 @@ built with Flutter. Native successor of the web app
 4. Every expected sound is shown as a chip: green = right, orange = close,
    red = missing / wrong.
 
+## More games (above the worlds)
+
+- **🦉 Quiz:** the phone asks "Was kann fliegen? Baum, Vogel oder Haus?",
+  shows the three pictures, and the child answers by saying the word.
+  Eight questions a round about the words of the open worlds: what flies,
+  swims, can be eaten, has wheels, … and what is biggest, smallest,
+  heaviest, lightest. The facts are in `assets/facts/facts.tsv` (one line
+  per picture, the same for every language): every property is yes, no or
+  unclear, and only clear "no"s are offered as wrong answers. A word the
+  phone did not understand is asked once more instead of being marked wrong.
+- **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
+  (`lib/voice/`); the sound is only measured, never recorded.
+- **📖 Word list:** every word with picture, rough size and weight and its
+  properties; tapping a word says it.
+
 ## How recognition works
 
 ```

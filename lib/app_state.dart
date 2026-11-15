@@ -5,6 +5,7 @@ import 'data/progress.dart';
 import 'game/game_io.dart';
 import 'phonetics/phoneme_distance.dart';
 import 'phonetics/recognizer.dart';
+import 'quiz/facts.dart';
 
 /// Everything the game needs, loaded once at start.
 class AppState {
@@ -14,7 +15,8 @@ class AppState {
     this.progress,
     this.book, {
     required this.io,
-  });
+    Facts? facts,
+  }) : facts = facts ?? Facts(const {});
 
   final Recognizer recognizer;
 
@@ -24,6 +26,9 @@ class AppState {
   final Progress progress;
   PhraseBook book;
 
+  /// What the quiz knows about the pictures.
+  final Facts facts;
+
   static Future<AppState> load() async {
     final progress = await Progress.load();
     final comparer = PhonemeComparer.fromJson(
@@ -31,7 +36,14 @@ class AppState {
     );
     final book = await PhraseBook.load(progress.studyLang ?? 'de-DE');
     final recognizer = await PhoneRecognizer.load();
-    return AppState(recognizer, comparer, progress, book, io: GameIo.device());
+    return AppState(
+      recognizer,
+      comparer,
+      progress,
+      book,
+      io: GameIo.device(),
+      facts: await Facts.load(),
+    );
   }
 
   Future<void> switchLanguage(String lang) async {

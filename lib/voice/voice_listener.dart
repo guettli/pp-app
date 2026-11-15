@@ -29,9 +29,12 @@ class VoiceListener {
     void Function(VoiceTake take, VoiceFrame frame)? onFrame,
   }) async {
     await cancel();
+    final gen = _gen;
     // A start cancelled meanwhile stops the mic when it is up; that must
     // happen before this start, or it would stop the new recording.
     await _starting;
+    // cancelled while waiting (app paused): do not open the mic
+    if (gen != _gen) return null;
     final done = _done = Completer<VoiceTake?>();
     final starting = Completer<void>();
     _starting = starting.future;
@@ -91,8 +94,12 @@ class VoiceListener {
     await _finish(c, t);
   }
 
+  /// Incremented by every [cancel], also when nothing is listening yet.
+  int _gen = 0;
+
   /// Ends the try and drops it (app paused, screen closed).
   Future<void> cancel() async {
+    _gen++;
     final c = _done;
     if (c != null) await _finish(c, null);
   }

@@ -236,7 +236,13 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
         if (mounted) setState(() {});
       },
     );
-    if (!_current(id) || heard == null) return;
+    if (!_current(id)) return;
+    if (heard == null) {
+      // the mic could not start (cancelling also gives null, but then the
+      // flow is not current any more)
+      _fail(id, (s) => s.tryAgain);
+      return;
+    }
     if (heard.heardNothing || heard.pitch == null) {
       _fail(id, (s) => s.notHeardVoice);
       return;

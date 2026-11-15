@@ -1,0 +1,608 @@
+// The quiz: the phone asks "What can fly? Tree, bird or house?", shows the
+// three pictures, and the child answers by saying the word. Eight
+// questions a round, about the words the child already plays with. A word
+// the phone did not understand is asked once more instead of being marked
+// wrong. Tapping a picture says its word (not while listening).
+import 'dart:async';
+import 'dart:math' as math;
+import 'dart:typed_data';
+
+import 'package:flutter/material.dart';
+
+import '../app_state.dart';
+import '../data/phrases.dart';
+import '../game/feedback.dart';
+import '../game/game_io.dart';
+import '../game/rocket_launch.dart';
+import '../game/voice_effects.dart';
+import '../ui/emoji_image.dart';
+import '../ui/round_button.dart';
+import '../ui/strings.dart';
+import 'facts.dart';
+import 'quiz_lines.dart';
+import 'quiz_rules.dart';
+import 'word_listener.dart';
+
+enum _Phase { ready, speaking, listening, thinking, result }
+
+class QuizScreen extends StatefulWidget {
+  const QuizScreen({super.key, required this.app, this.round});
+
+  final AppState app;
+
+  /// The questions; a new random round if null.
+  final List<QuizQuestion>? round;
+
+  /// Questions per round.
+  static const questions = 8;
+
+  @override
+  State<QuizScreen> createState() => _QuizScreenState();
+}
+
+class _QuizScreenState extends State<QuizScreen>
+    with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  late final WordListener _listener;
+  late final Speaker _tts;
+  late final SoundOut _sfx;
+  late final math.Random _rng;
+  late final QuizLines _lines = QuizLines.of(_lang);
+  late final List<QuizQuestion> _round = widget.round ?? _makeRound();
+
+  _Phase _phase = _Phase.ready;
+  int _index = 0;
+
+  /// Tries of the current question that were not understood.
+  int _unclear = 0;
+
+  /// Per question: right (true), wrong (false), not yet (null).
+  late final List<bool?> _results = List.filled(_round.length, null);
+
+  /// What the child said for the current question (shown in the result).
+  Phrase? _chosen;
+  String? _lastPraise;
+
+  /// Incremented to stop whatever runs (new try, pause, closing).
+  int _flow = 0;
+  bool _paused = false;
+  bool _over = false;
+  Timer? _onward;
+  Timer? _donePraise;
+
+  late final AnimationController _bounce = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 600),
+  );
+
+  String get _lang => widget.app.book.lang;
+  QuizQuestion get _q => _round[_index];
+  bool get _idle => _phase == _Phase.ready || _phase == _Phase.result;
+  bool _current(int id) => mounted && id == _flow && !_paused;
+
+  /// The words of the open worlds (at least the first three), so the
+  /// child knows them; all words if that is not enough for a round.
+  List<QuizQuestion> _makeRound() {
+    final app = widget.app;
+    final book = app.book;
+    var open = 0;
+    while (open < book.worldCount && app.worldOpen(open)) {
+      open++;
+    }
+    open = math.max(open, 3);
+    final pool = [
+      for (var w = 0; w < math.min(open, book.worldCount); w++)
+        ...book.world(w),
+    ];
+    bool similar(Phrase a, Phrase b) =>
+        soundsSimilar(app.comparer, book.lang, a, b);
+    final round = makeRound(
+      pool,
+      app.facts,
+      _rng,
+      count: QuizScreen.questions,
+      similar: similar,
+    );
+    if (round.length >= QuizScreen.questions) return round;
+    return makeRound(
+      book.phrases,
+      app.facts,
+      _rng,
+      count: QuizScreen.questions,
+      similar: similar,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    final io = widget.app.io;
+    _listener = WordListener(io.mic());
+    _tts = io.speaker();
+    _sfx = io.soundPlayer();
+    _rng = io.random();
+    _tts.setLanguage(_lang);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _ask());
+  }
+
+  @override
+  void dispose() {
+    _flow++;
+    WidgetsBinding.instance.removeObserver(this);
+    _onward?.cancel();
+    _donePraise?.cancel();
+    _listener.dispose();
+    _quietly(_tts.stop);
+    _quietly(_sfx.dispose);
+    _bounce.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Not on `inactive`: the permission dialog causes that.
+    if (state == AppLifecycleState.paused) {
+      _paused = true;
+      _flow++;
+      _onward?.cancel();
+      _donePraise?.cancel();
+      _listener.cancel(); // the mic first
+      _quietly(_tts.stop);
+      _quietly(_sfx.stop);
+      if (!_idle && mounted) setState(() => _phase = _Phase.ready);
+    } else if (state == AppLifecycleState.resumed) {
+      _paused = false; // goes on with a tap
+    }
+  }
+
+  Future<void> _say(String text) async {
+    try {
+      await _tts.stop();
+      await _tts
+          .speak(text)
+          .timeout(Duration(seconds: 3 + text.length ~/ 4), onTimeout: () {});
+    } catch (e, st) {
+      debugPrint('tts failed: $e\n$st');
+    }
+  }
+
+  static Future<void> _quietly(Future<void> Function() f) async {
+    try {
+      await f();
+    } catch (e, st) {
+      debugPrint('sound failed: $e\n$st');
+    }
+  }
+
+  Future<void> _sound(Float32List s) async {
+    if (!_idle || _paused || _listener.listening) return;
+    await _quietly(() async {
+      await _sfx.stop();
+      await _sfx.play(wavBytes(s));
+    });
+  }
+
+  /// Asks the current question, listens, and scores the answer.
+  Future<void> _ask() async {
+    if (!_idle || _over || !mounted || _round.isEmpty) return;
+    final id = ++_flow;
+    _onward?.cancel();
+    setState(() {
+      _phase = _Phase.speaking;
+      _chosen = null;
+    });
+    await _quietly(_sfx.stop);
+    bool allowed;
+    try {
+      allowed = await _listener.mic.hasPermission();
+    } catch (e, st) {
+      debugPrint('permission check failed: $e\n$st');
+      _fail(id, (s) => s.tryAgain);
+      return;
+    }
+    if (!allowed) {
+      _fail(id, (s) => s.needMic);
+      return;
+    }
+    if (!_current(id)) return;
+    await _say(_lines.ask(_q));
+    // let the speaker's echo fade before the mic opens
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    if (!_current(id)) return;
+    await _quietly(_tts.stop);
+    await _quietly(_sfx.stop);
+    // paused or closed meanwhile: the mic must not open
+    if (!_current(id)) return;
+    setState(() => _phase = _Phase.listening);
+    final heard = await _listener.listen(
+      onChunk: () {
+        if (mounted) setState(() {});
+      },
+    );
+    if (!_current(id)) return;
+    if (heard == null) {
+      // the mic could not start (cancelling also gives null, but then the
+      // flow is not current any more)
+      _fail(id, (s) => s.tryAgain);
+      return;
+    }
+    if (!heard.speech) {
+      _fail(id, (s) => s.notHeardVoice);
+      return;
+    }
+    setState(() => _phase = _Phase.thinking);
+    Phrase? said;
+    try {
+      final rec = await widget.app.recognizer
+          .recognize(heard.audio)
+          .timeout(const Duration(seconds: 20));
+      said = heardOption(widget.app.comparer, _q.options, rec.ipa, _lang);
+      debugPrint('quiz: heard "${rec.ipa}" -> ${said?.text}');
+    } catch (e, st) {
+      debugPrint('recognition failed: $e\n$st');
+      _fail(id, (s) => s.tryAgain);
+      return;
+    }
+    if (!_current(id)) return;
+    if (said == null && _unclear == 0) {
+      // misheard, or a word that is not one of the three: once more
+      _unclear++;
+      // still "speaking": taps must not cut it off and ask twice
+      setState(() => _phase = _Phase.speaking);
+      await _say(_lines.notUnderstood);
+      if (!_current(id)) return;
+      setState(() => _phase = _Phase.ready);
+      unawaited(_ask());
+      return;
+    }
+    await _answered(id, said);
+  }
+
+  void _fail(int id, String Function(S) message) {
+    if (!mounted || id != _flow) return;
+    setState(() => _phase = _Phase.ready);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message(S.of(context)))));
+  }
+
+  /// [said]: the option the child said, null if still not understood.
+  Future<void> _answered(int id, Phrase? said) async {
+    final right = said == _q.answer;
+    setState(() {
+      _phase = _Phase.result;
+      _chosen = said;
+      _results[_index] = right;
+    });
+    _bounce.forward(from: 0);
+    unawaited(_sound(jingle(right ? 3 : 1, _rng)));
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!_current(id)) return;
+    final String text;
+    if (right) {
+      text = pickPraise(_lang, 3, _rng, avoid: _lastPraise);
+      _lastPraise = text;
+    } else {
+      text = _lines.answerIs(_q.answer.text);
+    }
+    await _say(text);
+    if (!_current(id)) return;
+    _onward = Timer(const Duration(milliseconds: 900), () {
+      if (_current(id) && _phase == _Phase.result) _next();
+    });
+  }
+
+  void _next() {
+    if (_over) return;
+    if (_index + 1 >= _round.length) {
+      _finish();
+      return;
+    }
+    setState(() {
+      _index++;
+      _unclear = 0;
+      _chosen = null;
+      _phase = _Phase.ready;
+    });
+    _ask();
+  }
+
+  /// Big button: listening -> done; otherwise ask (again) now.
+  void _onMic() {
+    switch (_phase) {
+      case _Phase.listening:
+        _listener.stopNow();
+      case _Phase.ready:
+        _ask();
+      case _Phase.result:
+        _flow++;
+        _onward?.cancel();
+        _quietly(_tts.stop);
+        _next();
+      case _Phase.speaking || _Phase.thinking:
+        break;
+    }
+  }
+
+  /// 🔊: hear the question again (before answering).
+  Future<void> _again() async {
+    if (_phase != _Phase.ready) return;
+    await _say(_lines.ask(_q));
+  }
+
+  /// A picture: says its word, so the child knows what to say.
+  Future<void> _sayOption(Phrase p) async {
+    if (!_idle) return;
+    if (_phase == _Phase.result) {
+      _flow++; // stay on the result until the child goes on
+      _onward?.cancel();
+    }
+    await _say(p.text);
+  }
+
+  Future<void> _finish() async {
+    _over = true;
+    _flow++;
+    final right = _results.where((r) => r == true).length;
+    final stars = quizStars(right, _round.length);
+    var record = false;
+    try {
+      record = await widget.app.progress.recordQuiz(_lang, stars);
+    } catch (e, st) {
+      debugPrint('saving the quiz record failed: $e\n$st');
+    }
+    if (!mounted) return;
+    final s = S.of(context);
+    setState(() => _phase = _Phase.ready);
+    // not when the app went to the background meanwhile
+    unawaited(_sound(fanfare(_rng)));
+    var text = pickPraise(_lang, math.max(stars, 1), _rng, avoid: _lastPraise);
+    if (record) text = '$text ${s.newRecord}';
+    _donePraise = Timer(const Duration(milliseconds: 1400), () {
+      if (mounted && !_paused) _say(text);
+    });
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      // the back button must not close it: the round is over
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          title: Row(
+            children: [
+              const EmojiImage('🏆', size: 48),
+              const SizedBox(width: 12),
+              Flexible(child: Text(s.worldDone)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    Opacity(
+                      opacity: i < stars ? 1 : 0.25,
+                      child: const EmojiImage('⭐', size: 40),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '$right / ${_round.length}',
+                style: const TextStyle(fontSize: 22),
+              ),
+              if (record) Text(s.newRecord),
+            ],
+          ),
+          actions: [
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(context).pop();
+              },
+              child: Text(s.ok),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static const _text = TextStyle(
+    color: Colors.white,
+    fontWeight: FontWeight.w800,
+    shadows: [Shadow(blurRadius: 6, color: Colors.black45)],
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return Scaffold(
+      backgroundColor: const Color(0xFF14143A),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        foregroundColor: Colors.white,
+        title: Text(s.quizTitle),
+      ),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            const Positioned.fill(child: Starfield()),
+            if (_round.isEmpty)
+              Center(child: Text(s.tryAgain, style: _text))
+            else
+              Column(
+                children: [
+                  _progressRow(),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      _lines.question(_q.ask),
+                      textAlign: TextAlign.center,
+                      style: _text.copyWith(fontSize: 28),
+                    ),
+                  ),
+                  Expanded(child: _options()),
+                  AnimatedOpacity(
+                    opacity: _phase == _Phase.listening ? 1 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      s.yourTurn,
+                      style: _text.copyWith(fontSize: 28),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  _controls(s),
+                  const SizedBox(height: 24),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// One dot per question: a star when right.
+  Widget _progressRow() => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        for (final (i, r) in _results.indexed)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 3),
+            child: r == true
+                ? const EmojiImage('⭐', size: 26)
+                : Container(
+                    width: 18,
+                    height: 18,
+                    margin: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: r == false ? Colors.white24 : null,
+                      border: Border.all(
+                        color: i == _index ? Colors.white : Colors.white38,
+                        width: i == _index ? 3 : 2,
+                      ),
+                    ),
+                  ),
+          ),
+      ],
+    ),
+  );
+
+  Widget _options() {
+    final result = _phase == _Phase.result;
+    return LayoutBuilder(
+      builder: (context, c) {
+        final w = (c.maxWidth - 16 * 4) / 3;
+        final pic = math.min(w * 0.8, c.maxHeight * 0.45);
+        // shrinks when there is no room (landscape, large text)
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+            width: c.maxWidth,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (final o in _q.options) _option(o, w, pic, result: result),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _option(Phrase o, double width, double pic, {required bool result}) {
+    final isAnswer = o == _q.answer;
+    final color = !result
+        ? const Color(0xFF2B2B6B)
+        : isAnswer
+        ? const Color(0xFF2E7D32)
+        : o == _chosen
+        ? const Color(0xFFB45309)
+        : const Color(0xFF1D1D45);
+    return AnimatedBuilder(
+      animation: _bounce,
+      builder: (_, child) {
+        final up = result && isAnswer
+            ? math.sin(_bounce.value * math.pi) * 0.15
+            : 0.0;
+        return Transform.scale(scale: 1 + up, child: child);
+      },
+      child: Opacity(
+        opacity: result && !isAnswer && o != _chosen ? 0.5 : 1,
+        child: Material(
+          color: color,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: () => _sayOption(o),
+            child: SizedBox(
+              width: width,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    EmojiImage(o.emoji, size: pic),
+                    const SizedBox(height: 8),
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 6),
+                        child: Text(
+                          o.text,
+                          style: _text.copyWith(fontSize: 20),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _controls(S s) {
+    final listening = _phase == _Phase.listening;
+    final busy = _phase == _Phase.speaking || _phase == _Phase.thinking;
+    final level = listening ? (_listener.level * 8).clamp(0.0, 0.3) : 0.0;
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        RoundButton(
+          tooltip: s.listen,
+          onTap: _phase == _Phase.ready ? _again : null,
+          color: const Color(0xFF3D5AFE),
+          child: const EmojiImage('🔊', size: 40),
+        ),
+        AnimatedScale(
+          scale: 1 + level,
+          duration: const Duration(milliseconds: 120),
+          child: RoundButton(
+            tooltip: listening ? s.yourTurn : s.speak,
+            size: 110,
+            onTap: busy ? null : _onMic,
+            dimmed: busy ? false : null,
+            color: listening
+                ? const Color(0xFFFF5252)
+                : busy
+                ? const Color(0xFF3D5AFE)
+                : const Color(0xFFFF9100),
+            child: EmojiImage(busy ? '👂' : '🎤', size: 60),
+          ),
+        ),
+        // keeps the mic button centred
+        const SizedBox(width: 76),
+      ],
+    );
+  }
+}
