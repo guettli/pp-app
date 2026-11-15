@@ -341,7 +341,8 @@ const (
 // releaseAabCheck: $1 the bundle, $2 the expected versionCode.
 const releaseAabCheck = `set -e
 cd "$(mktemp -d)"
-keytool -printcert -jarfile "$1" > cert.txt || { echo "bundle is not signed" >&2; exit 1; }
+keytool -printcert -jarfile "$1" > cert.txt 2>&1 || true
+if grep -q "Not a signed jar" cert.txt || ! grep -q "^Owner:" cert.txt; then echo "bundle is not signed" >&2; exit 1; fi
 if grep -q "CN=Android Debug" cert.txt; then echo "bundle is signed with a debug key" >&2; exit 1; fi
 java -jar /home/ci/bundletool.jar build-apks --bundle="$1" --output=u.apks --mode=universal
 unzip -q u.apks universal.apk
@@ -351,8 +352,7 @@ sh -c "$RELEASE_APK_CHECK" check universal.apk`
 
 // releaseApkCheck makes sure the release APK is the real app: its id and
 // name (not the test app's), and exactly the permissions we mean: the
-// microphone, the internet (feedback a grown-up sends, content updates;
-// see lib/net/) and the one Android adds by itself. A plugin that brings
+// microphone, the internet (feedback a grown-up sends; see lib/net/) and the one Android adds by itself. A plugin that brings
 // in another permission fails the build.
 const releaseApkCheck = `set -e
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")

@@ -24,7 +24,12 @@ class FeedbackScreen extends StatefulWidget {
 
 class _FeedbackScreenState extends State<FeedbackScreen> {
   late final math.Random _rng = widget.app.io.random();
-  late final int _a = 3 + _rng.nextInt(7), _b = 3 + _rng.nextInt(7);
+  // a product like 14 × 7: easy for grown-ups, hard for young children
+  // (the Play Store's Families policy wants such a gate)
+  late final int _a = 12 + _rng.nextInt(8), _b = 3 + _rng.nextInt(7);
+
+  /// Shown before sending: a parent can ask for this report's deletion.
+  late final String _id = FeedbackReport.newId(math.Random.secure());
   final _answer = TextEditingController();
   final _text = TextEditingController();
   bool _unlocked = false;
@@ -61,7 +66,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
     setState(() => _sending = true);
     final s = S.of(context);
     final report = FeedbackReport(
-      id: FeedbackReport.newId(math.Random.secure()),
+      id: _id,
       kind: _kind,
       text: text,
       info: _info(context),
@@ -106,7 +111,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       keyboardType: TextInputType.number,
       autofocus: true,
       onChanged: (v) {
-        if (int.tryParse(v.trim()) == _a + _b) {
+        if (int.tryParse(v.trim()) == _a * _b) {
           setState(() => _unlocked = true);
         }
       },
@@ -149,7 +154,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       ),
       const SizedBox(height: 8),
       Text(s.feedbackSends),
-      for (final e in info.entries)
+      for (final e in {...info, 'id': _id}.entries)
         Text(
           '${e.key}: ${e.value}',
           style: const TextStyle(color: Colors.black54),

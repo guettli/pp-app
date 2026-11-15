@@ -183,17 +183,19 @@ void main() {
     expect(find.byKey(const Key('text')), findsNothing);
     // the sum: math.Random(1) of FakeDevices
     final q = find.textContaining('what is').evaluate().single.widget as Text;
-    final m = RegExp(r'(\d+) \+ (\d+)').firstMatch(q.data!)!;
+    final m = RegExp(r'(\d+) × (\d+)').firstMatch(q.data!)!;
     await t.enterText(find.byKey(const Key('gate')), '99');
     await t.pump();
     expect(find.byKey(const Key('text')), findsNothing);
     await t.enterText(
       find.byKey(const Key('gate')),
-      '${int.parse(m[1]!) + int.parse(m[2]!)}',
+      '${int.parse(m[1]!) * int.parse(m[2]!)}',
     );
     await t.pump();
     expect(find.text('phone: Test Phone'), findsOneWidget);
     expect(find.text('studyLang: de-DE'), findsOneWidget);
+    final shownId =
+        find.textContaining('id: ').evaluate().single.widget as Text;
     await t.tap(find.text('Idea'));
     await t.enterText(find.byKey(const Key('text')), 'Mehr Tiere bitte');
     await t.pump();
@@ -203,6 +205,8 @@ void main() {
     expect(net.sent.single['kind'], 'idea');
     expect((net.sent.single['info'] as Map)['phone'], 'Test Phone');
     expect(find.text('Thank you! Sent.'), findsOneWidget);
+    // the id shown before sending is the one sent (for deletion requests)
+    expect('id: ${net.sent.single['id']}', shownId.data);
   });
 }
 

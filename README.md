@@ -15,7 +15,7 @@ built with Flutter. Native successor of the web app
 - **Offline, no server, no AI token.** Speech recognition runs on the phone.
   The recording never leaves the device.
 - Five study languages: German (de-DE), British English (en-GB), French
-  (fr-FR), Italian (it-IT), Spanish (es-ES), about 165 words each.
+  (fr-FR), Italian (it-IT), Spanish (es-ES), about 170 words each.
 - Only concrete things kids know (animals, food, body, toys, vehicles,
   numbers …) with a picture that makes everybody think of the same word.
   The list is curated in `tool/words.tsv`.
@@ -97,7 +97,9 @@ Answers for the Play Console:
     *App info and performance → Diagnostics* (app version, phone model,
     Android version, languages).
   - Optional (the user chooses to send it), purpose *App functionality*,
-    not shared, encrypted in transit, deletion on request.
+    not shared, encrypted in transit, deletion on request (the screen
+    shows the report id; `kubectl -n pp-app exec deploy/feedback --
+    /feedback delete <id>`), deleted automatically after 12 months.
   - Audio is processed only on the device and therefore not "collected"
     in Google's sense; nothing else is collected (no ids, no location).
 - **Permissions:** `RECORD_AUDIO` (the game), `INTERNET` (feedback).

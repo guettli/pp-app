@@ -233,6 +233,61 @@ func (d *Dir) Save(r *Report, received time.Time) error {
 	return os.Rename(tmp, name)
 }
 
+// Keep is how long a report is kept (PRIVACY.md says twelve months).
+const Keep = 365 * 24 * time.Hour
+
+// Prune deletes the reports received more than Keep before now; it
+// returns how many. The time is the file name's prefix.
+func (d *Dir) Prune(now time.Time) (int, error) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	entries, err := os.ReadDir(d.Path)
+	if err != nil {
+		return 0, err
+	}
+	cut := now.Add(-Keep)
+	n := 0
+	for _, e := range entries {
+		ts, _, ok := strings.Cut(e.Name(), "-")
+		if !ok {
+			continue
+		}
+		t, err := time.Parse("20060102T150405Z", ts)
+		if err != nil || !t.Before(cut) {
+			continue
+		}
+		if err := os.Remove(filepath.Join(d.Path, e.Name())); err != nil {
+			return n, err
+		}
+		n++
+	}
+	return n, nil
+}
+
+// Delete removes the report with this id (a deletion request: the app
+// shows the id before sending). It reports whether one was found.
+func (d *Dir) Delete(id string) (bool, error) {
+	if !idPattern.MatchString(id) {
+		return false, errors.New("not a report id")
+	}
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	entries, err := os.ReadDir(d.Path)
+	if err != nil {
+		return false, err
+	}
+	found := false
+	for _, e := range entries {
+		if strings.HasSuffix(e.Name(), "-"+id+".json") {
+			if err := os.Remove(filepath.Join(d.Path, e.Name())); err != nil {
+				return found, err
+			}
+			found = true
+		}
+	}
+	return found, nil
+}
+
 // List prints all stored reports, newest first.
 func (d *Dir) List(w io.Writer) error {
 	entries, err := os.ReadDir(d.Path)
@@ -271,6 +326,17 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) == 3 && os.Args[1] == "delete" {
+		found, err := dir.Delete(os.Args[2])
+		if err != nil {
+			log.Fatal(err)
+		}
+		if !found {
+			log.Fatalf("no report %s", os.Args[2])
+		}
+		fmt.Println("deleted", os.Args[2])
+		return
+	}
 	if err := os.MkdirAll(dir.Path, 0o700); err != nil {
 		log.Fatal(err)
 	}
@@ -282,6 +348,16 @@ func main() {
 		ReadTimeout:       20 * time.Second,
 		WriteTimeout:      20 * time.Second,
 	}
+	go func() {
+		for {
+			if n, err := dir.Prune(time.Now()); err != nil {
+				log.Printf("prune: %v", err)
+			} else if n > 0 {
+				log.Printf("pruned %d reports older than %s", n, Keep)
+			}
+			time.Sleep(24 * time.Hour)
+		}
+	}()
 	log.Printf("feedback into %s on %s", dir.Path, addr)
 	log.Fatal(srv.ListenAndServe())
 }

@@ -27,12 +27,11 @@ void main() {
   }
 
   test('no other locales', () {
-    final dirs =
-        Directory('fastlane/metadata/android')
-            .listSync()
-            .whereType<Directory>()
-            .map((d) => d.uri.pathSegments.where((s) => s.isNotEmpty).last)
-            .toSet();
+    final dirs = Directory('fastlane/metadata/android')
+        .listSync()
+        .whereType<Directory>()
+        .map((d) => d.uri.pathSegments.where((s) => s.isNotEmpty).last)
+        .toSet();
     expect(dirs, locales.toSet());
   });
 }
