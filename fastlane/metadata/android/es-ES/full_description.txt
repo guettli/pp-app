@@ -1,0 +1,17 @@
+Phoneme Party ayuda a los niños a hablar con más claridad, jugando.
+
+El teléfono muestra una imagen y dice la palabra. Luego te toca a ti: repítela, y el cohete sube tan alto como clara fue tu pronunciación. Con tres estrellas llega al planeta. Cada sonido de la palabra aparece en color: verde es correcto, naranja es casi, rojo falta.
+
+• Cinco idiomas para practicar: alemán, inglés, francés, italiano y español, unas 165 palabras cada uno.
+• Solo cosas que los niños conocen: animales, comida, el cuerpo, juguetes, vehículos, números – cada una con una imagen clara.
+• No hace falta ningún botón: el teléfono escucha solo y nota cuándo el niño ha terminado de hablar.
+• Adivinanzas: «¿Qué puede volar? ¿Árbol, pájaro o casa?» – el niño responde diciendo la palabra.
+• Juegos de voz sin palabras: mantener un sonido mucho tiempo, hablar grave como un oso o agudo como un ratón.
+• Lista de palabras: cada palabra con imagen, tamaño y peso aproximados; toca una palabra para oírla.
+
+Privacidad desde el principio
+• El reconocimiento de voz funciona en el teléfono. Las grabaciones nunca salen del dispositivo y no se guardan.
+• Sin cuenta, sin anuncios, sin compras dentro de la app, sin rastreo.
+• El juego funciona sin internet. Lo único que la app envía es un mensaje que un adulto escribe y envía a propósito (tras una pequeña suma para los padres).
+
+Phoneme Party es gratuito y de código abierto, hecho para niños de todo el mundo – también en teléfonos sencillos y baratos.

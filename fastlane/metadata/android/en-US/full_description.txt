@@ -1,0 +1,17 @@
+Phoneme Party helps children speak more clearly, with a game.
+
+The phone shows a picture and says the word. Then it is your turn: say it, and the rocket flies as high as your pronunciation was clear. Three stars and the rocket reaches the planet. Every sound of the word is shown in colour: green is right, orange is close, red is missing.
+
+• Five languages to practise: German, English, French, Italian and Spanish, about 165 words each.
+• Only things children know: animals, food, the body, toys, vehicles, numbers – each with a clear picture.
+• No button needed: the phone listens by itself and notices when the child has finished speaking.
+• Quiz: "What can fly? Tree, bird or house?" – the child answers by saying the word.
+• Voice games without words: hold a sound long, speak low like a bear or high like a mouse.
+• Word list: every word with picture, rough size and weight; tap a word to hear it.
+
+Private by design
+• Speech recognition runs on the phone. Recordings never leave the device and are not stored.
+• No account, no ads, no in-app purchases, no tracking.
+• The game works without internet. The only thing the app ever sends is a feedback report that a grown-up writes and sends on purpose (behind a small sum for parents).
+
+Phoneme Party is free and open source, made for children everywhere – also on simple, cheap phones.

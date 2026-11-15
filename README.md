@@ -73,6 +73,35 @@ mic (16 kHz PCM) -> silence trim -> Kaldi fbank (80 mel, Dart)
   - stars use the phoneme hit rate, not the feature similarity: a completely
     different phrase got ~0.7–0.8 in pp, i.e. 2–3 stars.
 
+## Google Play
+
+Every release also carries `phoneme-party-google-play.aab`, the App Bundle
+signed with the upload key (`dagger call -m ci build-aab ...`; Play App
+Signing re-signs what phones get). It is checked like the APK: package id,
+name, permissions, versionCode = build number, not a debug key.
+
+- Listing texts: `fastlane/metadata/android/<locale>/` (title,
+  short and full description; `test/store_listing_test.dart` checks
+  Google's length limits). Default language en-US.
+- Privacy policy: [PRIVACY.md](PRIVACY.md) (English and German).
+- Phones that installed the GitHub APK cannot update to the Play version
+  (other signature, unless Play App Signing uses our upload key as app
+  signing key); switching means uninstalling, which deletes the stars.
+
+Answers for the Play Console:
+
+- **Target audience:** children (5 and under, 6–8, 9–12) → Families
+  policy. **Ads:** no. **In-app purchases:** no.
+- **Data safety:** data is collected (only the optional feedback report):
+  - *App activity → Other user-generated content* (the typed text) and
+    *App info and performance → Diagnostics* (app version, phone model,
+    Android version, languages).
+  - Optional (the user chooses to send it), purpose *App functionality*,
+    not shared, encrypted in transit, deletion on request.
+  - Audio is processed only on the device and therefore not "collected"
+    in Google's sense; nothing else is collected (no ids, no location).
+- **Permissions:** `RECORD_AUDIO` (the game), `INTERNET` (feedback).
+
 ## Development
 
 Flutter is **not** installed on the dev host. Everything runs in containers
