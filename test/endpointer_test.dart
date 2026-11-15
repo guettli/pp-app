@@ -133,4 +133,22 @@ void main() {
     final ep = Endpointer()..add(Float32List.fromList(tone(100, 0.3)));
     expect(ep.level, greaterThan(0.1));
   });
+
+  test('with a noise hint, a child who talks through the calibration is '
+      'heard', () {
+    final audio = [...tone(700, 0.1), ...noise(1500, 0.01)];
+    final plain = run(Endpointer(), audio).map((e) => e.$1);
+    expect(plain, isNot(contains(EndpointEvent.speechStarted)));
+    final hinted = run(Endpointer()..noiseHint = 0.003, audio).map((e) => e.$1);
+    expect(hinted, contains(EndpointEvent.speechStarted));
+    expect(hinted, contains(EndpointEvent.speechEnded));
+  });
+
+  test('a noise hint does not make a loud room speech', () {
+    final events = run(Endpointer()..noiseHint = 0.06, noise(6000, 0.1));
+    expect(
+      events.map((e) => e.$1),
+      isNot(contains(EndpointEvent.speechStarted)),
+    );
+  });
 }

@@ -52,6 +52,7 @@ class GameIo {
     required this.replayPlayer,
     required this.soundPlayer,
     required this.random,
+    this.listensWhileSpeaking = false,
   });
 
   /// The real devices.
@@ -61,9 +62,17 @@ class GameIo {
     replayPlayer: AudioPlayersOut.new,
     soundPlayer: () => AudioPlayersOut(takesFocus: false),
     random: math.Random.new,
+    // Android records next to the TTS without changing how it sounds
+    // (checked on the A80). iOS would switch the audio session to
+    // play-and-record, which can move the voice to the earpiece: untested.
+    listensWhileSpeaking: Platform.isAndroid,
   );
 
   final MicSource Function() mic;
+
+  /// Open the microphone while the phone still says the phrase (see
+  /// phonetics/echo_gate.dart); else only after it.
+  final bool listensWhileSpeaking;
   final Speaker Function() speaker;
 
   /// Plays the child's voice back (funny voice).

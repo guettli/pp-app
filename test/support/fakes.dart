@@ -38,9 +38,24 @@ class IoLog {
   final Duration Function() now;
   final events = <IoEvent>[];
 
-  void on(String device, [String detail = '']) =>
-      events.add(IoEvent(now(), device, true, detail));
-  void off(String device) => events.add(IoEvent(now(), device, false, ''));
+  void on(String device, [String detail = '']) {
+    events.add(IoEvent(now(), device, true, detail));
+    _on.add(device);
+  }
+
+  void off(String device) {
+    events.add(IoEvent(now(), device, false, ''));
+    _on.remove(device);
+    if (!audible) quietSince = now();
+  }
+
+  /// When the app's last sound ended.
+  Duration quietSince = Duration.zero;
+
+  final _on = <String>{};
+
+  /// Whether something the app plays is on now (the microphone hears it).
+  bool get audible => _on.any((d) => d != 'mic');
 
   /// Things a fake noticed that the real device would get wrong, e.g. a
   /// TTS call that Android would drop.
@@ -75,18 +90,36 @@ class IoLog {
   ];
 
   /// Sounds (TTS, players) that were on while the microphone recorded.
-  List<String> soundsWhileRecording() {
+  /// A sound of [startedBefore] (the phrase) may overlap a recording that
+  /// it started before; one that starts during the recording may not.
+  List<String> soundsWhileRecording({Set<String> startedBefore = const {}}) {
     final mics = intervals('mic');
     final sounds = intervals().where((i) => i.device != 'mic');
     final end = now();
     return [
       for (final m in mics)
         for (final s in sounds)
-          if (s.from < (m.to ?? end) && m.from < (s.to ?? end))
+          if (s.from < (m.to ?? end) &&
+              m.from < (s.to ?? end) &&
+              !(startedBefore.contains(s.device) && s.from <= m.from))
             '${s.device} "${s.what}" ${s.from.inMilliseconds}-'
                 '${s.to?.inMilliseconds} during mic ${m.from.inMilliseconds}-'
                 '${m.to?.inMilliseconds}',
     ];
+  }
+
+  /// Notes a problem if [audio] (what the game scores) contains what the
+  /// microphone heard of the app's own sounds: [FakeMic] records those
+  /// as a constant level ([FakeMic.echoLevel]), which no voice has.
+  void checkNoEcho(Float32List audio) {
+    var run = 0;
+    for (var i = 1; i < audio.length; i++) {
+      run = audio[i] == audio[i - 1] && audio[i].abs() > 0.05 ? run + 1 : 0;
+      if (run >= 160) {
+        problem('the game scored its own sound (${audio.length} samples)');
+        return;
+      }
+    }
   }
 
   @override
@@ -97,6 +130,10 @@ class IoLog {
 enum Child {
   /// Says something (a tone of 0.7 s after a short pause).
   speaks,
+
+  /// Answers at once: a tone of 0.7 s from 150 ms (a quick reaction)
+  /// after the app's last sound ended, whenever the microphone opened.
+  speaksAtOnce,
 
   /// Says nothing.
   silent,
@@ -109,8 +146,13 @@ enum Child {
   micEnds,
 }
 
-/// Streams 20 ms chunks of 16 kHz PCM in (fake) real time.
+/// Streams 20 ms chunks of 16 kHz PCM in (fake) real time. While the app
+/// plays something ([IoLog.audible]) the microphone hears that, as a
+/// constant [echoLevel]; the child's time line ([Child]) runs only while
+/// nothing plays, so the child answers after the phone has spoken.
 class FakeMic implements MicSource {
+  static const echoLevel = 0.6;
+
   FakeMic(this.log, this.child, {this.permission = true});
 
   final IoLog log;
@@ -145,6 +187,14 @@ class FakeMic implements MicSource {
   /// The next starts fail (the audio device cannot be opened).
   bool startThrows = false;
 
+  /// Audio arrives this much after it was heard (the platform's buffers),
+  /// so the end of a sound still arrives after the sound stopped.
+  Duration latency = Duration.zero;
+
+  /// The stream ends by itself this long after the start (whatever the
+  /// child does).
+  Duration? endsAfter;
+
   @override
   Future<Stream<Uint8List>> start({bool voiceProcessing = true}) async {
     await stop();
@@ -158,8 +208,27 @@ class FakeMic implements MicSource {
     // fake clock never completes
     final ctrl = _ctrl = StreamController<Uint8List>(onCancel: () async {});
     log.on('mic', what.name);
-    var t = 0;
+    var t = 0; // ms of the child's time: only while nothing plays
+    var micMs = 0;
+    final queue = <Uint8List>[];
+    void emit(Uint8List chunk) {
+      queue.add(chunk);
+      if (queue.length > latency.inMilliseconds ~/ 20) {
+        ctrl.add(queue.removeAt(0));
+      }
+    }
+
     _timer = Timer.periodic(const Duration(milliseconds: 20), (_) {
+      micMs += 20;
+      final end = endsAfter;
+      if (end != null && micMs > end.inMilliseconds) {
+        stop();
+        return;
+      }
+      if (log.audible) {
+        emit(_echo());
+        return;
+      }
       if (t == 1200 && (what == Child.micBreaks || what == Child.micEnds)) {
         if (what == Child.micBreaks) {
           ctrl.addError(StateError('microphone taken'));
@@ -167,7 +236,14 @@ class FakeMic implements MicSource {
         stop();
         return;
       }
-      ctrl.add(_chunk(what, t));
+      emit(
+        _chunk(
+          what,
+          what == Child.speaksAtOnce
+              ? (log.now() - log.quietSince).inMilliseconds
+              : t,
+        ),
+      );
       t += 20;
     });
     return ctrl.stream;
@@ -188,11 +264,23 @@ class FakeMic implements MicSource {
     return ctrl.stream;
   }
 
+  static Uint8List _echo() {
+    final b = ByteData(640);
+    for (var i = 0; i < 320; i++) {
+      b.setInt16(i * 2, (echoLevel * 32767).round(), Endian.little);
+    }
+    return b.buffer.asUint8List();
+  }
+
   static Uint8List _chunk(Child what, int ms) {
     const n = 320;
     final b = ByteData(n * 2);
     final rng = math.Random(ms);
-    final speech = what != Child.silent && ms >= 400 && ms < 1100;
+    final speech = switch (what) {
+      Child.silent => false,
+      Child.speaksAtOnce => ms >= 150 && ms < 850,
+      _ => ms >= 400 && ms < 1100,
+    };
     for (var i = 0; i < n; i++) {
       final s = (ms * 16 + i) / 16000;
       var v = (rng.nextDouble() - 0.5) * 0.002;
@@ -339,7 +427,17 @@ class FakeOut implements SoundOut {
 
 /// Answers with the IPA [answer] gives (e.g. the target: 3 stars).
 class FakeRecognizer implements Recognizer {
-  FakeRecognizer(this.answer, {this.delay = Duration.zero});
+  FakeRecognizer(this.answer, {this.delay = Duration.zero, this.log});
+
+  /// If set, every scored recording is checked for the app's own sounds.
+  final IoLog? log;
+
+  /// Seconds of audio of the last call.
+  double lastSeconds = 0;
+
+  /// Seconds of the child's voice in the last call (its samples are well
+  /// above the faint noise of [FakeMic]).
+  double lastSpeechSeconds = 0;
 
   final String Function() answer;
 
@@ -350,6 +448,9 @@ class FakeRecognizer implements Recognizer {
   @override
   Future<Recognition> recognize(Float32List audio) async {
     calls++;
+    lastSeconds = audio.length / 16000;
+    lastSpeechSeconds = audio.where((v) => v.abs() > 0.05).length / 16000;
+    log?.checkNoEcho(audio);
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     final ipa = answer();
     return Recognition([
@@ -365,12 +466,14 @@ class FakeDevices {
     Child Function()? child,
     bool fromMemory = true,
     bool ttsCompletesOnStop = true,
+    this.listensWhileSpeaking = true,
   }) : mic = FakeMic(log, child ?? () => Child.speaks),
        speaker = FakeSpeaker(log, completesOnStop: ttsCompletesOnStop),
        player = FakeOut(log, 'replay', playsFromMemory: fromMemory),
        sfx = FakeOut(log, 'sfx', playsFromMemory: fromMemory);
 
   final IoLog log;
+  final bool listensWhileSpeaking;
   final FakeMic mic;
   final FakeSpeaker speaker;
   final FakeOut player;
@@ -382,5 +485,6 @@ class FakeDevices {
     replayPlayer: () => player,
     soundPlayer: () => sfx,
     random: () => math.Random(1),
+    listensWhileSpeaking: listensWhileSpeaking,
   );
 }

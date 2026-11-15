@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../data/phrases.dart';
+import '../phonetics/echo_gate.dart';
 import '../phonetics/endpointer.dart';
 import '../phonetics/phoneme_distance.dart';
 import '../phonetics/recognizer.dart';
@@ -365,6 +366,7 @@ class _PlayScreenState extends State<PlayScreen>
     if (!_idle || !mounted || _worldDone) return;
     final round = ++_round;
     final back = _phase;
+    var speakFailed = false;
     setState(() {
       _phase = _Phase.starting;
       _lastAudio = null;
@@ -384,40 +386,125 @@ class _PlayScreenState extends State<PlayScreen>
         _result = null;
       });
       await _tts.stop();
-      await _tts
-          .speak(_phrase.text)
-          .timeout(
-            Duration(seconds: 3 + _phrase.text.length ~/ 4),
-            onTimeout: () {}, // no TTS engine: listen anyway
-          );
-      // let the speaker's echo fade before the mic opens
-      await Future<void>.delayed(const Duration(milliseconds: 250));
+      // With the gate the microphone opens now, while the phone speaks:
+      // it needs about half a second, and a child who answers at once
+      // would lose the first sounds. The gate drops the phone's voice.
+      final gate = widget.app.io.listensWhileSpeaking ? EchoGate() : null;
+      // not awaited: the phrase must not wait for the microphone
+      final opening = gate == null ? null : _openMic(round, gate);
+      var micUp = false;
+      opening?.then((_) => micUp = true);
+      try {
+        await _tts
+            .speak(_phrase.text)
+            .timeout(
+              Duration(seconds: 3 + _phrase.text.length ~/ 4),
+              onTimeout: () {}, // no TTS engine: listen anyway
+            );
+      } catch (_) {
+        // end the round first, so the microphone that is still starting
+        // closes itself, then let the catch below report it
+        speakFailed = _current(round);
+        if (speakFailed) _round++;
+        await opening;
+        rethrow;
+      }
+      // read now, before waiting for the mic below
+      final micUpWhileSpeaking = micUp;
+      // without the gate: let the speaker's echo fade before the mic opens
+      if (gate == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+      }
+      if (opening != null && !await opening) {
+        if (_current(round)) _fail(back, (s) => s.tryAgain);
+        return;
+      }
       if (!_current(round)) return;
       // never record our own voice, replay or melody (also a TTS engine
       // that timed out above)
       await _tts.stop();
       await _player.stop();
       await _sfx.stop();
-      await _listen(round);
+      // a mic that came up only after the phrase cannot have heard it
+      gate?.spoken(clean: !micUpWhileSpeaking);
+      if (gate == null && !await _openMic(round, null)) {
+        if (_current(round)) _fail(back, (s) => s.tryAgain);
+        return;
+      }
+      if (!_current(round)) return;
+      _timer = Timer(recordingLimit(_phrase.text), _stop);
+      setState(() => _phase = _Phase.listening);
+      // the stream ended while the phone was speaking: do not wait for
+      // the time limit
+      if (_micEnded) _stop();
     } catch (e, st) {
       debugPrint('round failed: $e\n$st');
-      if (_current(round)) _fail(back, (s) => s.tryAgain);
+      if (mounted && (_current(round) || speakFailed)) {
+        if (_current(round)) _round++; // the mic must not come back on
+        await _closeMic();
+        _fail(back, (s) => s.tryAgain);
+      }
     }
   }
 
-  Future<void> _listen(int round) async {
-    _buffer.clear();
-    final ep = _endpointer = Endpointer();
-    final stream = await _recorder.start();
-    if (!_current(round)) {
-      await _recorder.stop();
-      return;
+  /// Starts and stops of the recorder, one after the other: a stop from a
+  /// round that ended while its microphone was starting must not hit the
+  /// next round's recording.
+  Future<void> _micQueue = Future.value();
+  Future<T> _mic<T>(Future<T> Function() f) {
+    final r = _micQueue.then((_) => f());
+    _micQueue = r.then((_) {}, onError: (Object _) {});
+    return r;
+  }
+
+  /// The recording stream ended before the listening phase.
+  bool _micEnded = false;
+
+  /// Starts the microphone. What passes [gate] (all without one) goes to
+  /// the buffer and the endpointer. False if the round ended meanwhile or
+  /// the microphone failed (never throws: it runs next to the TTS).
+  Future<bool> _openMic(int round, EchoGate? gate) async {
+    final Stream<Uint8List>? stream;
+    try {
+      stream = await _mic(() async {
+        final s = await _recorder.start();
+        if (_current(round)) return s;
+        await _recorder.stop(); // ended meanwhile
+        return null;
+      });
+    } catch (e, st) {
+      debugPrint('microphone failed: $e\n$st');
+      return false;
     }
+    if (stream == null) return false;
+    if (!_current(round)) {
+      await _quietly(() => _mic(_recorder.stop));
+      return false;
+    }
+    _buffer.clear();
+    _micEnded = false;
+    final ep = _endpointer = Endpointer();
+    var passing = false;
+    void ended() {
+      if (_phase == _Phase.listening) {
+        _stop();
+      } else {
+        _micEnded = true;
+      }
+    }
+
     _sub = stream.listen(
       (chunk) {
-        _buffer.add(chunk);
-        ep.addPcm16(chunk);
-        if (!mounted) return;
+        final kept = gate == null ? chunk : gate.add(chunk);
+        if (kept.isEmpty) return;
+        if (!passing) {
+          passing = true;
+          // the frame that opened the gate: the room, without the phone
+          ep.noiseHint = gate?.quietLevel;
+        }
+        _buffer.add(kept);
+        ep.addPcm16(kept);
+        if (!mounted || _phase != _Phase.listening) return;
         final db = 20 * math.log(math.max(ep.level, 1e-5)) / math.ln10;
         setState(() => _level = ((db + 50) / 50).clamp(0.0, 1.0));
         if (ep.done) _stop();
@@ -426,12 +513,21 @@ class _PlayScreenState extends State<PlayScreen>
       // app): score what we have, as if the child had finished
       onError: (Object e, StackTrace st) {
         debugPrint('recording failed: $e\n$st');
-        _stop();
+        ended();
       },
-      onDone: _stop,
+      onDone: ended,
     );
-    _timer = Timer(recordingLimit(_phrase.text), _stop);
-    setState(() => _phase = _Phase.listening);
+    return true;
+  }
+
+  /// Stops the microphone without scoring. The subscription before the
+  /// recorder, so the end of the stream is not taken as the child having
+  /// finished.
+  Future<void> _closeMic() async {
+    final sub = _sub;
+    _sub = null;
+    await _quietly(() async => sub?.cancel());
+    await _quietly(() => _mic(_recorder.stop));
   }
 
   /// Ends the recording (child finished, time limit, or tap) and scores it.
@@ -449,9 +545,11 @@ class _PlayScreenState extends State<PlayScreen>
       _level = 0;
     });
     try {
-      await _recorder.stop();
-      await _sub?.cancel();
+      final sub = _sub;
       _sub = null;
+      await _mic(_recorder.stop);
+      await sub?.cancel();
+      if (!_current(round)) return; // aborted (background) meanwhile
       if (!heard) {
         _fail(_Phase.ready, (s) => s.notHeard);
         return;
@@ -488,15 +586,9 @@ class _PlayScreenState extends State<PlayScreen>
     if (!wasIdle) {
       _round++;
       _timer?.cancel();
-      if (_phase == _Phase.listening) {
-        // The microphone first, whatever fails later. The subscription
-        // before the recorder, so the end of the stream is not taken as
-        // the child having finished.
-        final sub = _sub;
-        _sub = null;
-        await _quietly(() async => sub?.cancel());
-        await _quietly(_recorder.stop);
-      }
+      // the microphone first, whatever fails later (it is open while
+      // speaking, too)
+      if (_sub != null || _phase == _Phase.listening) await _closeMic();
       if (mounted) setState(() => _phase = _Phase.ready);
     }
     await _quietly(_tts.stop);
