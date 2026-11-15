@@ -7,6 +7,7 @@ import '../game/world_scene.dart';
 import '../quiz/quiz_screen.dart';
 import '../voice/voice_screen.dart';
 import 'emoji_image.dart';
+import 'feedback_screen.dart';
 import 'strings.dart';
 import 'word_list_screen.dart';
 
@@ -124,6 +125,12 @@ class _HomeScreenState extends State<HomeScreen> {
         foregroundColor: Colors.white,
         title: Text(s.title),
         actions: [
+          if (app.feedback != null)
+            IconButton(
+              tooltip: s.feedbackTitle,
+              onPressed: () => _push(() => FeedbackScreen(app: app)),
+              icon: const Icon(Icons.mail_outline, size: 30),
+            ),
           IconButton(
             tooltip: s.wordsTitle,
             onPressed: () => _push(() => WordListScreen(app: app)),

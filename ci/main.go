@@ -131,6 +131,13 @@ func (m *Ci) FormatWrite() *dagger.Directory {
 		Filter(dagger.DirectoryFilterOpts{Include: []string{"lib/", "test/", "integration_test/"}})
 }
 
+// networkOnlyInLibNet fails if code outside lib/net/ can reach the
+// network: everything the app sends or loads is in one place, easy to
+// review. (Native plugin code is not covered; the plugins in pubspec.yaml
+// do not use the network.)
+const networkOnlyInLibNet = `hits=$(grep -rnE "\\b(HttpClient|HttpRequest|HttpServer|WebSocket|RawSocket|RawDatagramSocket|ServerSocket|SecureSocket|Socket\\.connect|InternetAddress|NetworkImage|UrlSource|NetworkAssetBundle)\\b|Image\\.network|package:(http|dio|web_socket_channel|cached_network_image)/" lib | grep -v "^lib/net/")
+[ -z "$hits" ] || { echo "$hits"; echo "network code belongs in lib/net/" >&2; exit 1; }`
+
 // noTestCodeInLib fails if anything in lib/ names test code: any quoted
 // path (also a conditional import on its own line) into test/,
 // integration_test or a test package. grep's exit 1 (no match) passes;
@@ -144,6 +151,7 @@ case $rc in 1) exit 0 ;; 0) echo "lib/ must not use test code" >&2; exit 1 ;; *)
 func (m *Ci) Analyze(ctx context.Context) (string, error) {
 	return m.base().
 		WithExec([]string{"sh", "-c", noTestCodeInLib}).
+		WithExec([]string{"sh", "-c", networkOnlyInLibNet}).
 		WithExec([]string{"flutter", "analyze", "--fatal-infos"}).
 		Stdout(ctx)
 }
@@ -155,10 +163,54 @@ func (m *Ci) Test(ctx context.Context) (string, error) {
 		Stdout(ctx)
 }
 
+// feedbackGo: Go toolchain with the feedback service (server/feedback, Go).
+func (m *Ci) feedbackGo() *dagger.Container {
+	return dag.Container().
+		From("golang:1.26-alpine").
+		WithMountedCache("/go/pkg/mod", dag.CacheVolume("pp-app-go-mod")).
+		WithDirectory("/src", m.Source.Directory("server/feedback")).
+		WithWorkdir("/src").
+		WithEnvVariable("CGO_ENABLED", "0")
+}
+
+// FeedbackTest checks the feedback service: gofmt, vet, tests.
+func (m *Ci) FeedbackTest(ctx context.Context) (string, error) {
+	return m.feedbackGo().
+		WithExec([]string{"sh", "-c", `test -z "$(gofmt -l .)" || { gofmt -l . >&2; echo "run gofmt" >&2; exit 1; }`}).
+		WithExec([]string{"go", "vet", "./..."}).
+		WithExec([]string{"go", "test", "-count=1", "./..."}).
+		Stdout(ctx)
+}
+
+// FeedbackImage is the container of the feedback service: one static
+// binary, no shell, not root.
+func (m *Ci) FeedbackImage() *dagger.Container {
+	bin := m.feedbackGo().
+		WithExec([]string{"go", "build", "-trimpath", "-ldflags=-s -w", "-o", "/feedback", "."}).
+		File("/feedback")
+	return dag.Container().
+		From("gcr.io/distroless/static-debian12:nonroot").
+		WithFile("/feedback", bin).
+		WithExposedPort(8080).
+		WithEntrypoint([]string{"/feedback"})
+}
+
+// FeedbackPublish pushes [FeedbackImage] to address (ghcr.io/...).
+func (m *Ci) FeedbackPublish(
+	ctx context.Context,
+	address string,
+	username string,
+	password *dagger.Secret,
+) (string, error) {
+	return m.FeedbackImage().
+		WithRegistryAuth("ghcr.io", username, password).
+		Publish(ctx, address)
+}
+
 // CheckFast: format + analyze + test. Run this before every push.
 func (m *Ci) CheckFast(ctx context.Context) (string, error) {
 	out := ""
-	for _, step := range []func(context.Context) (string, error){m.Format, m.Analyze, m.Test} {
+	for _, step := range []func(context.Context) (string, error){m.Format, m.Analyze, m.Test, m.FeedbackTest} {
 		s, err := step(ctx)
 		if err != nil {
 			return out, err
@@ -233,13 +285,17 @@ printf 'storeFile=/home/ci/upload.jks\nstorePassword=%s\nkeyAlias=upload\nkeyPas
 }
 
 // releaseApkCheck makes sure the release APK is the real app: its id and
-// name (not the test app's), and no INTERNET permission, so nothing can
-// leave the phone.
+// name (not the test app's), and exactly the permissions we mean: the
+// microphone, the internet (feedback a grown-up sends, content updates;
+// see lib/net/) and the one Android adds by itself. A plugin that brings
+// in another permission fails the build.
 const releaseApkCheck = `set -e
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")
 echo "$b" | grep -q "^package: name='de.relaxandplay.phoneme_party' " || { echo "wrong package id" >&2; exit 1; }
 echo "$b" | grep -q "^application-label:'Phoneme Party'$" || { echo "wrong app name" >&2; exit 1; }
-if echo "$b" | grep -q "android.permission.INTERNET"; then echo "release APK must not ask for INTERNET" >&2; exit 1; fi`
+perms=$(echo "$b" | sed -n "s/^uses-permission\\(-sdk-23\\)\\{0,1\\}: name='\\([^']*\\)'.*/\\2/p" | sort | tr '\n' ' ')
+want="android.permission.INTERNET android.permission.RECORD_AUDIO de.relaxandplay.phoneme_party.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION "
+[ "$perms" = "$want" ] || { echo "unexpected permissions: $perms" >&2; exit 1; }`
 
 // DeviceTestApks builds what tool/device_test.sh installs on a phone: the
 // app (debug, id ...phoneme_party.test, so it sits next to the release app)

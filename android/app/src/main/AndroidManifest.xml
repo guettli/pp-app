@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Only for feedback a grown-up sends and for content updates
+         (lib/net/); recordings never leave the phone. -->
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
         android:label="${appLabel}"
         android:name="${applicationName}"

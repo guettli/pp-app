@@ -1,8 +1,10 @@
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'data/phrases.dart';
 import 'data/progress.dart';
 import 'game/game_io.dart';
+import 'net/feedback.dart';
 import 'phonetics/phoneme_distance.dart';
 import 'phonetics/recognizer.dart';
 import 'quiz/facts.dart';
@@ -16,6 +18,7 @@ class AppState {
     this.book, {
     required this.io,
     Facts? facts,
+    this.feedback,
   }) : facts = facts ?? Facts(const {});
 
   final Recognizer recognizer;
@@ -28,6 +31,9 @@ class AppState {
 
   /// What the quiz knows about the pictures.
   final Facts facts;
+
+  /// Reports from the feedback screen; null: no feedback (tests).
+  final FeedbackOutbox? feedback;
 
   static Future<AppState> load() async {
     final progress = await Progress.load();
@@ -43,6 +49,10 @@ class AppState {
       book,
       io: GameIo.device(),
       facts: await Facts.load(),
+      feedback: FeedbackOutbox(
+        await SharedPreferences.getInstance(),
+        HttpFeedbackTransport(),
+      ),
     );
   }
 

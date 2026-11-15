@@ -62,7 +62,11 @@ class _Loader extends StatefulWidget {
 }
 
 class _LoaderState extends State<_Loader> {
-  late final Future<AppState> _app = AppState.load();
+  late final Future<AppState> _app = AppState.load().then((app) {
+    // reports written without internet go out now
+    app.feedback?.flush();
+    return app;
+  });
 
   @override
   Widget build(BuildContext context) {
