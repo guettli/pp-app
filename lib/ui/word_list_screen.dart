@@ -21,9 +21,17 @@ class WordListScreen extends StatefulWidget {
 }
 
 class _WordListScreenState extends State<WordListScreen> {
-  late final Speaker _tts = widget.app.io.speaker()
-    ..setLanguage(widget.app.book.lang);
+  late final Speaker _tts;
   late final QuizLines _lines = QuizLines.of(widget.app.book.lang);
+
+  @override
+  void initState() {
+    super.initState();
+    _tts = widget.app.io.speaker();
+    _tts.setLanguage(widget.app.book.lang).catchError((Object e) {
+      debugPrint('tts language failed: $e');
+    });
+  }
 
   @override
   void dispose() {

@@ -176,6 +176,29 @@ void main() {
     expect(heardOption(comparer, o, '', 'de-DE'), isNull);
     expect(heardOption(comparer, o, ipa('Schmetterling'), 'de-DE'), isNull);
     expect(heardOption(comparer, o, 'pst', 'de-DE'), isNull);
+    // other words are not one of the three, unless they sound alike
+    // (Kuh for Schuh)
+    final food = [w('Schuh'), w('Apfel'), w('Bus')];
+    final taken = [
+      for (final other in b.phrases)
+        if (!food.contains(other))
+          if (heardOption(comparer, food, ipa(other.text), 'de-DE')
+              case final got?)
+            if (!soundsSimilar(comparer, 'de-DE', got, other))
+              '${other.text} -> ${got.text}',
+    ];
+    expect(taken, isEmpty);
+  });
+
+  test('Spanish: "u" before an o sound', () {
+    final es = books['es-ES']!;
+    Phrase e(String t) => es.phrases.firstWhere((p) => p.text == t);
+    final q = QuizQuestion(const Ask.prop(Prop.plant), [
+      e('casa'),
+      e('oso'),
+      e('hoja'),
+    ], e('hoja'));
+    expect(QuizLines.of('es-ES').ask(q), endsWith('oso u hoja?'));
   });
 
   test('stars of a round', () {
@@ -228,6 +251,8 @@ void main() {
       WidgetTester t,
       List<String> answers, {
       List<Child>? child,
+      bool fixed = true,
+      void Function(FakeDevices dev)? prepare,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
@@ -240,6 +265,7 @@ void main() {
             ? Child.speaks
             : child[(c++).clamp(0, child.length - 1)],
       );
+      prepare?.call(dev);
       var n = 0;
       final rec = FakeRecognizer(
         () => answers[(n++).clamp(0, answers.length - 1)],
@@ -258,7 +284,7 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => QuizScreen(app: app, round: three()),
+          builder: (_) => QuizScreen(app: app, round: fixed ? three() : null),
         ),
       );
       await t.pump();
@@ -385,6 +411,64 @@ void main() {
       }
       // goes on with a tap only
       expect(dev.log.started('mic'), hasLength(1));
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('the mic does not start: a message, then a tap works', (
+      t,
+    ) async {
+      final (dev, _, dialog) = await play(t, [
+        ipa('Vogel'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], prepare: (d) => d.mic.startThrows = true);
+      await until(
+        t,
+        () => find.byType(SnackBar).evaluate().isNotEmpty,
+        dev.log,
+      );
+      expect(find.byTooltip('Speak'), findsOneWidget); // not listening
+      dev.mic.startThrows = false;
+      for (var i = 0; i < 100; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      expect(find.text('3 / 3'), findsOneWidget);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('to the background while "once more": nothing goes on', (
+      t,
+    ) async {
+      final (dev, _, _) = await play(t, [ipa('Schmetterling')]);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.notUnderstood),
+        dev.log,
+      );
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await t.pump();
+      for (var i = 0; i < 200; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(dev.log.started('mic'), hasLength(1));
+      expect(dev.log.started('tts').last, lines.notUnderstood);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await t.pump();
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('a random round: eight questions from the open worlds', (
+      t,
+    ) async {
+      final (dev, _, _) = await play(t, [''], fixed: false);
+      await until(t, () => dev.mic.recording, dev.log);
+      final asked = dev.log.started('tts').first;
+      final first = [for (var w = 0; w < 3; w++) ...book.world(w)];
+      final named = first.where((p) => asked.contains(p.text)).length;
+      expect(named, greaterThanOrEqualTo(3), reason: asked);
+      expect(find.byType(Container), findsWidgets);
       await expectClean(t, dev.log);
     });
 

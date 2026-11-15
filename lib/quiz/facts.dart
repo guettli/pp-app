@@ -217,8 +217,8 @@ QuizQuestion? makeQuestion(
   return null;
 }
 
-/// [count] questions about different things, each [Ask] at most once
-/// (as long as there are enough), never the same answer twice.
+/// Up to [count] questions, each [Ask] at most once, never the same
+/// answer twice.
 List<QuizQuestion> makeRound(
   List<Phrase> pool,
   Facts facts,

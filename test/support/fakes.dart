@@ -142,10 +142,14 @@ class FakeMic implements MicSource {
   /// [child].
   List<double> Function()? script;
 
+  /// The next starts fail (the audio device cannot be opened).
+  bool startThrows = false;
+
   @override
   Future<Stream<Uint8List>> start({bool voiceProcessing = true}) async {
     await stop();
     if (startup > Duration.zero) await Future<void>.delayed(startup);
+    if (startThrows) throw StateError('microphone cannot be opened');
     this.voiceProcessing = voiceProcessing;
     final audio = script?.call();
     if (audio != null) return _play(audio);

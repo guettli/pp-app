@@ -219,7 +219,13 @@ class _QuizScreenState extends State<QuizScreen>
         if (mounted) setState(() {});
       },
     );
-    if (!_current(id) || heard == null) return;
+    if (!_current(id)) return;
+    if (heard == null) {
+      // the mic could not start (cancelling also gives null, but then the
+      // flow is not current any more)
+      _fail(id, (s) => s.tryAgain);
+      return;
+    }
     if (!heard.speech) {
       _fail(id, (s) => s.notHeardVoice);
       return;
@@ -227,7 +233,9 @@ class _QuizScreenState extends State<QuizScreen>
     setState(() => _phase = _Phase.thinking);
     Phrase? said;
     try {
-      final rec = await widget.app.recognizer.recognize(heard.audio);
+      final rec = await widget.app.recognizer
+          .recognize(heard.audio)
+          .timeout(const Duration(seconds: 20));
       said = heardOption(widget.app.comparer, _q.options, rec.ipa, _lang);
       debugPrint('quiz: heard "${rec.ipa}" -> ${said?.text}');
     } catch (e, st) {
@@ -239,9 +247,12 @@ class _QuizScreenState extends State<QuizScreen>
     if (said == null && _unclear == 0) {
       // misheard, or a word that is not one of the three: once more
       _unclear++;
-      setState(() => _phase = _Phase.ready);
+      // still "speaking": taps must not cut it off and ask twice
+      setState(() => _phase = _Phase.speaking);
       await _say(_lines.notUnderstood);
-      if (_current(id)) unawaited(_ask());
+      if (!_current(id)) return;
+      setState(() => _phase = _Phase.ready);
+      unawaited(_ask());
       return;
     }
     await _answered(id, said);
@@ -334,15 +345,17 @@ class _QuizScreenState extends State<QuizScreen>
     _flow++;
     final right = _results.where((r) => r == true).length;
     final stars = quizStars(right, _round.length);
-    final record = await widget.app.progress.recordQuiz(_lang, stars);
+    var record = false;
+    try {
+      record = await widget.app.progress.recordQuiz(_lang, stars);
+    } catch (e, st) {
+      debugPrint('saving the quiz record failed: $e\n$st');
+    }
     if (!mounted) return;
     final s = S.of(context);
-    unawaited(
-      _quietly(() async {
-        await _sfx.stop();
-        await _sfx.play(wavBytes(fanfare(_rng)));
-      }),
-    );
+    setState(() => _phase = _Phase.ready);
+    // not when the app went to the background meanwhile
+    unawaited(_sound(fanfare(_rng)));
     var text = pickPraise(_lang, math.max(stars, 1), _rng, avoid: _lastPraise);
     if (record) text = '$text ${s.newRecord}';
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
@@ -487,11 +500,18 @@ class _QuizScreenState extends State<QuizScreen>
       builder: (context, c) {
         final w = (c.maxWidth - 16 * 4) / 3;
         final pic = math.min(w * 0.8, c.maxHeight * 0.45);
-        return Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            for (final o in _q.options) _option(o, w, pic, result: result),
-          ],
+        // shrinks when there is no room (landscape, large text)
+        return FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+            width: c.maxWidth,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (final o in _q.options) _option(o, w, pic, result: result),
+              ],
+            ),
+          ),
         );
       },
     );

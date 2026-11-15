@@ -88,9 +88,13 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             child: Column(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [for (final e in emojis) EmojiImage(e, size: 48)],
+                // three tiles on a narrow phone: the pictures shrink
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [for (final e in emojis) EmojiImage(e, size: 48)],
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
