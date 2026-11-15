@@ -163,3 +163,9 @@ func TestGitHubClient(t *testing.T) {
 		t.Fatal(got)
 	}
 }
+
+func TestNoTokenMeansLater(t *testing.T) {
+	if w := post(NewServer(nil), report(id1, "a"), "1.1.1.1"); w.Code != 503 {
+		t.Fatal(w.Code)
+	}
+}

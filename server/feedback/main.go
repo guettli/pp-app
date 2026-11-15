@@ -121,6 +121,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if s.Issuer == nil {
+		http.Error(w, "not configured, try later", http.StatusServiceUnavailable)
+		return
+	}
 	if s.wasSeen(rep.ID) {
 		w.WriteHeader(http.StatusOK) // a retry: filed already
 		return
@@ -297,9 +301,6 @@ func urlQuery(s string) string {
 
 func main() {
 	token := os.Getenv("GITHUB_TOKEN")
-	if token == "" {
-		log.Fatal("GITHUB_TOKEN is not set")
-	}
 	repo := os.Getenv("REPO")
 	if repo == "" {
 		repo = "guettli/pp-app"
@@ -308,10 +309,18 @@ func main() {
 	if addr == "" {
 		addr = ":8080"
 	}
-	gh := &GitHub{Token: token, Repo: repo, API: "https://api.github.com", Client: &http.Client{Timeout: 15 * time.Second}}
+	// Without a token the service runs (health is fine) but answers "try
+	// later", so the app keeps its reports: in gitops the Secret is applied
+	// after the Deployment.
+	var issuer Issuer
+	if token != "" {
+		issuer = &GitHub{Token: token, Repo: repo, API: "https://api.github.com", Client: &http.Client{Timeout: 15 * time.Second}}
+	} else {
+		log.Print("GITHUB_TOKEN is not set: reports are refused with 503")
+	}
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           NewServer(gh),
+		Handler:           NewServer(issuer),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       20 * time.Second,
 		WriteTimeout:      40 * time.Second,
