@@ -27,7 +27,7 @@ jobs:
       - name: Test
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: feedback-test
@@ -38,11 +38,11 @@ jobs:
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: >-
             feedback-publish
             --address ghcr.io/guettli/pp-app-feedback:${{ env.TAG }}
             --username ${{ github.actor }}
-            --password env:GHCR_TOKEN
+            --password env://GHCR_TOKEN

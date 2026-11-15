@@ -13,7 +13,7 @@ jobs:
       - name: Format, analyze, test
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: check-fast
@@ -34,18 +34,18 @@ jobs:
         if: env.HAS_KEYSTORE == 'true'
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: >-
-            build-apk --keystore-base-64 env:KEYSTORE_BASE64
-            --keystore-password env:KEYSTORE_PASSWORD
+            build-apk --keystore-base-64 env://KEYSTORE_BASE64
+            --keystore-password env://KEYSTORE_PASSWORD
             export --path build/phoneme-party.apk
       - name: Build APK (debug key)
         if: env.HAS_KEYSTORE != 'true'
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: build-apk export --path build/phoneme-party.apk
@@ -79,30 +79,30 @@ jobs:
       - name: Build APK arm64 (most phones)
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: >-
             build-apk --abi arm64-v8a --build-number ${{ github.run_number }}
-            --keystore-base-64 env:KEYSTORE_BASE64
-            --keystore-password env:KEYSTORE_PASSWORD
+            --keystore-base-64 env://KEYSTORE_BASE64
+            --keystore-password env://KEYSTORE_PASSWORD
             export --path dist/phoneme-party.apk
       - name: Build APK armv7 (older 32-bit phones)
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: >-
             build-apk --abi armeabi-v7a --build-number ${{ github.run_number }}
-            --keystore-base-64 env:KEYSTORE_BASE64
-            --keystore-password env:KEYSTORE_PASSWORD
+            --keystore-base-64 env://KEYSTORE_BASE64
+            --keystore-password env://KEYSTORE_PASSWORD
             export --path dist/phoneme-party-armv7.apk
       - name: Version
         id: version
         uses: dagger/dagger-for-github@v8.4.1
         with:
-          version: "0.21.8"
+          version: "1.0.0-beta.27"
           verb: call
           module: ci
           args: release-version --build-number ${{ github.run_number }}
