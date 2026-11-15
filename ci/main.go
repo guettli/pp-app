@@ -190,6 +190,8 @@ func (m *Ci) FeedbackImage() *dagger.Container {
 		File("/feedback")
 	return dag.Container().
 		From("gcr.io/distroless/static-debian12:nonroot").
+		// links the ghcr package to the repo (its Actions may push it)
+		WithLabel("org.opencontainers.image.source", "https://github.com/guettli/pp-app").
 		WithFile("/feedback", bin).
 		WithExposedPort(8080).
 		WithEntrypoint([]string{"/feedback"})
