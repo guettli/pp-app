@@ -143,7 +143,7 @@ stars). Release builds therefore use an upload key:
 
 ```sh
 dagger call -m ci build-apk \
-  --keystore-base-64 file:upload.jks.b64 --keystore-password file:password \
+  --keystore-base-64 file://upload.jks.b64 --keystore-password file://password \
   export --path build/phoneme-party.apk
 ```
 

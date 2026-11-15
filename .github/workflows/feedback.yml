@@ -45,4 +45,4 @@ jobs:
             feedback-publish
             --address ghcr.io/guettli/pp-app-feedback:${{ env.TAG }}
             --username ${{ github.actor }}
-            --password env:GHCR_TOKEN
+            --password env://GHCR_TOKEN
