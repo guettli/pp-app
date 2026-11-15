@@ -55,3 +55,6 @@ app.*.map.json
 *.jks
 *.jks.b64
 /password
+
+# Dagger v1.0 writes this on every run; versions are pinned in ci/.
+dagger.lock
