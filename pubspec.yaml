@@ -29,6 +29,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/phrases/
+    - assets/facts/
     - assets/emoji/
     - assets/panphon/
     - assets/models/

@@ -30,6 +30,8 @@ class S {
   String get best => _t['best']!;
   String get notHeardVoice => _t['notHeardVoice']!;
   String get newRecord => _t['newRecord']!;
+  String get quizTitle => _t['quizTitle']!;
+  String get wordsTitle => _t['wordsTitle']!;
   String newStars(int n) => _t['newStars']!.replaceAll('{n}', '$n');
 
   static const _all = {
@@ -52,6 +54,8 @@ class S {
       'pitchTitle': 'Tief und hoch',
       'best': 'Rekord',
       'newRecord': 'Neuer Rekord!',
+      'quizTitle': 'Rätsel',
+      'wordsTitle': 'Wörter',
       'notHeardVoice':
           'Ich habe nichts gehört. Tippe auf 🎤 und versuch es noch einmal.',
     },
@@ -74,6 +78,8 @@ class S {
       'pitchTitle': 'Low and high',
       'best': 'Best',
       'newRecord': 'New record!',
+      'quizTitle': 'Quiz',
+      'wordsTitle': 'Words',
       'notHeardVoice': 'I did not hear anything. Tap 🎤 and try again.',
     },
     'fr': {
@@ -95,6 +101,8 @@ class S {
       'pitchTitle': 'Grave et aigu',
       'best': 'Record',
       'newRecord': 'Nouveau record !',
+      'quizTitle': 'Devinettes',
+      'wordsTitle': 'Mots',
       'notHeardVoice': 'Je n’ai rien entendu. Touche 🎤 et réessaie.',
     },
     'it': {
@@ -116,6 +124,8 @@ class S {
       'pitchTitle': 'Basso e alto',
       'best': 'Record',
       'newRecord': 'Nuovo record!',
+      'quizTitle': 'Indovinelli',
+      'wordsTitle': 'Parole',
       'notHeardVoice': 'Non ho sentito niente. Tocca 🎤 e riprova.',
     },
     'es': {
@@ -137,6 +147,8 @@ class S {
       'pitchTitle': 'Grave y agudo',
       'best': 'Récord',
       'newRecord': '¡Nuevo récord!',
+      'quizTitle': 'Adivinanzas',
+      'wordsTitle': 'Palabras',
       'notHeardVoice': 'No he oído nada. Toca 🎤 e inténtalo otra vez.',
     },
   };

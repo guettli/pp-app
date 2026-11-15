@@ -1,0 +1,179 @@
+# What every child knows about the things in the pictures, for the quiz
+# ("What can fly? Tree, bird or house?"). One line per picture, the same in
+# every language:
+# emoji<TAB>name (for us)<TAB>size cm<TAB>weight kg<TAB>yes<TAB>unclear
+# Size and weight are rough ("-" = none, e.g. a number or a body part); the
+# quiz compares only things that differ a lot.
+# yes / unclear: space-separated properties. Everything else is a clear
+# "no". A thing is offered as a wrong answer only if it is a clear no, so
+# anything people might argue about (can a chicken fly?) goes to unclear.
+# Properties: animal flies swims walks talks eat drink wear plant wheels
+# music shines cold body number
+🥚	egg	6	0.06	eat	-
+🐮	cow	250	600	animal walks	swims eat
+👂	ear	6	-	body	-
+👞	shoe	28	0.4	wear	walks
+🛏️	bed	200	50	-	wheels
+📖	book	25	0.5	-	-
+🚌	bus	1200	12000	wheels	shines
+🐻	bear	200	300	animal walks	swims eat
+🍦	ice cream	15	0.15	eat cold	drink
+🐟	fish	30	1	animal swims eat	-
+🦈	shark	400	1000	animal swims	eat
+🐔	chicken	40	2.5	animal walks	flies swims eat
+🎩	hat	30	0.2	wear	-
+💍	ring	2	0.01	-	wear shines cold
+🐑	sheep	120	70	animal walks	swims eat
+🧣	scarf	80	0.2	wear	-
+🚢	ship	10000	10000000	-	swims shines
+🚪	door	200	30	-	swims
+🐳	whale	2000	50000	animal swims	eat
+4️⃣	four	-	-	number	-
+🌳	tree	1000	2000	plant	swims
+🦵	leg	80	-	body	walks
+🏠	house	1000	100000	-	shines
+🐭	mouse	8	0.02	animal walks	swims eat
+9️⃣	nine	-	-	number	-
+🔥	fire	-	-	shines	-
+8️⃣	eight	-	-	number	-
+⛰️	mountain	100000	-	-	cold
+🧹	broom	120	1	-	flies swims
+🍁	leaf	10	0.005	-	plant flies eat swims
+🍞	bread	30	0.5	eat	-
+🏰	castle	3000	-	-	shines
+🐸	frog	8	0.05	animal swims	walks eat
+🦊	fox	70	6	animal walks	swims eat
+✋	hand	18	-	body	music
+🐶	dog	60	20	animal walks	swims eat
+🍪	cookie	7	0.02	eat	-
+🧺	basket	40	1	-	swims
+🥄	spoon	15	0.05	-	music cold
+🥛	milk	15	0.25	drink	eat cold
+🌙	moon	-	-	shines	flies cold
+🧦	socks	25	0.05	wear	-
+🪑	chair	90	5	-	wheels swims
+🐺	wolf	120	40	animal walks	swims eat
+🦷	tooth	1	-	body	-
+🚆	train	10000	100000	wheels	shines
+3️⃣	three	-	-	number	-
+1️⃣	one	-	-	number	-
+5️⃣	five	-	-	number	-
+6️⃣	six	-	-	number	-
+🔟	ten	-	-	number	-
+❤️	heart	-	-	-	body shines
+🍒	cherries	2	0.01	eat	plant drink
+👗	dress	100	0.3	wear	-
+🍄	mushroom	8	0.05	-	eat plant
+🐷	pig	120	100	animal walks	swims eat
+2️⃣	two	-	-	number	-
+⚡	lightning	-	-	shines	flies
+🦴	bone	20	0.2	-	body eat
+🐴	horse	220	500	animal walks	swims eat
+🔑	key	6	0.02	-	cold music
+⭐	star	-	-	shines	flies
+🥁	drum	40	3	music	-
+🐵	monkey	60	10	animal walks	swims eat talks
+👵	grandma	160	60	walks talks	animal swims music
+👴	grandpa	170	75	walks talks	animal swims music
+👁️	eye	3	-	body	shines
+🚗	car	400	1200	wheels	shines
+👶	baby	60	6	-	walks talks animal swims music
+🐝	bee	1.5	0.0001	animal flies	walks music
+🔨	hammer	30	0.6	-	music cold
+🐰	rabbit	30	2	animal	walks swims eat
+🦔	hedgehog	25	1	animal walks	swims eat
+🧀	cheese	15	1	eat	-
+🦁	lion	200	190	animal walks	swims eat
+👃	nose	5	-	body	walks
+🛴	scooter	80	4	wheels	shines
+🌹	rose	50	0.05	plant	eat
+✂️	scissors	15	0.1	-	cold
+🧸	teddy	30	0.3	-	animal talks walks
+☀️	sun	-	-	shines	flies
+🐯	tiger	250	200	animal walks	swims eat
+🌊	wave	-	-	-	drink swims cold music
+🪣	bucket	30	1	-	music
+🦉	owl	40	1.5	animal flies	walks eat
+🪶	feather	15	0.001	-	flies animal swims
+🎻	violin	60	0.5	music	-
+🍯	honey	10	0.5	eat	drink
+🐫	camel	300	500	animal walks	swims eat
+🐤	chick	8	0.05	animal walks	flies swims eat
+🐚	shell	8	0.05	-	animal eat music
+🐦	bird	15	0.03	animal flies	walks swims eat music talks
+7️⃣	seven	-	-	number	-
+🚲	bicycle	170	12	wheels	shines
+🪜	ladder	300	8	-	-
+🦆	duck	50	1.5	animal flies swims	walks eat
+⚓	anchor	100	-	-	cold
+🍎	apple	8	0.2	eat	plant drink swims
+🍐	pear	10	0.2	eat	plant drink swims
+👓	glasses	14	0.03	-	wear shines
+🔔	bell	-	-	-	music cold
+🥒	cucumber	25	0.3	eat	plant cold
+🐱	cat	45	4	animal walks	swims eat
+🐙	octopus	100	10	animal swims	walks eat
+👑	crown	20	0.5	-	wear shines cold
+🌴	palm tree	1500	1000	plant	-
+🐼	panda	150	100	animal walks	swims eat
+🍕	pizza	30	0.5	eat	-
+🐍	snake	150	5	animal	walks swims eat
+🐌	snail	4	0.01	animal	walks eat
+🕷️	spider	2	0.001	animal	walks eat
+🚕	taxi	450	1300	wheels	shines
+🌷	tulip	40	0.03	plant	-
+☁️	cloud	-	-	-	flies drink cold
+🐐	goat	120	50	animal walks	swims eat
+🐬	dolphin	250	200	animal swims	eat
+🪁	kite	100	0.3	flies	-
+⚽	football	22	0.4	-	flies swims
+🎁	present	30	1	-	-
+🌵	cactus	100	20	plant	eat drink
+🕯️	candle	20	0.3	shines	-
+🎃	pumpkin	40	5	-	eat shines plant swims
+🧲	magnet	8	0.1	-	cold
+⛄	snowman	150	50	cold	talks walks eat
+🌋	volcano	100000	-	-	shines
+🎲	dice	2	0.005	-	number
+🧤	gloves	25	0.1	wear	-
+🐧	penguin	60	20	animal swims walks	eat cold
+☂️	umbrella	90	0.5	-	flies
+🦓	zebra	250	300	animal walks	swims eat
+🦄	unicorn	-	-	-	animal flies walks talks shines
+🍿	popcorn	15	0.1	eat	swims
+🚜	tractor	400	4000	wheels	shines
+👻	ghost	-	-	-	flies talks walks shines
+✈️	plane	4000	50000	flies	wheels shines
+🍍	pineapple	30	1.5	eat	plant drink
+🍌	banana	20	0.15	eat	plant drink swims
+🦒	giraffe	500	1000	animal walks	swims eat
+🎸	guitar	100	3	music	-
+🥕	carrot	20	0.1	eat	plant drink
+🚀	rocket	5000	500000	flies	shines
+🤖	robot	-	-	-	walks talks shines music wheels
+🍅	tomato	7	0.1	eat	plant drink
+🦜	parrot	40	1	animal flies	talks walks eat music
+✏️	pencil	18	0.01	-	swims
+🚑	ambulance	600	3500	wheels	shines
+🐘	elephant	600	5000	animal walks	swims eat music
+🍓	strawberry	4	0.02	eat	plant drink
+🦘	kangaroo	150	60	animal	walks swims eat
+🥔	potato	8	0.2	eat	plant
+🥥	coconut	20	1.5	eat	drink plant swims
+🐊	crocodile	400	500	animal swims	walks eat
+🎈	balloon	30	0.005	flies	swims
+🚁	helicopter	1500	3000	flies	wheels shines
+🦩	flamingo	120	3	animal flies walks	swims eat
+❄️	snowflake	0.5	-	cold	flies eat drink shines
+🎺	trumpet	50	1	music	cold
+🍋	lemon	8	0.1	-	eat drink plant swims
+🦋	butterfly	7	0.0005	animal flies	walks
+🔦	torch	20	0.3	shines	-
+🐿️	squirrel	40	0.4	animal walks	swims eat
+👸	princess	160	50	walks talks	animal swims music shines
+🛁	bathtub	170	50	-	swims
+🍫	chocolate	15	0.1	eat	drink
+🪥	toothbrush	18	0.02	-	-
+🐞	ladybird	0.7	0.00003	animal flies	walks
+🌈	rainbow	-	-	-	shines flies
+🌻	sunflower	200	1	plant	eat

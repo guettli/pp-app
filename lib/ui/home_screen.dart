@@ -4,9 +4,11 @@ import '../app_state.dart';
 import '../data/phrases.dart';
 import '../game/play_screen.dart';
 import '../game/world_scene.dart';
+import '../quiz/quiz_screen.dart';
 import '../voice/voice_screen.dart';
 import 'emoji_image.dart';
 import 'strings.dart';
+import 'word_list_screen.dart';
 
 /// Language switch + world map. Each world shows its collection (pictures
 /// with at least one star) and the stars collected so far.
@@ -66,24 +68,22 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {}); // refresh stars
   }
 
-  Future<void> _openVoice(VoiceGame game) async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => VoiceGameScreen(app: app, game: game),
-      ),
-    );
+  Future<void> _push(Widget Function() screen) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => screen()));
     setState(() {});
   }
 
-  /// A voice game: big pictures, the name for the grown-ups.
-  Widget _voiceTile(VoiceGame game, List<String> emojis, String name) {
+  /// A game besides the worlds: big pictures, the name for the grown-ups.
+  Widget _tile(Widget Function() screen, List<String> emojis, String name) {
     return Expanded(
       child: Material(
         color: const Color(0xFF3B2B7B),
         borderRadius: BorderRadius.circular(20),
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () => _openVoice(game),
+          onTap: () => _push(screen),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             child: Column(
@@ -121,6 +121,11 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text(s.title),
         actions: [
           IconButton(
+            tooltip: s.wordsTitle,
+            onPressed: () => _push(() => WordListScreen(app: app)),
+            icon: const EmojiImage('📖', size: 32),
+          ),
+          IconButton(
             tooltip: s.chooseLanguage,
             onPressed: _chooseLanguage,
             icon: EmojiImage(languageFlags[book.lang]!, size: 32),
@@ -134,9 +139,19 @@ class _HomeScreenState extends State<HomeScreen> {
             sliver: SliverToBoxAdapter(
               child: Row(
                 children: [
-                  _voiceTile(VoiceGame.hold, const ['🎈'], s.holdTitle),
+                  _tile(() => QuizScreen(app: app), const ['🦉'], s.quizTitle),
                   const SizedBox(width: 12),
-                  _voiceTile(VoiceGame.pitch, const ['🐻', '🐭'], s.pitchTitle),
+                  _tile(
+                    () => VoiceGameScreen(app: app, game: VoiceGame.hold),
+                    const ['🎈'],
+                    s.holdTitle,
+                  ),
+                  const SizedBox(width: 12),
+                  _tile(
+                    () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
+                    const ['🐻', '🐭'],
+                    s.pitchTitle,
+                  ),
                 ],
               ),
             ),

@@ -65,6 +65,16 @@ class Progress {
   double? get pitchBase => _prefs.getDouble('pitch|base');
   Future<void> setPitchBase(double hz) => _prefs.setDouble('pitch|base', hz);
 
+  /// Most stars (0..3) for one quiz round (per study language).
+  int quizBest(String lang) => _prefs.getInt('quiz|$lang') ?? 0;
+
+  /// Stores [stars] if it is a new best; returns whether it was.
+  Future<bool> recordQuiz(String lang, int stars) async {
+    if (stars <= quizBest(lang)) return false;
+    await _prefs.setInt('quiz|$lang', stars);
+    return true;
+  }
+
   String? get studyLang => _prefs.getString('studyLang');
   Future<void> setStudyLang(String lang) => _prefs.setString('studyLang', lang);
 }
