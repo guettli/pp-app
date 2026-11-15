@@ -18,7 +18,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dagger
-        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Format, analyze, test
         run: dagger call -m ci check-fast
 
@@ -35,7 +39,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dagger
-        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Build APK (release key)
         if: env.HAS_KEYSTORE == 'true'
         run: |
@@ -67,7 +75,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Dagger
-        run: curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR=/usr/local/bin sudo -E sh
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Require the release key
         run: |
           if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
