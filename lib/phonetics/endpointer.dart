@@ -20,7 +20,9 @@ enum EndpointEvent {
 /// when the child has finished speaking, so no stop button is needed.
 ///
 /// The first [calibration] of audio is taken as background noise (a child
-/// does not answer within 200 ms). A 20 ms frame counts as speech if its RMS
+/// does not answer within 200 ms). With a [noiseHint] (the room measured
+/// just before, when the microphone opens right after the phone spoke and a
+/// quick child may already talk) the noise is at most twice the hint. A 20 ms frame counts as speech if its RMS
 /// is above [minLevel] and [noiseFactor] times the noise level.
 class Endpointer {
   Endpointer({
@@ -65,7 +67,15 @@ class Endpointer {
   /// Whether the recording should stop.
   bool get done => _done;
 
-  double get _noise => _noiseFrames == 0 ? 0 : _noiseSum / _noiseFrames;
+  /// RMS of the room measured before this audio (see the class comment).
+  double? noiseHint;
+
+  double get _noise {
+    final mean = _noiseFrames == 0 ? 0.0 : _noiseSum / _noiseFrames;
+    final hint = noiseHint;
+    return hint == null ? mean : math.min(mean, 2 * math.max(hint, 0.001));
+  }
+
   double get threshold => math.max(minLevel, _noise * noiseFactor);
 
   int _ms(Duration d) => d.inMilliseconds ~/ 20;

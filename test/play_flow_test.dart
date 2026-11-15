@@ -43,6 +43,9 @@ Future<(Game, Fakes)> start(
   bool permission = true,
   bool ttsHangs = false,
   Duration recognizing = Duration.zero,
+  bool listensWhileSpeaking = true,
+  Duration micStartup = Duration.zero,
+  Duration micLatency = Duration.zero,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final progress = await Progress.load();
@@ -53,14 +56,18 @@ Future<(Game, Fakes)> start(
     child: child,
     fromMemory: fromMemory,
     ttsCompletesOnStop: !iosTts,
+    listensWhileSpeaking: listensWhileSpeaking,
   );
   dev.mic.permission = permission;
+  dev.mic.startup = micStartup;
+  dev.mic.latency = micLatency;
   dev.speaker.hang = ttsHangs;
   // the recognizer is asked only after the game exists
   late final Game game;
   final rec = FakeRecognizer(
     () => answer == null ? game.current.ipa : answer(game),
     delay: recognizing,
+    log: log,
   );
   final app = AppState(rec, comparer, progress, book, io: dev.io);
   game = await Game.open(t, app, log);
@@ -227,6 +234,119 @@ void flows(bool ios) {
     expect(g.recordings, 1, reason: 'waits for a tap');
   });
 
+  testWidgets('a child who answers at once is heard from the first sound, '
+      'the phone is not', (t) async {
+    final (g, f) = await start(
+      t,
+      iosTts: ios,
+      child: () => Child.speaksAtOnce,
+      // the mic is up before the end of "Ei" (420 ms), and its audio comes
+      // late, so the end of the phrase arrives after speak() completed
+      micStartup: const Duration(milliseconds: 200),
+      micLatency: const Duration(milliseconds: 100),
+    );
+    await g.until(() => f.rec.calls == 1);
+    // all of the 0.7 s answer (a gate waiting its 300 ms would cut 0.15 s)
+    expect(f.rec.lastSpeechSeconds, greaterThanOrEqualTo(0.65));
+    await g.until(() => g.recordings == 2, reason: 'goes on');
+    g.expectClean(); // and none of the phrase (FakeRecognizer checks)
+  });
+
+  testWidgets('a short phrase, done before the mic is up: the answer is '
+      'still heard', (t) async {
+    final (g, f) = await start(
+      t,
+      iosTts: ios,
+      child: () => Child.speaksAtOnce,
+      micStartup: const Duration(milliseconds: 500), // as on the A80
+    );
+    await g.until(() => f.rec.calls == 1);
+    expect(f.rec.lastSpeechSeconds, greaterThanOrEqualTo(0.5));
+    await g.until(() => g.recordings == 2, reason: 'goes on');
+    g.expectClean();
+  });
+
+  testWidgets('the mic fails to start while the phone speaks: try again, '
+      'and the mic stays off', (t) async {
+    final (g, f) = await start(t, iosTts: ios);
+    // the first start already ran: fail from the second word on
+    await g.until(() => f.rec.calls == 1);
+    f.dev.mic.startThrows = true;
+    await g.until(() => g.said.length == 2);
+    await g.until(() => find.byType(SnackBar).evaluate().isNotEmpty);
+    await g.wait(quiet);
+    expect(f.dev.mic.recording, isFalse);
+    expect(f.rec.calls, 1);
+    f.dev.mic.startThrows = false;
+    await g.tap('Speak');
+    await g.until(() => f.rec.calls == 2, reason: 'works again');
+    await g.until(() => g.recordings == 3, reason: 'goes on');
+    g.expectClean();
+  });
+
+  testWidgets('background while the phone speaks and the mic is open: '
+      'all off, nothing scored', (t) async {
+    final (g, f) = await start(t, iosTts: ios);
+    await g.until(() => f.dev.mic.recording && f.dev.speaker.speaking);
+    await g.lifecycle(AppLifecycleState.paused);
+    await g.wait(const Duration(seconds: 1));
+    expect(f.dev.mic.recording, isFalse);
+    expect(f.dev.speaker.speaking, isFalse);
+    await g.wait(quiet);
+    expect(f.rec.calls, 0);
+    expect(f.dev.mic.recording, isFalse);
+    await g.lifecycle(AppLifecycleState.resumed);
+    await g.tap('Speak');
+    await g.until(() => f.rec.calls == 1, reason: 'works again');
+    await g.until(() => g.recordings == 3, reason: 'goes on');
+    g.expectClean();
+  });
+
+  testWidgets('the mic stream ends while the phone speaks: no waiting for '
+      'the time limit', (t) async {
+    final (g, f) = await start(t, iosTts: ios);
+    f.dev.mic.endsAfter = const Duration(milliseconds: 100);
+    await g.until(() => g.log.intervals('tts').firstOrNull?.to != null);
+    final spoken = g.log.intervals('tts').first.to!;
+    await g.until(() => find.byType(SnackBar).evaluate().isNotEmpty);
+    expect(g.log.now() - spoken, lessThan(const Duration(seconds: 1)));
+    expect(f.rec.calls, 0, reason: 'nothing of the child was heard');
+    f.dev.mic.endsAfter = null;
+    await g.wait(quiet);
+  });
+
+  testWidgets('a mic that starts slowly, the app in the background meanwhile: '
+      'its late stop does not end the next recording', (t) async {
+    final (g, f) = await start(
+      t,
+      iosTts: ios,
+      micStartup: const Duration(milliseconds: 800),
+    );
+    await g.wait(const Duration(milliseconds: 100)); // the mic is starting
+    await g.lifecycle(AppLifecycleState.paused);
+    await g.lifecycle(AppLifecycleState.resumed);
+    await g.tap('Speak');
+    await g.until(() => f.rec.calls == 1, reason: 'the new round is scored');
+    expect(f.rec.lastSpeechSeconds, greaterThan(0.5));
+    await g.until(() => g.recordings == 3, reason: 'goes on');
+    g.expectClean();
+  });
+
+  testWidgets('without listening while speaking (iOS) the mic opens after '
+      'the phrase, and a quick answer is not even heard', (t) async {
+    final (g, f) = await start(
+      t,
+      iosTts: ios,
+      child: () => Child.speaksAtOnce,
+      listensWhileSpeaking: false,
+      micStartup: const Duration(milliseconds: 500), // as on the A80
+    );
+    await g.until(() => g.log.intervals('mic').firstOrNull?.to != null);
+    // the mic opened 0.75 s after the phrase: 0.1 s of the answer is left
+    expect(f.rec.calls, 0);
+    g.expectClean();
+  });
+
   testWidgets('background while listening, and the TTS fails to stop: the '
       'mic still goes off', (t) async {
     final (g, f) = await start(t, iosTts: ios);
@@ -343,10 +463,12 @@ void flows(bool ios) {
   testWidgets('a stuck TTS engine does not stop the game', (t) async {
     final (g, _) = await start(t, iosTts: ios, ttsHangs: true);
     await g.until(() => g.recordings == 2, limit: const Duration(minutes: 1));
-    // the app waited for its timeout, then listened anyway
+    // the app waited for its timeout, stopped the engine, listened anyway
     final first = g.log.intervals('tts').first;
-    final mic = g.log.intervals('mic').first;
-    expect(mic.from - first.from, greaterThan(const Duration(seconds: 3)));
+    expect(
+      first.to! - first.from,
+      greaterThanOrEqualTo(const Duration(seconds: 3)),
+    );
     g.expectClean();
   });
 

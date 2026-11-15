@@ -9,7 +9,14 @@ import 'package:phoneme_party/game/play_screen.dart';
 import 'fakes.dart';
 
 class Game {
-  Game._(this.t, this.log, this.words, this.nav, this.step);
+  Game._(
+    this.t,
+    this.log,
+    this.words,
+    this.nav,
+    this.step,
+    this.listensWhileSpeaking,
+  );
 
   /// Opens world [world] of [app], like the home screen does.
   static Future<Game> open(
@@ -28,7 +35,14 @@ class Game {
     );
     await t.pump();
     await t.pump();
-    return Game._(t, log, app.book.world(world), nav, step);
+    return Game._(
+      t,
+      log,
+      app.book.world(world),
+      nav,
+      step,
+      app.io.listensWhileSpeaking,
+    );
   }
 
   final WidgetTester t;
@@ -38,6 +52,9 @@ class Game {
 
   /// How far each pump moves the clock.
   final Duration step;
+
+  /// The microphone is open while the phone says the phrase.
+  final bool listensWhileSpeaking;
 
   late final _texts = {for (final p in words) p.text};
 
@@ -53,7 +70,15 @@ class Game {
       if (!_texts.contains(s)) s,
   ];
 
-  int get recordings => log.started('mic').length;
+  /// Recordings the child could speak into: a microphone that is open
+  /// while the phone still says the phrase does not count yet.
+  int get recordings {
+    final n = log.started('mic').length;
+    final now = log.intervals();
+    bool on(String d) => now.any((i) => i.device == d && i.to == null);
+    return on('mic') && on('tts') ? n - 1 : n;
+  }
+
   int get replays => log.started('replay').length;
 
   /// The word the phone said last, which the child is answering.
@@ -99,9 +124,18 @@ class Game {
   }
 
   /// Nothing may ever be audible while the microphone records, and no
-  /// device call may have been lost.
+  /// device call may have been lost. With [listensWhileSpeaking] the
+  /// phrase overlaps the start of the recording on purpose; then the
+  /// recognizer must have got none of it (a FakeRecognizer with this log
+  /// notes that).
   void expectClean() {
-    expect(log.soundsWhileRecording(), isEmpty, reason: '$log');
+    expect(
+      log.soundsWhileRecording(
+        startedBefore: listensWhileSpeaking ? const {'tts'} : const {},
+      ),
+      isEmpty,
+      reason: '$log',
+    );
     expect(log.problems, isEmpty, reason: '$log');
   }
 }

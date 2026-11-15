@@ -41,10 +41,14 @@ class LoggedMic implements MicSource {
 }
 
 class LoggedSpeaker implements Speaker {
-  LoggedSpeaker(this.log, this.inner);
+  LoggedSpeaker(this.log, this.inner, {this.onDone});
 
   final IoLog log;
   final Speaker inner;
+
+  /// Called with the text when [speak] completed (e.g. to let a "child"
+  /// answer).
+  final void Function(String text)? onDone;
   int _id = 0;
   bool _on = false;
 
@@ -59,6 +63,7 @@ class LoggedSpeaker implements Speaker {
     _on = true;
     try {
       await inner.speak(text, pitch: pitch);
+      onDone?.call(text);
     } finally {
       if (id == _id && _on) {
         log.off('tts');

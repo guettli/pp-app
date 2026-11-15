@@ -89,9 +89,10 @@ void main() {
       soundPlayer: () =>
           LoggedOut(log, 'sfx', AudioPlayersOut(takesFocus: false)),
       random: GameIo.device().random,
+      listensWhileSpeaking: true,
     );
     final app = AppState(
-      FakeRecognizer(() => game.current.ipa),
+      FakeRecognizer(() => game.current.ipa, log: log),
       base.comparer,
       base.progress,
       base.book,
@@ -125,21 +126,25 @@ void main() {
     final child = TtsSpeaker();
     Timer? say;
     final io = GameIo(
-      mic: () => LoggedMic(
+      mic: () => LoggedMic(log, RecordMic()),
+      // a quick child: answers 300 ms after the phone said the phrase (the
+      // microphone is open by then; the phone's own voice must not count)
+      speaker: () => LoggedSpeaker(
         log,
-        RecordMic(),
-        onStart: () {
+        TtsSpeaker(),
+        onDone: (text) {
+          if (text != game.current.text) return; // the praise
           say?.cancel();
-          say = Timer(const Duration(milliseconds: 600), () {
-            child.speak(game.current.text);
+          say = Timer(const Duration(milliseconds: 300), () {
+            child.speak(text);
           });
         },
       ),
-      speaker: () => LoggedSpeaker(log, TtsSpeaker()),
       replayPlayer: () => LoggedOut(log, 'replay', AudioPlayersOut()),
       soundPlayer: () =>
           LoggedOut(log, 'sfx', AudioPlayersOut(takesFocus: false)),
       random: GameIo.device().random,
+      listensWhileSpeaking: true,
     );
     await child.setLanguage(base.book.lang);
     final rec = PrintingRecognizer(base.recognizer, base, () => game.current);
