@@ -19,30 +19,33 @@ concurrency:
   group: feedback-image
   cancel-in-progress: false
 
+# One Dagger CLI per job, installed directly: dagger-for-github@v8.4.1 probes
+# an installed CLI with `dagger --silent version`, which v1.0 rejects, so a
+# second action step in a job fails. Must match the engine on tc (gitops
+# ansible/group_vars/all.yml dagger_version).
+env:
+  DAGGER_VERSION: "1.0.0-beta.27"
+
 jobs:
   image:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Dagger
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Test
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: feedback-test
+        run: dagger call -m ci feedback-test
       - name: Tag
         run: echo "TAG=v$(TZ=UTC git log -1 --date=format-local:%Y.%m.%d.%H%M%S --format=%cd)" >> "$GITHUB_ENV"
       - name: Publish
-        uses: dagger/dagger-for-github@v8.4.1
         env:
           GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: >-
-            feedback-publish
-            --address ghcr.io/guettli/pp-app-feedback:${{ env.TAG }}
-            --username ${{ github.actor }}
+        run: |
+          dagger call -m ci feedback-publish \
+            --address ghcr.io/guettli/pp-app-feedback:${{ env.TAG }} \
+            --username ${{ github.actor }} \
             --password env://GHCR_TOKEN

@@ -5,18 +5,26 @@ on:
     branches: [main]
   pull_request:
 
+# One Dagger CLI per job, installed directly: dagger-for-github@v8.4.1 probes
+# an installed CLI with `dagger --silent version`, which v1.0 rejects, so a
+# second action step in a job fails. Must match the engine on tc (gitops
+# ansible/group_vars/all.yml dagger_version).
+env:
+  DAGGER_VERSION: "1.0.0-beta.27"
+
 jobs:
   check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Install Dagger
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Format, analyze, test
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: check-fast
+        run: dagger call -m ci check-fast
 
   # Pull requests: build the APK as a downloadable artifact (main: see release).
   apk:
@@ -30,25 +38,21 @@ jobs:
       KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Dagger
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Build APK (release key)
         if: env.HAS_KEYSTORE == 'true'
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: >-
-            build-apk --keystore-base-64 env://KEYSTORE_BASE64
-            --keystore-password env://KEYSTORE_PASSWORD
+        run: |
+          dagger call -m ci build-apk --keystore-base-64 env://KEYSTORE_BASE64 \
+            --keystore-password env://KEYSTORE_PASSWORD \
             export --path build/phoneme-party.apk
       - name: Build APK (debug key)
         if: env.HAS_KEYSTORE != 'true'
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: build-apk export --path build/phoneme-party.apk
+        run: dagger call -m ci build-apk export --path build/phoneme-party.apk
       - uses: actions/upload-artifact@v4
         with:
           name: phoneme-party-apk
@@ -70,6 +74,12 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Dagger
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          curl -fsSL https://dl.dagger.io/dagger/install.sh | BIN_DIR="$HOME/.local/bin" sh
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/dagger" version
       - name: Require the release key
         run: |
           if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ]; then
@@ -77,35 +87,22 @@ jobs:
             exit 1
           fi
       - name: Build APK arm64 (most phones)
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: >-
-            build-apk --abi arm64-v8a --build-number ${{ github.run_number }}
-            --keystore-base-64 env://KEYSTORE_BASE64
-            --keystore-password env://KEYSTORE_PASSWORD
+        run: |
+          dagger call -m ci build-apk --abi arm64-v8a --build-number ${{ github.run_number }} \
+            --keystore-base-64 env://KEYSTORE_BASE64 \
+            --keystore-password env://KEYSTORE_PASSWORD \
             export --path dist/phoneme-party.apk
       - name: Build APK armv7 (older 32-bit phones)
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: >-
-            build-apk --abi armeabi-v7a --build-number ${{ github.run_number }}
-            --keystore-base-64 env://KEYSTORE_BASE64
-            --keystore-password env://KEYSTORE_PASSWORD
+        run: |
+          dagger call -m ci build-apk --abi armeabi-v7a --build-number ${{ github.run_number }} \
+            --keystore-base-64 env://KEYSTORE_BASE64 \
+            --keystore-password env://KEYSTORE_PASSWORD \
             export --path dist/phoneme-party-armv7.apk
       - name: Version
         id: version
-        uses: dagger/dagger-for-github@v8.4.1
-        with:
-          version: "1.0.0-beta.27"
-          verb: call
-          module: ci
-          args: release-version --build-number ${{ github.run_number }}
+        run: |
+          v=$(dagger call -q -m ci release-version --build-number "$BUILD_NUMBER")
+          echo "output=$v" >> "$GITHUB_OUTPUT"
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
