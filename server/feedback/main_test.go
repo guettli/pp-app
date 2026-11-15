@@ -129,6 +129,27 @@ func TestRateLimits(t *testing.T) {
 	}
 }
 
+func TestIPv6CountsPerSlash64(t *testing.T) {
+	s := NewServer(newDir(t, 100))
+	for i := 0; i < perClient; i++ {
+		post(s, report(id(i), "a"), "2001:db8:1:2::"+string("123456789"[i]))
+	}
+	if w := post(s, report(id(40), "a"), "2001:db8:1:2:ffff::1"); w.Code != 429 {
+		t.Fatal("same /64:", w.Code)
+	}
+	if w := post(s, report(id(41), "a"), "2001:db8:1:3::1"); w.Code != 201 {
+		t.Fatal("other /64:", w.Code)
+	}
+}
+
+func TestLeftoverTmpDoesNotCount(t *testing.T) {
+	d := newDir(t, 1)
+	os.WriteFile(filepath.Join(d.Path, "x.json.tmp"), []byte("{"), 0o600)
+	if w := post(NewServer(d), report(id1, "a"), "1.1.1.1"); w.Code != 201 {
+		t.Fatal(w.Code)
+	}
+}
+
 func TestFullMeansLater(t *testing.T) {
 	d := newDir(t, 1)
 	s := NewServer(d)

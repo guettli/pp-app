@@ -3,8 +3,9 @@
 // directory (a volume on the vps). Nothing is published.
 //
 // Reports are anonymous: text the grown-up typed, the app version, the
-// languages, phone model and Android version. Client addresses are neither
-// stored nor logged; they are only held in memory for the rate limit.
+// languages, phone model and Android version. This service neither stores
+// nor logs client addresses; it only holds them in memory for the rate
+// limit (Traefik in front of it sees them, as for every request).
 //
 //	feedback            serve (LISTEN, default :8080; DIR, default /data/feedback)
 //	feedback list       print the stored reports, newest first
@@ -38,8 +39,9 @@ type Report struct {
 }
 
 const (
-	maxBody   = 16 << 10
-	maxText   = 4000
+	maxBody = 128 << 10
+	// The app allows 2000 characters; one emoji can be several code points.
+	maxText   = 20000
 	maxInfo   = 100
 	perClient = 5  // reports per client and hour
 	perHour   = 60 // reports per hour, all clients together
@@ -164,22 +166,29 @@ func (s *Server) allow(client string) bool {
 }
 
 // clientIP is the address Traefik saw: the last X-Forwarded-For entry
-// (the ones before it come from the client and can be made up).
+// (the ones before it come from the client and can be made up). An IPv6
+// address counts as its /64: one connection usually has a whole /64.
 func clientIP(r *http.Request) string {
+	addr := ""
 	if f := r.Header.Get("X-Forwarded-For"); f != "" {
 		parts := strings.Split(f, ",")
-		return strings.TrimSpace(parts[len(parts)-1])
+		addr = strings.TrimSpace(parts[len(parts)-1])
+	} else if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		addr = host
+	} else {
+		addr = r.RemoteAddr
 	}
-	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		return r.RemoteAddr
+	ip := net.ParseIP(addr)
+	if ip == nil || ip.To4() != nil {
+		return addr
 	}
-	return host
+	return ip.Mask(net.CIDRMask(64, 128)).String() + "/64"
 }
 
 // Dir stores each report as <dir>/<received>-<id>.json.
 type Dir struct {
 	Path string
+	mu   sync.Mutex // one Save at a time: the duplicate and Max checks
 
 	// Max reports kept; more are refused (a full disk would hurt the
 	// other services on the vps).
@@ -193,16 +202,23 @@ type Stored struct {
 }
 
 func (d *Dir) Save(r *Report, received time.Time) error {
+	d.mu.Lock()
+	defer d.mu.Unlock()
 	entries, err := os.ReadDir(d.Path)
 	if err != nil {
 		return err
 	}
+	stored := 0
 	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".json") {
+			continue // a .tmp left by a crash
+		}
+		stored++
 		if strings.HasSuffix(e.Name(), "-"+r.ID+".json") {
 			return nil // a retry: stored already
 		}
 	}
-	if len(entries) >= d.Max {
+	if stored >= d.Max {
 		return errors.New("store is full")
 	}
 	b, err := json.MarshalIndent(Stored{Report: *r, Received: received.UTC().Format(time.RFC3339)}, "", "  ")

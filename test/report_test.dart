@@ -1,5 +1,6 @@
 // Feedback: the outbox keeps reports until the service took them, and the
 // screen sends only after the grown-ups' sum, showing what goes out.
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
@@ -48,15 +49,15 @@ void main() {
   });
 
   test('sent at once when there is internet', () async {
-    expect(await outbox.add(report('a')), isTrue);
+    expect(await outbox.add(report('a')), ReportState.sent);
     expect(net.sent.single['text'], 'a');
     expect(outbox.waiting, isEmpty);
   });
 
   test('kept without internet, sent later in order', () async {
     net.answer = () => SendResult.later;
-    expect(await outbox.add(report('a')), isFalse);
-    expect(await outbox.add(report('b')), isFalse);
+    expect(await outbox.add(report('a')), ReportState.waiting);
+    expect(await outbox.add(report('b')), ReportState.waiting);
     expect(outbox.waiting.map((r) => r.text), ['a', 'b']);
     // survives a restart
     final again = FeedbackOutbox(prefs, net);
@@ -98,6 +99,34 @@ void main() {
     net.answer = () => SendResult.done;
     await Future.wait([outbox.flush(), outbox.flush()]);
     expect(net.sent, hasLength(1));
+  });
+
+  test('a report rejected by the service is said so', () async {
+    net.answer = () => SendResult.rejected;
+    expect(await outbox.add(report('x')), ReportState.rejected);
+    expect(outbox.waiting, isEmpty);
+  });
+
+  test('a report added during a running flush goes out with it', () async {
+    net.answer = () => SendResult.later;
+    await outbox.add(report('a'));
+    net.answer = () => SendResult.done;
+    final gate = Completer<void>();
+    final o = FeedbackOutbox(prefs, _GatedTransport(net, gate));
+    final first = o.flush();
+    final second = o.add(report('b'), wait: const Duration(seconds: 5));
+    gate.complete();
+    await first;
+    expect(await second, ReportState.sent);
+    expect(net.sent.map((j) => j['text']), ['a', 'b']);
+  });
+
+  test('a stalled send does not block the screen', () async {
+    final o = FeedbackOutbox(prefs, _GatedTransport(net, Completer()));
+    expect(
+      await o.add(report('a'), wait: const Duration(milliseconds: 50)),
+      ReportState.waiting,
+    );
   });
 
   test('a report survives a round trip through JSON', () {
@@ -175,4 +204,17 @@ void main() {
     expect((net.sent.single['info'] as Map)['phone'], 'Test Phone');
     expect(find.text('Thank you! Sent.'), findsOneWidget);
   });
+}
+
+/// Holds every send until [gate] opens.
+class _GatedTransport implements FeedbackTransport {
+  _GatedTransport(this.inner, this.gate);
+  final FeedbackTransport inner;
+  final Completer<void> gate;
+
+  @override
+  Future<SendResult> send(Map<String, dynamic> json) async {
+    await gate.future;
+    return inner.send(json);
+  }
 }

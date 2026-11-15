@@ -67,11 +67,19 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       info: _info(context),
       created: DateTime.now(),
     );
-    final sent = await outbox.add(report);
+    final messenger = ScaffoldMessenger.of(context);
+    final state = await outbox.add(report);
+    final message = switch (state) {
+      ReportState.sent => s.feedbackSent,
+      ReportState.waiting => s.feedbackQueued,
+      ReportState.rejected => s.tryAgain,
+    };
+    messenger.showSnackBar(SnackBar(content: Text(message)));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(sent ? s.feedbackSent : s.feedbackQueued)),
-    );
+    if (state == ReportState.rejected) {
+      setState(() => _sending = false); // the text is still there
+      return;
+    }
     Navigator.of(context).pop();
   }
 
@@ -151,7 +159,13 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       const SizedBox(height: 16),
       FilledButton(
         onPressed: _text.text.trim().isEmpty || _sending ? null : _send,
-        child: Text(s.send),
+        child: _sending
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Text(s.send),
       ),
     ];
   }

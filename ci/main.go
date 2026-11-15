@@ -131,10 +131,12 @@ func (m *Ci) FormatWrite() *dagger.Directory {
 		Filter(dagger.DirectoryFilterOpts{Include: []string{"lib/", "test/", "integration_test/"}})
 }
 
-// networkOnlyInLibNet fails if code outside lib/net/ opens a connection:
-// everything the app sends or loads is in one place, easy to review.
-const networkOnlyInLibNet = `grep -rnE "\\b(HttpClient|HttpRequest|WebSocket|RawSocket|Socket\\.connect|SecureSocket)\\b|package:(http|dio|web_socket_channel)/" lib --exclude-dir=net; rc=$?
-case $rc in 1) exit 0 ;; 0) echo "network code belongs in lib/net/" >&2; exit 1 ;; *) exit $rc ;; esac`
+// networkOnlyInLibNet fails if code outside lib/net/ can reach the
+// network: everything the app sends or loads is in one place, easy to
+// review. (Native plugin code is not covered; the plugins in pubspec.yaml
+// do not use the network.)
+const networkOnlyInLibNet = `hits=$(grep -rnE "\\b(HttpClient|HttpRequest|HttpServer|WebSocket|RawSocket|RawDatagramSocket|ServerSocket|SecureSocket|Socket\\.connect|InternetAddress|NetworkImage|UrlSource|NetworkAssetBundle)\\b|Image\\.network|package:(http|dio|web_socket_channel|cached_network_image)/" lib | grep -v "^lib/net/")
+[ -z "$hits" ] || { echo "$hits"; echo "network code belongs in lib/net/" >&2; exit 1; }`
 
 // noTestCodeInLib fails if anything in lib/ names test code: any quoted
 // path (also a conditional import on its own line) into test/,
@@ -291,7 +293,7 @@ const releaseApkCheck = `set -e
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")
 echo "$b" | grep -q "^package: name='de.relaxandplay.phoneme_party' " || { echo "wrong package id" >&2; exit 1; }
 echo "$b" | grep -q "^application-label:'Phoneme Party'$" || { echo "wrong app name" >&2; exit 1; }
-perms=$(echo "$b" | sed -n "s/^uses-permission: name='\\([^']*\\)'.*/\\1/p" | sort | tr '\n' ' ')
+perms=$(echo "$b" | sed -n "s/^uses-permission\\(-sdk-23\\)\\{0,1\\}: name='\\([^']*\\)'.*/\\2/p" | sort | tr '\n' ' ')
 want="android.permission.INTERNET android.permission.RECORD_AUDIO de.relaxandplay.phoneme_party.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION "
 [ "$perms" = "$want" ] || { echo "unexpected permissions: $perms" >&2; exit 1; }`
 

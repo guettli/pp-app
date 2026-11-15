@@ -58,8 +58,9 @@ class FeedbackReport {
     'created': created.toUtc().toIso8601String(),
   };
 
-  /// Longest text the service takes.
-  static const maxText = 4000;
+  /// Longest text the screen allows (characters as the user sees them; the
+  /// service takes more code points, emoji are several).
+  static const maxText = 2000;
 
   static String newId(math.Random rng) => List.generate(
     16,
@@ -73,13 +74,14 @@ abstract class FeedbackTransport {
 }
 
 enum SendResult {
-  /// Filed (or filed before).
+  /// Stored by the service (or stored before).
   done,
 
   /// No internet, server down, too many reports: keep and try later.
   later,
 
-  /// The service will never take it (malformed): drop it.
+  /// The service says the report is malformed (400, 413): it will never
+  /// take it, drop it.
   rejected,
 }
 
@@ -94,15 +96,8 @@ class HttpFeedbackTransport implements FeedbackTransport {
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 15);
     try {
-      final req = await client.postUrl(endpoint);
-      req.headers.contentType = ContentType.json;
-      req.add(utf8.encode(jsonEncode(json)));
-      final res = await req.close().timeout(const Duration(seconds: 30));
-      await res.drain<void>();
-      final code = res.statusCode;
-      if (code >= 200 && code < 300) return SendResult.done;
-      if (code == 429 || code >= 500) return SendResult.later;
-      return SendResult.rejected;
+      // the whole exchange: a stalled answer must not hold the outbox
+      return await _send(client, json).timeout(const Duration(seconds: 40));
     } catch (e) {
       debugPrint('feedback not sent: $e');
       return SendResult.later;
@@ -110,7 +105,26 @@ class HttpFeedbackTransport implements FeedbackTransport {
       client.close(force: true);
     }
   }
+
+  Future<SendResult> _send(HttpClient client, Map<String, dynamic> json) async {
+    final req = await client.postUrl(endpoint);
+    req.followRedirects = false;
+    req.headers.contentType = ContentType.json;
+    req.add(utf8.encode(jsonEncode(json)));
+    final res = await req.close();
+    await res.drain<void>();
+    final code = res.statusCode;
+    if (code >= 200 && code < 300) return SendResult.done;
+    // Only the service's own "malformed" drops a report. Anything else (a
+    // captive portal, a redirect, 404 while the route is being set up,
+    // 429, 5xx) may work later.
+    if (code == 400 || code == 413) return SendResult.rejected;
+    return SendResult.later;
+  }
 }
+
+/// What became of a report the user just sent.
+enum ReportState { sent, waiting, rejected }
 
 /// Reports waiting to be sent, on the phone.
 class FeedbackOutbox {
@@ -119,6 +133,9 @@ class FeedbackOutbox {
   final SharedPreferences _prefs;
   final FeedbackTransport _transport;
   Future<void>? _flushing;
+
+  /// Ids of reports the service rejected (since the app started).
+  final _rejected = <String>{};
 
   static const _key = 'feedback|outbox';
 
@@ -145,30 +162,44 @@ class FeedbackOutbox {
     [for (final r in reports) jsonEncode(r.toJson())],
   );
 
-  /// Keeps [report] and tries to send everything; true if [report] went out.
-  Future<bool> add(FeedbackReport report) async {
+  /// Keeps [report] and tries to send everything, waiting at most [wait];
+  /// after that the sending goes on in the background.
+  Future<ReportState> add(
+    FeedbackReport report, {
+    Duration wait = const Duration(seconds: 15),
+  }) async {
     final all = [...waiting, report];
     await _store(all.sublist(math.max(0, all.length - maxWaiting)));
-    await flush();
-    return !waiting.any((r) => r.id == report.id);
+    try {
+      await flush().timeout(wait);
+    } on TimeoutException {
+      // still sending: it stays in the outbox until it went out
+    }
+    if (_rejected.contains(report.id)) return ReportState.rejected;
+    return waiting.any((r) => r.id == report.id)
+        ? ReportState.waiting
+        : ReportState.sent;
   }
 
-  /// Sends what is waiting, oldest first; stops at the first "later".
+  /// Sends what is waiting, oldest first, also reports added meanwhile;
+  /// stops at the first "later".
   Future<void> flush() {
     // one flush at a time: two would send the same report twice
     return _flushing ??= _flush().whenComplete(() => _flushing = null);
   }
 
   Future<void> _flush() async {
-    final now = DateTime.now();
-    for (final r in waiting) {
-      if (now.difference(r.created) > maxAge) {
-        await _remove(r.id);
+    while (true) {
+      final next = waiting.firstOrNull;
+      if (next == null) return;
+      if (DateTime.now().difference(next.created) > maxAge) {
+        await _remove(next.id);
         continue;
       }
-      final result = await _transport.send(r.toJson());
+      final result = await _transport.send(next.toJson());
       if (result == SendResult.later) return;
-      await _remove(r.id);
+      if (result == SendResult.rejected) _rejected.add(next.id);
+      await _remove(next.id);
     }
   }
 
