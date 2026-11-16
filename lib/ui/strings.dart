@@ -11,7 +11,7 @@ class S {
     return S(_all[code] ?? _all['en']!);
   }
 
-  String get title => 'Phoneme Party';
+  String get title => 'Der Hase lacht';
   String get chooseLanguage => _t['chooseLanguage']!;
   String get world => _t['world']!;
   String get listen => _t['listen']!;
@@ -69,7 +69,7 @@ class S {
       'newRecord': 'Neuer Rekord!',
       'quizTitle': 'Rätsel',
       'wordsTitle': 'Wörter',
-      'feedbackTitle': 'Feedback für Phoneme Party',
+      'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
       'kindBug': 'Fehler',
       'kindIdea': 'Idee',
@@ -106,7 +106,7 @@ class S {
       'newRecord': 'New record!',
       'quizTitle': 'Quiz',
       'wordsTitle': 'Words',
-      'feedbackTitle': 'Feedback for Phoneme Party',
+      'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
       'kindBug': 'Bug',
       'kindIdea': 'Idea',
@@ -115,7 +115,7 @@ class S {
       'feedbackHint': 'What happened? What would you like?',
       'feedbackSends': 'Also sent (no recordings, no names):',
       'feedbackPublic':
-          'Goes to the Phoneme Party team only and is not published.',
+          'Goes to the Der Hase lacht team only and is not published.',
       'send': 'Send',
       'feedbackSent': 'Thank you! Sent.',
       'feedbackQueued': 'Thank you! It will be sent when there is internet.',
@@ -142,7 +142,7 @@ class S {
       'newRecord': 'Nouveau record !',
       'quizTitle': 'Devinettes',
       'wordsTitle': 'Mots',
-      'feedbackTitle': 'Avis sur Phoneme Party',
+      'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
       'kindBug': 'Bug',
       'kindIdea': 'Idée',
@@ -151,7 +151,7 @@ class S {
       'feedbackHint': 'Que s’est-il passé ? Que souhaitez-vous ?',
       'feedbackSends': 'Envoyé aussi (aucun enregistrement, aucun nom) :',
       'feedbackPublic':
-          'Envoyé uniquement à l’équipe Phoneme Party, jamais publié.',
+          'Envoyé uniquement à l’équipe Der Hase lacht, jamais publié.',
       'send': 'Envoyer',
       'feedbackSent': 'Merci ! Envoyé.',
       'feedbackQueued': 'Merci ! Ce sera envoyé dès qu’il y aura internet.',
@@ -178,7 +178,7 @@ class S {
       'newRecord': 'Nuovo record!',
       'quizTitle': 'Indovinelli',
       'wordsTitle': 'Parole',
-      'feedbackTitle': 'Commenti su Phoneme Party',
+      'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
       'kindBug': 'Errore',
       'kindIdea': 'Idea',
@@ -187,7 +187,7 @@ class S {
       'feedbackHint': 'Cosa è successo? Cosa desidera?',
       'feedbackSends': 'Inviato anche (nessuna registrazione, nessun nome):',
       'feedbackPublic':
-          'Va solo al team di Phoneme Party e non viene pubblicato.',
+          'Va solo al team di Der Hase lacht e non viene pubblicato.',
       'send': 'Invia',
       'feedbackSent': 'Grazie! Inviato.',
       'feedbackQueued': 'Grazie! Verrà inviato appena c’è internet.',
@@ -214,7 +214,7 @@ class S {
       'newRecord': '¡Nuevo récord!',
       'quizTitle': 'Adivinanzas',
       'wordsTitle': 'Palabras',
-      'feedbackTitle': 'Comentarios sobre Phoneme Party',
+      'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',
       'kindBug': 'Error',
       'kindIdea': 'Idea',
@@ -223,7 +223,7 @@ class S {
       'feedbackHint': '¿Qué ha pasado? ¿Qué le gustaría?',
       'feedbackSends': 'También se envía (sin grabaciones ni nombres):',
       'feedbackPublic':
-          'Solo lo recibe el equipo de Phoneme Party; no se publica.',
+          'Solo lo recibe el equipo de Der Hase lacht; no se publica.',
       'send': 'Enviar',
       'feedbackSent': '¡Gracias! Enviado.',
       'feedbackQueued': '¡Gracias! Se enviará cuando haya internet.',

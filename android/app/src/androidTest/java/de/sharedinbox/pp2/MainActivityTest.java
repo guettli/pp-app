@@ -1,4 +1,4 @@
-package de.relaxandplay.phoneme_party;
+package de.sharedinbox.pp2;
 
 import androidx.test.rule.ActivityTestRule;
 import dev.flutter.plugins.integration_test.FlutterTestRunner;

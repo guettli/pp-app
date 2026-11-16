@@ -1,4 +1,4 @@
-package de.relaxandplay.phoneme_party
+package de.sharedinbox.pp2
 
 import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
@@ -12,7 +12,7 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
-            "de.relaxandplay.phoneme_party/device",
+            "de.sharedinbox.pp2/device",
         ).setMethodCallHandler { call, result ->
             if (call.method != "info") {
                 result.notImplemented()

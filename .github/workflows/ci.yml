@@ -122,6 +122,6 @@ jobs:
             gh release upload "$TAG" dist/*.apk dist/*.aab --clobber
           else
             gh release create "$TAG" dist/*.apk dist/*.aab \
-              --target "$GITHUB_SHA" --title "Phoneme Party $VERSION" \
+              --target "$GITHUB_SHA" --title "Der Hase lacht $VERSION" \
               --generate-notes --latest
           fi

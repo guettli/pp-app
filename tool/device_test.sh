@@ -3,17 +3,17 @@
 # connected via adb.
 #
 # Builds the test app in dagger (ci DeviceTestApks), installs it next to the
-# release app (id ...phoneme_party.test, name "PP Test", own storage), runs
+# release app (id ...pp2.test, name "PP Test", own storage), runs
 # it, prints the result and the audio log, and uninstalls it again, also
 # when something fails. KEEP=1 keeps it installed; APKS=dir uses APKs
 # built before.
 #
 # Only the two test packages below are ever installed or removed; the
-# release app (de.relaxandplay.phoneme_party) is never touched.
+# release app (de.sharedinbox.pp2) is never touched.
 #
 # Needs: adb with one device, dagger. Turn the screen on and unlock first.
 set -eu
-app=de.relaxandplay.phoneme_party.test
+app=de.sharedinbox.pp2.test
 apks=${APKS:+$(cd "$APKS" && pwd)}
 out=$(mktemp -d)
 cleanup() {

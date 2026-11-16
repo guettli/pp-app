@@ -1,4 +1,4 @@
-# Phoneme Party (App)
+# Der Hase lacht (App)
 
 **📲 [Download for Android (APK)](https://github.com/guettli/pp-app/releases/latest/download/phoneme-party.apk)**
 · older 32-bit phones: [armv7 APK](https://github.com/guettli/pp-app/releases/latest/download/phoneme-party-armv7.apk)
@@ -89,7 +89,10 @@ name, permissions, versionCode = build number, not a debug key.
   (`appLabel`), `lib/main.dart`, `lib/ui/strings.dart` (title and the
   feedback texts), `ios/Runner/Info.plist`, `fastlane/metadata/android/*/`
   (title ≤ 30 characters, descriptions) and `PRIVACY.md`. The package id
-  `de.relaxandplay.phoneme_party` stays: Google Play never lets it change.
+  `de.sharedinbox.pp2` stays: Google Play never lets it change.
+- Up to v0.1.52 the app was "Phoneme Party" with id
+  `de.relaxandplay.phoneme_party`; that one does not update to the new
+  id, it stays installed beside it (uninstall it by hand).
 - Phones that installed the GitHub APK cannot update to the Play version
   (other signature, unless Play App Signing uses our upload key as app
   signing key); switching means uninstalling, which deletes the stars.
