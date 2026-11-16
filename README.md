@@ -83,7 +83,13 @@ name, permissions, versionCode = build number, not a debug key.
 - Listing texts: `fastlane/metadata/android/<locale>/` (title,
   short and full description; `test/store_listing_test.dart` checks
   Google's length limits). Default language en-US.
-- Privacy policy: [PRIVACY.md](PRIVACY.md) (English and German).
+- Privacy policy: [PRIVACY.md](PRIVACY.md) (English and German); URL for
+  the Play Console: <https://github.com/guettli/pp-app/blob/main/PRIVACY.md>.
+- Renaming the app: the shown name is in `android/app/build.gradle.kts`
+  (`appLabel`), `lib/main.dart`, `lib/ui/strings.dart` (title and the
+  feedback texts), `ios/Runner/Info.plist`, `fastlane/metadata/android/*/`
+  (title ≤ 30 characters, descriptions) and `PRIVACY.md`. The package id
+  `de.relaxandplay.phoneme_party` stays: Google Play never lets it change.
 - Phones that installed the GitHub APK cannot update to the Play version
   (other signature, unless Play App Signing uses our upload key as app
   signing key); switching means uninstalling, which deletes the stars.

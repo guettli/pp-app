@@ -2,15 +2,19 @@
 
 *Deutsch: siehe unten.*
 
-Last updated: 2026-11-15
+Last updated: 2026-11-16
 
 Phoneme Party is a speaking game for children. It is free, has no ads, no
 in-app purchases, no account and no tracking or analytics.
 
 ## Responsible (controller) and contact
 
-<!-- TODO(owner): name and postal address of the person responsible
-(GDPR controller) and a contact e-mail. -->
+Thomas Güttler  
+Bonhoefferstrasse 45  
+09116 Chemnitz  
+Germany
+
+E-mail: <playstore@thomas-guettler.de>
 
 ## Microphone and recordings
 
@@ -75,7 +79,7 @@ Source code: <https://github.com/guettli/pp-app>
 
 # Datenschutzerklärung – Phoneme Party (Android-App)
 
-Stand: 15.11.2026
+Stand: 16.11.2026
 
 Phoneme Party ist ein Sprechspiel für Kinder. Es ist kostenlos und hat
 keine Werbung, keine In-App-Käufe, kein Konto und kein Tracking oder
@@ -83,8 +87,12 @@ Analyse.
 
 ## Verantwortlicher und Kontakt
 
-<!-- TODO(owner): Name und Anschrift des Verantwortlichen (DSGVO) und eine
-Kontakt-E-Mail. -->
+Thomas Güttler  
+Bonhoefferstrasse 45  
+09116 Chemnitz  
+Deutschland
+
+E-Mail: <playstore@thomas-guettler.de>
 
 ## Mikrofon und Aufnahmen
 
