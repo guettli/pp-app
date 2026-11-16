@@ -75,6 +75,14 @@ class Progress {
     return true;
   }
 
+  /// A grown-up switched on quiz reports (feedback screen, behind the
+  /// parent gate): the quiz then shows a button that sends the question
+  /// with the child's recording to the developer. Stays on until switched
+  /// off.
+  bool get quizReports => _prefs.getBool('settings|quizReports') ?? false;
+  Future<void> setQuizReports(bool on) =>
+      _prefs.setBool('settings|quizReports', on);
+
   String? get studyLang => _prefs.getString('studyLang');
   Future<void> setStudyLang(String lang) => _prefs.setString('studyLang', lang);
 }

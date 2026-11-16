@@ -7,8 +7,18 @@
 // nor logs client addresses; it only holds them in memory for the rate
 // limit (Traefik in front of it sees them, as for every request).
 //
-//	feedback            serve (LISTEN, default :8080; DIR, default /data/feedback)
-//	feedback list       print the stored reports, newest first
+// Quiz reports (quiz.go) also carry the child's recording of one quiz
+// question; a grown-up has switched them on in the app. They are kept in
+// their own directory, 90 days.
+//
+//	feedback               serve (LISTEN, default :8080; DIR, default
+//	                       /data/feedback; QUIZ_DIR, default /data/quiz)
+//	feedback list          print the stored reports, newest first
+//	feedback quiz-list     the same for quiz reports (without audio)
+//	feedback cat <file>    write one stored file of the quiz directory to
+//	                       stdout (a recording: the image has no tar, so
+//	                       kubectl cp does not work)
+//	feedback delete <id>   delete a report (text or quiz) with its files
 package main
 
 import (
@@ -88,15 +98,20 @@ type Store interface {
 // Server is the HTTP handler.
 type Server struct {
 	Store Store
-	Now   func() time.Time
+	// Quiz stores quiz reports; nil: the route answers 404.
+	Quiz QuizStore
+	Now  func() time.Time
 
-	mu      sync.Mutex
-	clients map[string][]time.Time
-	all     []time.Time
+	limit, quizLimit *limiter
 }
 
 func NewServer(st Store) *Server {
-	return &Server{Store: st, Now: time.Now, clients: map[string][]time.Time{}}
+	return &Server{
+		Store: st, Now: time.Now,
+		limit: newLimiter(perClient, perHour),
+		// one question at a time while a parent watches the child play
+		quizLimit: newLimiter(quizPerClient, quizPerHour),
+	}
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +120,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok")
 		return
 	case "/pp-app/api/feedback":
+	case "/pp-app/api/quiz-report":
+		s.serveQuiz(w, r)
+		return
 	default:
 		http.NotFound(w, r)
 		return
@@ -124,7 +142,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if !s.allow(clientIP(r)) {
+	if !s.limit.allow(clientIP(r), s.Now()) {
 		http.Error(w, "too many reports, try later", http.StatusTooManyRequests)
 		return
 	}
@@ -137,11 +155,23 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 }
 
+// limiter counts reports per client and in all, for one hour.
+type limiter struct {
+	perClient, perHour int
+
+	mu      sync.Mutex
+	clients map[string][]time.Time
+	all     []time.Time
+}
+
+func newLimiter(perClient, perHour int) *limiter {
+	return &limiter{perClient: perClient, perHour: perHour, clients: map[string][]time.Time{}}
+}
+
 // allow counts a report of client and tells whether it is within the limits.
-func (s *Server) allow(client string) bool {
+func (s *limiter) allow(client string, now time.Time) bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	now := s.Now()
 	recent := func(ts []time.Time) []time.Time {
 		out := ts[:0]
 		for _, t := range ts {
@@ -153,7 +183,7 @@ func (s *Server) allow(client string) bool {
 	}
 	s.all = recent(s.all)
 	c := recent(s.clients[client])
-	if len(c) >= perClient || len(s.all) >= perHour {
+	if len(c) >= s.perClient || len(s.all) >= s.perHour {
 		s.clients[client] = c
 		return false
 	}
@@ -193,6 +223,45 @@ type Dir struct {
 	// Max reports kept; more are refused (a full disk would hurt the
 	// other services on the vps).
 	Max int
+
+	// Keep is how long a report is kept; 0 means [Keep].
+	Keep time.Duration
+}
+
+func (d *Dir) keep() time.Duration {
+	if d.Keep > 0 {
+		return d.Keep
+	}
+	return Keep
+}
+
+// stored tells whether a report with this id is stored, and how many
+// reports are (a .tmp left by a crash and a report's other files do not
+// count). Call with d.mu held.
+func (d *Dir) stored(id string) (found bool, n int, err error) {
+	entries, err := os.ReadDir(d.Path)
+	if err != nil {
+		return false, 0, err
+	}
+	for _, e := range entries {
+		if !strings.HasSuffix(e.Name(), ".json") {
+			continue
+		}
+		n++
+		if strings.HasSuffix(e.Name(), "-"+id+".json") {
+			found = true
+		}
+	}
+	return found, n, nil
+}
+
+// write writes b to name atomically.
+func write(name string, b []byte) error {
+	tmp := name + ".tmp"
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmp, name)
 }
 
 // Stored is a report as written to disk.
@@ -204,40 +273,32 @@ type Stored struct {
 func (d *Dir) Save(r *Report, received time.Time) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	entries, err := os.ReadDir(d.Path)
+	found, n, err := d.stored(r.ID)
 	if err != nil {
 		return err
 	}
-	stored := 0
-	for _, e := range entries {
-		if !strings.HasSuffix(e.Name(), ".json") {
-			continue // a .tmp left by a crash
-		}
-		stored++
-		if strings.HasSuffix(e.Name(), "-"+r.ID+".json") {
-			return nil // a retry: stored already
-		}
+	if found {
+		return nil // a retry: stored already
 	}
-	if stored >= d.Max {
+	if n >= d.Max {
 		return errors.New("store is full")
 	}
 	b, err := json.MarshalIndent(Stored{Report: *r, Received: received.UTC().Format(time.RFC3339)}, "", "  ")
 	if err != nil {
 		return err
 	}
-	name := filepath.Join(d.Path, received.UTC().Format("20060102T150405Z")+"-"+r.ID+".json")
-	tmp := name + ".tmp"
-	if err := os.WriteFile(tmp, append(b, '\n'), 0o600); err != nil {
-		return err
-	}
-	return os.Rename(tmp, name)
+	return write(filepath.Join(d.Path, received.UTC().Format(stamp)+"-"+r.ID+".json"), append(b, '\n'))
 }
+
+// stamp is the time format of the file names.
+const stamp = "20060102T150405Z"
 
 // Keep is how long a report is kept (PRIVACY.md says twelve months).
 const Keep = 365 * 24 * time.Hour
 
-// Prune deletes the reports received more than Keep before now; it
-// returns how many. The time is the file name's prefix.
+// Prune deletes the files of reports received more than d's keep time
+// before now; it returns how many files. The time is the file name's
+// prefix.
 func (d *Dir) Prune(now time.Time) (int, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -245,14 +306,14 @@ func (d *Dir) Prune(now time.Time) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	cut := now.Add(-Keep)
+	cut := now.Add(-d.keep())
 	n := 0
 	for _, e := range entries {
 		ts, _, ok := strings.Cut(e.Name(), "-")
 		if !ok {
 			continue
 		}
-		t, err := time.Parse("20060102T150405Z", ts)
+		t, err := time.Parse(stamp, ts)
 		if err != nil || !t.Before(cut) {
 			continue
 		}
@@ -278,7 +339,8 @@ func (d *Dir) Delete(id string) (bool, error) {
 	}
 	found := false
 	for _, e := range entries {
-		if strings.HasSuffix(e.Name(), "-"+id+".json") {
+		// the report and its recordings (<stamp>-<id>-<n>.wav)
+		if strings.Contains(e.Name(), "-"+id+".") || strings.Contains(e.Name(), "-"+id+"-") {
 			if err := os.Remove(filepath.Join(d.Path, e.Name())); err != nil {
 				return found, err
 			}
@@ -320,40 +382,37 @@ func env(key, def string) string {
 
 func main() {
 	dir := &Dir{Path: env("DIR", "/data/feedback"), Max: 20000}
-	if len(os.Args) > 1 && os.Args[1] == "list" {
-		if err := dir.List(os.Stdout); err != nil {
+	quiz := &Dir{Path: env("QUIZ_DIR", "/data/quiz"), Max: quizMax, Keep: QuizKeep}
+	if len(os.Args) > 1 {
+		if err := command(os.Args[1:], dir, quiz, os.Stdout); err != nil {
 			log.Fatal(err)
 		}
 		return
 	}
-	if len(os.Args) == 3 && os.Args[1] == "delete" {
-		found, err := dir.Delete(os.Args[2])
-		if err != nil {
+	for _, d := range []*Dir{dir, quiz} {
+		if err := os.MkdirAll(d.Path, 0o700); err != nil {
 			log.Fatal(err)
 		}
-		if !found {
-			log.Fatalf("no report %s", os.Args[2])
-		}
-		fmt.Println("deleted", os.Args[2])
-		return
-	}
-	if err := os.MkdirAll(dir.Path, 0o700); err != nil {
-		log.Fatal(err)
 	}
 	addr := env("LISTEN", ":8080")
+	handler := NewServer(dir)
+	handler.Quiz = quiz
 	srv := &http.Server{
 		Addr:              addr,
-		Handler:           NewServer(dir),
+		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
-		ReadTimeout:       20 * time.Second,
-		WriteTimeout:      20 * time.Second,
+		// a quiz report is up to 1.5 MB from a phone on a slow line
+		ReadTimeout:  90 * time.Second,
+		WriteTimeout: 20 * time.Second,
 	}
 	go func() {
 		for {
-			if n, err := dir.Prune(time.Now()); err != nil {
-				log.Printf("prune: %v", err)
-			} else if n > 0 {
-				log.Printf("pruned %d reports older than %s", n, Keep)
+			for _, d := range []*Dir{dir, quiz} {
+				if n, err := d.Prune(time.Now()); err != nil {
+					log.Printf("prune %s: %v", d.Path, err)
+				} else if n > 0 {
+					log.Printf("pruned %d files older than %s in %s", n, d.keep(), d.Path)
+				}
 			}
 			time.Sleep(24 * time.Hour)
 		}

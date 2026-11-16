@@ -1,6 +1,8 @@
-// Feedback and bug reports, for grown-ups: behind a small sum (children
-// should not send reports by accident; the Play Store asks for such a gate
-// in apps for children). The screen shows everything that is sent.
+// Feedback and bug reports, for grown-ups: behind a small multiplication
+// (children should not send reports by accident; the Play Store asks for
+// such a gate in apps for children). The screen shows everything that is
+// sent. Behind the same gate: the switch for quiz reports (they send the
+// child's recordings, lib/net/quiz_report.dart).
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -126,7 +128,22 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
       FeedbackKind.word: s.kindWord,
       FeedbackKind.other: s.kindOther,
     };
+    final progress = widget.app.progress;
     return [
+      if (widget.app.quizReports != null) ...[
+        SwitchListTile(
+          key: const Key('quizReports'),
+          contentPadding: EdgeInsets.zero,
+          title: Text(s.quizReports),
+          subtitle: Text(s.quizReportsInfo),
+          value: progress.quizReports,
+          onChanged: (on) async {
+            await progress.setQuizReports(on);
+            if (mounted) setState(() {});
+          },
+        ),
+        const Divider(height: 24),
+      ],
       Wrap(
         spacing: 8,
         runSpacing: 4,

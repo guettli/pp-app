@@ -48,6 +48,30 @@ Phrase? heardOption(
   return option;
 }
 
+/// Per option: its best score and best share of the same sounds against
+/// [ipa] (what [heardOption] decides on; for quiz reports).
+List<({String option, double score, double same})> optionScores(
+  PhonemeComparer comparer,
+  List<Phrase> options,
+  String ipa,
+  String lang,
+) => [
+  for (final o in options)
+    if (ipa.isEmpty)
+      (option: o.text, score: 0.0, same: 0.0)
+    else
+      () {
+        final cs = [
+          for (final w in o.accepted) comparer.compare(w.ipa, ipa, lang),
+        ];
+        return (
+          option: o.text,
+          score: cs.map((c) => c.score).reduce(math.max),
+          same: cs.map(sameShare).reduce(math.max),
+        );
+      }(),
+];
+
 /// Whether [a] and [b] sound so much alike that they must not be options
 /// of the same question (any accepted word of one against the other): at
 /// least half of the sounds the same (Kuh / Schuh, luna / lupo). Words that

@@ -1,7 +1,8 @@
 // The microphone part of the quiz: listen until the child has said a word
 // (hands-free, like the word game), and make sure the mic is off again
 // however the try ends (done, tap, error, stream end, app paused, screen
-// closed). The audio stays in memory for the recogniser only.
+// closed). The audio stays in memory (for the recogniser, and for a quiz
+// report if a grown-up switched those on).
 import 'dart:async';
 import 'dart:typed_data';
 
@@ -13,13 +14,16 @@ import '../phonetics/recognizer.dart';
 
 /// What [WordListener.listen] heard.
 class Heard {
-  const Heard(this.speech, this.audio);
+  const Heard(this.speech, this.audio, this.pcm);
 
   /// Whether the endpointer heard someone speak.
   final bool speech;
 
   /// Prepared for the recogniser.
   final Float32List audio;
+
+  /// As recorded: 16 kHz mono PCM16.
+  final Uint8List pcm;
 }
 
 class WordListener {
@@ -120,7 +124,10 @@ class WordListener {
     final speech = _ep?.heardSpeech ?? false;
     // taken before the mic stops, so a late chunk cannot change it
     final bytes = _buffer.takeBytes();
-    await _finish(c, Heard(speech, prepareForRecognition(pcm16ToFloat(bytes))));
+    await _finish(
+      c,
+      Heard(speech, prepareForRecognition(pcm16ToFloat(bytes)), bytes),
+    );
   }
 
   /// The mic goes off before anyone hears about the result, so nothing
