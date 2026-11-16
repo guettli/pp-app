@@ -12,8 +12,10 @@ Speaking clearly should be fun. A free, offline pronunciation game for kids,
 built with Flutter. Native successor of the web app
 [guettli/pp](https://github.com/guettli/pp).
 
-- **Offline, no server, no AI token.** Speech recognition runs on the phone.
-  The recording never leaves the device.
+- **Offline, no AI token.** Speech recognition runs on the phone. The
+  recording stays on the device, unless a grown-up switches on quiz reports
+  (then 🐞 in the quiz sends that question with its recording; see
+  PRIVACY.md). Feedback and quiz reports go to `server/feedback`.
 - Five study languages: German (de-DE), British English (en-GB), French
   (fr-FR), Italian (it-IT), Spanish (es-ES), about 170 words each.
 - Only concrete things kids know (animals, food, body, toys, vehicles,

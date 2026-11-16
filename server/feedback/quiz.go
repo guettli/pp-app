@@ -28,10 +28,13 @@ import (
 const (
 	// QuizKeep is how long quiz reports are kept (PRIVACY.md: 90 days).
 	QuizKeep = 90 * 24 * time.Hour
-	quizMax  = 1000 // reports; each is at most ~1 MB
+	// reports; each is at most ~0.8 MB on disk: 400 MB of the 1 GB volume
+	quizMax = 500
 
 	quizPerClient = 30
-	quizPerHour   = 120
+	quizPerHour   = 60
+	// uploads at once: each needs ~7 MB while it is decoded, the pod 64 MB
+	quizUploads = 2
 
 	maxTries   = 2 // a question is asked twice at most
 	maxOptions = 6
@@ -39,6 +42,8 @@ const (
 	maxAudio    = 13*16000*2 + 44
 	maxQuizBody = maxTries*(maxAudio*4/3+4) + 64<<10
 	maxField    = 200
+	// a quiz report on a slow line (Traefik's entrypoint allows 60 s)
+	quizUploadTime = 90 * time.Second
 )
 
 // QuizReport is what the app sends.
@@ -65,6 +70,7 @@ type QuizTry struct {
 	// Audio is a base64 WAV (16 kHz mono PCM16). It is stored as a file
 	// of its own; the stored JSON has its name in File instead.
 	Audio string `json:"audio,omitempty"`
+	wav   []byte // Audio decoded, by Validate
 	File  string `json:"file,omitempty"`
 	// Speech: the endpointer heard someone speak.
 	Speech bool `json:"speech"`
@@ -99,7 +105,8 @@ func wav(b64 string) ([]byte, error) {
 	return b, nil
 }
 
-// Validate checks a report; the error text goes back to the app.
+// Validate checks a report and decodes the audio; the error text goes back
+// to the app.
 func (q *QuizReport) Validate() error {
 	if !idPattern.MatchString(q.ID) {
 		return errors.New("bad id")
@@ -136,7 +143,8 @@ func (q *QuizReport) Validate() error {
 	if len(q.Tries) == 0 || len(q.Tries) > maxTries {
 		return errors.New("bad tries")
 	}
-	for _, t := range q.Tries {
+	for i := range q.Tries {
+		t := &q.Tries[i]
 		if t.File != "" || !okString(t.Heard, 2*maxField) || !okString(t.Said, maxField) || len(t.Scores) > maxOptions {
 			return errors.New("bad try")
 		}
@@ -145,9 +153,12 @@ func (q *QuizReport) Validate() error {
 				return errors.New("bad try")
 			}
 		}
-		if _, err := wav(t.Audio); err != nil {
+		b, err := wav(t.Audio)
+		if err != nil {
 			return err
 		}
+		t.wav = b
+		t.Audio = "" // not twice in memory
 	}
 	return nil
 }
@@ -166,8 +177,9 @@ type StoredQuiz struct {
 }
 
 // SaveQuiz writes <stamp>-<id>-<n>.wav per try, then <stamp>-<id>.json:
-// the report counts as stored once its JSON is there.
-func (d *Dir) SaveQuiz(q *QuizReport, received time.Time) error {
+// the report counts as stored once its JSON is there; if that fails, the
+// recordings are removed again. q must have passed Validate.
+func (d *Dir) SaveQuiz(q *QuizReport, received time.Time) (err error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	found, n, err := d.stored(q.ID)
@@ -183,18 +195,24 @@ func (d *Dir) SaveQuiz(q *QuizReport, received time.Time) error {
 	base := received.UTC().Format(stamp) + "-" + q.ID
 	out := StoredQuiz{QuizReport: *q, Received: received.UTC().Format(time.RFC3339)}
 	out.Tries = make([]QuizTry, len(q.Tries))
-	for i, t := range q.Tries {
-		b, err := wav(t.Audio)
+	var written []string
+	defer func() {
 		if err != nil {
-			return err
+			for _, n := range written {
+				os.Remove(filepath.Join(d.Path, n))
+			}
+		}
+	}()
+	for i, t := range q.Tries {
+		if len(t.wav) == 0 {
+			return errors.New("not validated")
 		}
 		name := base + "-" + strconv.Itoa(i+1) + ".wav"
-		if err := write(filepath.Join(d.Path, name), b); err != nil {
+		if err := write(filepath.Join(d.Path, name), t.wav); err != nil {
 			return err
 		}
-		t.Audio = ""
-		t.File = name
-		out.Tries[i] = t
+		written = append(written, name)
+		out.Tries[i] = QuizTry{File: name, Speech: t.Speech, Heard: t.Heard, Said: t.Said, Scores: t.Scores}
 	}
 	b, err := json.MarshalIndent(out, "", "  ")
 	if err != nil {
@@ -212,6 +230,24 @@ func (s *Server) serveQuiz(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "POST only", http.StatusMethodNotAllowed)
 		return
 	}
+	// before the body is read: a flood costs no memory
+	if !s.quizLimit.allow(clientIP(r), s.Now()) {
+		http.Error(w, "too many reports, try later", http.StatusTooManyRequests)
+		return
+	}
+	select {
+	case s.quizSlots <- struct{}{}:
+		defer func() { <-s.quizSlots }()
+	default:
+		http.Error(w, "busy, try later", http.StatusServiceUnavailable)
+		return
+	}
+	// a slow line: the default write deadline (from the headers on) would
+	// cut the answer after a long upload, and the phone would say "not
+	// sent" for a stored report
+	rc := http.NewResponseController(w)
+	rc.SetReadDeadline(time.Now().Add(quizUploadTime))
+	rc.SetWriteDeadline(time.Now().Add(quizUploadTime + 10*time.Second))
 	var q QuizReport
 	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, maxQuizBody))
 	dec.DisallowUnknownFields()
@@ -226,10 +262,6 @@ func (s *Server) serveQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := q.Validate(); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if !s.quizLimit.allow(clientIP(r), s.Now()) {
-		http.Error(w, "too many reports, try later", http.StatusTooManyRequests)
 		return
 	}
 	if err := s.Quiz.SaveQuiz(&q, s.Now()); err != nil {

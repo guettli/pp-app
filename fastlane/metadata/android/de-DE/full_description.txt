@@ -10,7 +10,7 @@ Das Handy zeigt ein Bild und sagt das Wort. Dann bist du dran: Sag es nach, und 
 • Wortliste: jedes Wort mit Bild (und, wo es passt, ungefährer Größe und Gewicht); antippen, und das Wort wird vorgesprochen.
 
 Datenschutz von Anfang an
-• Die Spracherkennung läuft auf dem Handy. Aufnahmen verlassen nie das Gerät und werden nicht gespeichert.
+• Die Spracherkennung läuft auf dem Handy. Aufnahmen werden nicht gespeichert und bleiben auf dem Gerät – außer ein Elternteil schaltet Rätsel-Meldungen ein, um einzelne Fragen mit der Aufnahme an den Entwickler zu senden.
 • Kein Konto, keine Werbung, keine In-App-Käufe, kein Tracking.
 • Das Spiel funktioniert ohne Internet. Die App sendet nur eine Rückmeldung, die ein Erwachsener selbst schreibt und absichtlich abschickt (hinter einer Malaufgabe für Eltern).
 

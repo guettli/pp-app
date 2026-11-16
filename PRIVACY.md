@@ -21,7 +21,9 @@ E-mail: <playstore@thomas-guettler.de>
 The app uses the microphone so a child can say a word. Speech recognition
 runs **on the phone**. A recording is kept in memory only during its round
 (to score it and to play it back when the child taps the funny-voice
-button); the next round, or leaving the game, discards it. Recordings are
+button); the next round, or leaving the game, discards it (with quiz
+reports switched on, the quiz keeps the last question's recordings in
+memory until the next try or until the quiz is closed). Recordings are
 never saved to storage. They leave the device only as a quiz report (see
 below), which is off unless a grown-up switches it on. The voice games without
 words ("hold it long", "low and high") only measure the length and pitch
@@ -127,8 +129,10 @@ Die App nutzt das Mikrofon, damit ein Kind ein Wort sagen kann. Die
 Spracherkennung läuft **auf dem Handy**. Eine Aufnahme bleibt nur während
 ihrer Runde im Arbeitsspeicher (zum Bewerten und um sie vorzuspielen, wenn
 das Kind auf den Knopf für die lustige Stimme tippt); die nächste Runde
-oder das Verlassen des Spiels verwirft sie. Aufnahmen werden nie
-gespeichert. Sie verlassen das Gerät nur als Rätsel-Meldung (siehe
+oder das Verlassen des Spiels verwirft sie (mit eingeschalteten
+Rätsel-Meldungen behält das Rätsel die Aufnahmen der letzten Frage im
+Arbeitsspeicher bis zum nächsten Versuch oder bis es geschlossen wird).
+Aufnahmen werden nie gespeichert. Sie verlassen das Gerät nur als Rätsel-Meldung (siehe
 unten), die aus ist, solange ein Erwachsener sie nicht einschaltet. Die
 Stimmspiele ohne Wörter
 („lange halten“, „tief und hoch“) messen nur Dauer und Tonhöhe.

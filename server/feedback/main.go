@@ -32,6 +32,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"sort"
 	"strings"
 	"sync"
@@ -103,6 +104,7 @@ type Server struct {
 	Now  func() time.Time
 
 	limit, quizLimit *limiter
+	quizSlots        chan struct{}
 }
 
 func NewServer(st Store) *Server {
@@ -111,6 +113,7 @@ func NewServer(st Store) *Server {
 		limit: newLimiter(perClient, perHour),
 		// one question at a time while a parent watches the child play
 		quizLimit: newLimiter(quizPerClient, quizPerHour),
+		quizSlots: make(chan struct{}, quizUploads),
 	}
 }
 
@@ -381,6 +384,9 @@ func env(key, def string) string {
 }
 
 func main() {
+	if os.Getenv("GOMEMLIMIT") == "" {
+		debug.SetMemoryLimit(48 << 20) // the pod has 64 MiB
+	}
 	dir := &Dir{Path: env("DIR", "/data/feedback"), Max: 20000}
 	quiz := &Dir{Path: env("QUIZ_DIR", "/data/quiz"), Max: quizMax, Keep: QuizKeep}
 	if len(os.Args) > 1 {
@@ -401,8 +407,8 @@ func main() {
 		Addr:              addr,
 		Handler:           handler,
 		ReadHeaderTimeout: 10 * time.Second,
-		// a quiz report is up to 1.5 MB from a phone on a slow line
-		ReadTimeout:  90 * time.Second,
+		// text reports; the quiz route sets its own deadlines
+		ReadTimeout:  20 * time.Second,
 		WriteTimeout: 20 * time.Second,
 	}
 	go func() {

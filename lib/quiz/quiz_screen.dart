@@ -257,20 +257,23 @@ class _QuizScreenState extends State<QuizScreen>
     }
     setState(() => _phase = _Phase.thinking);
     Phrase? said;
+    String? ipa;
     try {
       final rec = await widget.app.recognizer
           .recognize(heard.audio)
           .timeout(const Duration(seconds: 20));
       said = heardOption(widget.app.comparer, _q.options, rec.ipa, _lang);
       debugPrint('quiz: heard "${rec.ipa}" -> ${said?.text}');
-      _keepTry(heard, rec.ipa, said);
+      ipa = rec.ipa;
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
-      _keepTry(heard, '', null);
+      // not when the try was dropped meanwhile (paused, closed)
+      if (_current(id)) _keepTry(heard, '', null);
       _fail(id, (s) => s.tryAgain);
       return;
     }
     if (!_current(id)) return;
+    _keepTry(heard, ipa, said);
     if (said == null && _unclear == 0) {
       // misheard, or a word that is not one of the three: once more
       _unclear++;
@@ -323,10 +326,16 @@ class _QuizScreenState extends State<QuizScreen>
     final uiLang = Localizations.maybeLocaleOf(context)?.languageCode ?? '';
     final tries = _tries;
     setState(() => _reportSending = true);
+    Map<String, String> device;
+    try {
+      device = await widget.info();
+    } catch (_) {
+      device = const {};
+    }
     final report = QuizReport(
       id: FeedbackReport.newId(math.Random.secure()),
       created: DateTime.now(),
-      info: {...await widget.info(), 'studyLang': _lang, 'uiLang': uiLang},
+      info: {...device, 'studyLang': _lang, 'uiLang': uiLang},
       lang: _lang,
       question: _lines.question(q.ask),
       asked: _lines.ask(q),

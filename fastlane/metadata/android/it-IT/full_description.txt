@@ -10,7 +10,7 @@ Il telefono mostra un’immagine e dice la parola. Poi tocca a te: ripetila, e i
 • Elenco delle parole: ogni parola con la sua immagine (e, dove ha senso, grandezza e peso approssimativi); tocca una parola per sentirla.
 
 Privacy fin dall’inizio
-• Il riconoscimento vocale funziona sul telefono. Le registrazioni non lasciano mai il dispositivo e non vengono salvate.
+• Il riconoscimento vocale funziona sul telefono. Le registrazioni non vengono salvate e restano sul dispositivo – a meno che un genitore attivi l’invio degli indovinelli, per inviare una domanda con la registrazione allo sviluppatore.
 • Nessun account, nessuna pubblicità, nessun acquisto in-app, nessun tracciamento.
 • Il gioco funziona senza internet. L’app invia solo un messaggio che un adulto scrive e invia di proposito (dietro una moltiplicazione per i genitori).
 

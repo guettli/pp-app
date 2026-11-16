@@ -10,7 +10,7 @@ The phone shows a picture and says the word. Then it is your turn: say it, and t
 • Word list: every word with its picture (and rough size and weight where that makes sense); tap a word to hear it.
 
 Private by design
-• Speech recognition runs on the phone. Recordings never leave the device and are not stored.
+• Speech recognition runs on the phone. Recordings are not stored and stay on the device – unless a parent switches on quiz reports, to send single questions with the recording to the developer.
 • No account, no ads, no in-app purchases, no tracking.
 • The game works without internet. The only thing the app ever sends is a feedback report that a grown-up writes and sends on purpose (behind a small multiplication for parents).
 

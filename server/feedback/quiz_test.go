@@ -159,14 +159,53 @@ func TestQuizHasItsOwnLimit(t *testing.T) {
 	}
 }
 
+func valid(t *testing.T, q *QuizReport) *QuizReport {
+	t.Helper()
+	if err := q.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	return q
+}
+
+func TestQuizFailedSaveLeavesNoRecordings(t *testing.T) {
+	d := &Dir{Path: t.TempDir(), Max: 100, Keep: QuizKeep}
+	now := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)
+	// the report's JSON cannot be written: a directory is in its place
+	if err := os.Mkdir(filepath.Join(d.Path, now.Format(stamp)+"-"+id1+".json.tmp"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := d.SaveQuiz(valid(t, quizReport(id1, wavBytes(10), wavBytes(10))), now); err == nil {
+		t.Fatal("saved")
+	}
+	for _, f := range files(t, d) {
+		if strings.HasSuffix(f, ".wav") {
+			t.Fatal("recording left:", f)
+		}
+	}
+}
+
+func TestQuizBusy(t *testing.T) {
+	s, _ := quizServer(t)
+	for i := 0; i < quizUploads; i++ {
+		s.quizSlots <- struct{}{}
+	}
+	if w := postQuiz(s, quizReport(id1, wavBytes(10)), "1.1.1.1"); w.Code != 503 {
+		t.Fatal(w.Code)
+	}
+	<-s.quizSlots
+	if w := postQuiz(s, quizReport(id1, wavBytes(10)), "1.1.1.1"); w.Code != 201 {
+		t.Fatal(w.Code, w.Body)
+	}
+}
+
 func TestQuizPruneAndDelete(t *testing.T) {
 	d := &Dir{Path: t.TempDir(), Max: 100, Keep: QuizKeep}
 	now := time.Date(2026, 11, 16, 0, 0, 0, 0, time.UTC)
 	id2 := strings.Repeat("ab", 16)
-	if err := d.SaveQuiz(quizReport(id1, wavBytes(10)), now.Add(-QuizKeep-time.Hour)); err != nil {
+	if err := d.SaveQuiz(valid(t, quizReport(id1, wavBytes(10))), now.Add(-QuizKeep-time.Hour)); err != nil {
 		t.Fatal(err)
 	}
-	if err := d.SaveQuiz(quizReport(id2, wavBytes(10), wavBytes(10)), now.Add(-QuizKeep+time.Hour)); err != nil {
+	if err := d.SaveQuiz(valid(t, quizReport(id2, wavBytes(10), wavBytes(10))), now.Add(-QuizKeep+time.Hour)); err != nil {
 		t.Fatal(err)
 	}
 	if n, err := d.Prune(now); err != nil || n != 2 {
