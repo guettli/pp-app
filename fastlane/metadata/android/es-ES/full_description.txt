@@ -1,4 +1,4 @@
-Phoneme Party ayuda a los niños a hablar con más claridad, jugando.
+Der Hase lacht ayuda a los niños a hablar con más claridad, jugando.
 
 El teléfono muestra una imagen y dice la palabra. Luego te toca a ti: repítela, y el cohete sube tan alto como clara fue tu pronunciación. Con tres estrellas llega al planeta. Cada sonido de la palabra aparece en color: verde es correcto, naranja es casi, rojo falta.
 
@@ -14,4 +14,4 @@ Privacidad desde el principio
 • Sin cuenta, sin anuncios, sin compras dentro de la app, sin rastreo.
 • El juego funciona sin internet. Lo único que la app envía es un mensaje que un adulto escribe y envía a propósito (tras una multiplicación para los padres).
 
-Phoneme Party es gratuito y de código abierto, hecho para niños de todo el mundo – también en teléfonos sencillos y baratos.
+Der Hase lacht es gratuito y de código abierto, hecho para niños de todo el mundo – también en teléfonos sencillos y baratos.

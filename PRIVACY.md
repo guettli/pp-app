@@ -1,10 +1,10 @@
-# Privacy policy – Phoneme Party (Android app)
+# Privacy policy – Der Hase lacht (Android app)
 
 *Deutsch: siehe unten.*
 
 Last updated: 2026-11-16
 
-Phoneme Party is a speaking game for children. It is free, has no ads, no
+Der Hase lacht is a speaking game for children. It is free, has no ads, no
 in-app purchases, no account and no tracking or analytics.
 
 ## Responsible (controller) and contact
@@ -77,11 +77,11 @@ Source code: <https://github.com/guettli/pp-app>
 
 ---
 
-# Datenschutzerklärung – Phoneme Party (Android-App)
+# Datenschutzerklärung – Der Hase lacht (Android-App)
 
 Stand: 16.11.2026
 
-Phoneme Party ist ein Sprechspiel für Kinder. Es ist kostenlos und hat
+Der Hase lacht ist ein Sprechspiel für Kinder. Es ist kostenlos und hat
 keine Werbung, keine In-App-Käufe, kein Konto und kein Tracking oder
 Analyse.
 

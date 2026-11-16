@@ -16,7 +16,7 @@ val keyProps = Properties().apply {
 }
 
 android {
-    namespace = "de.relaxandplay.phoneme_party"
+    namespace = "de.sharedinbox.pp2"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +26,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "de.relaxandplay.phoneme_party"
+        applicationId = "de.sharedinbox.pp2"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 24 // ONNX Runtime + record need API 24+
@@ -38,7 +38,7 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        manifestPlaceholders["appLabel"] = "Phoneme Party"
+        manifestPlaceholders["appLabel"] = "Der Hase lacht"
     }
 
     signingConfigs {

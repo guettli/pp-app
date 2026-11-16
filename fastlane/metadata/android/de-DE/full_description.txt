@@ -1,4 +1,4 @@
-Phoneme Party hilft Kindern, deutlicher zu sprechen – spielerisch.
+Der Hase lacht hilft Kindern, deutlicher zu sprechen – spielerisch.
 
 Das Handy zeigt ein Bild und sagt das Wort. Dann bist du dran: Sag es nach, und die Rakete fliegt so hoch, wie deine Aussprache klar war. Bei drei Sternen erreicht sie den Planeten. Jeder Laut des Wortes wird farbig angezeigt: Grün ist richtig, Orange ist nah dran, Rot fehlt.
 
@@ -14,4 +14,4 @@ Datenschutz von Anfang an
 • Kein Konto, keine Werbung, keine In-App-Käufe, kein Tracking.
 • Das Spiel funktioniert ohne Internet. Die App sendet nur eine Rückmeldung, die ein Erwachsener selbst schreibt und absichtlich abschickt (hinter einer Malaufgabe für Eltern).
 
-Phoneme Party ist kostenlos und Open Source, gemacht für Kinder überall – auch auf einfachen, günstigen Handys.
+Der Hase lacht ist kostenlos und Open Source, gemacht für Kinder überall – auch auf einfachen, günstigen Handys.

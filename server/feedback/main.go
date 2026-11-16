@@ -1,4 +1,4 @@
-// Command feedback takes feedback and bug reports from the Phoneme Party
+// Command feedback takes feedback and bug reports from the Der Hase lacht
 // app (lib/net/feedback.dart) and stores each as a JSON file in a
 // directory (a volume on the vps). Nothing is published.
 //

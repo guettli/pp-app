@@ -72,7 +72,7 @@ void main() {
     base = await AppState.load();
   });
   // every test starts without progress; the test app
-  // (…phoneme_party.test) has its own storage
+  // (…pp2.test) has its own storage
   setUp(() async => (await SharedPreferences.getInstance()).clear());
 
   const step = Duration(milliseconds: 100);

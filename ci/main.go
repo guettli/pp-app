@@ -1,4 +1,4 @@
-// Dagger CI module for Phoneme Party (Flutter app).
+// Dagger CI module for Der Hase lacht (Flutter app).
 //
 // Flutter/Dart are not installed on the dev host. Everything runs inside
 // containers on the Dagger engine:
@@ -347,7 +347,7 @@ if grep -q "CN=Android Debug" cert.txt; then echo "bundle is signed with a debug
 java -jar /home/ci/bundletool.jar build-apks --bundle="$1" --output=u.apks --mode=universal
 unzip -q u.apks universal.apk
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging universal.apk)
-echo "$b" | grep -q "^package: name='de.relaxandplay.phoneme_party' versionCode='$2' " || { echo "wrong package id or versionCode (want $2)" >&2; echo "$b" | head -1 >&2; exit 1; }
+echo "$b" | grep -q "^package: name='de.sharedinbox.pp2' versionCode='$2' " || { echo "wrong package id or versionCode (want $2)" >&2; echo "$b" | head -1 >&2; exit 1; }
 sh -c "$RELEASE_APK_CHECK" check universal.apk`
 
 // releaseApkCheck makes sure the release APK is the real app: its id and
@@ -356,14 +356,14 @@ sh -c "$RELEASE_APK_CHECK" check universal.apk`
 // in another permission fails the build.
 const releaseApkCheck = `set -e
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")
-echo "$b" | grep -q "^package: name='de.relaxandplay.phoneme_party' " || { echo "wrong package id" >&2; exit 1; }
-echo "$b" | grep -q "^application-label:'Phoneme Party'$" || { echo "wrong app name" >&2; exit 1; }
+echo "$b" | grep -q "^package: name='de.sharedinbox.pp2' " || { echo "wrong package id" >&2; exit 1; }
+echo "$b" | grep -q "^application-label:'Der Hase lacht'$" || { echo "wrong app name" >&2; exit 1; }
 perms=$(echo "$b" | sed -n "s/^uses-permission\\(-sdk-23\\)\\{0,1\\}: name='\\([^']*\\)'.*/\\2/p" | sort | tr '\n' ' ')
-want="android.permission.INTERNET android.permission.RECORD_AUDIO de.relaxandplay.phoneme_party.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION "
+want="android.permission.INTERNET android.permission.RECORD_AUDIO de.sharedinbox.pp2.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION "
 [ "$perms" = "$want" ] || { echo "unexpected permissions: $perms" >&2; exit 1; }`
 
 // DeviceTestApks builds what tool/device_test.sh installs on a phone: the
-// app (debug, id ...phoneme_party.test, so it sits next to the release app)
+// app (debug, id ...pp2.test, so it sits next to the release app)
 // with an integration test as entry point, and the instrumentation runner.
 // Test code is only ever compiled into these, never into BuildApk.
 func (m *Ci) DeviceTestApks(
@@ -408,7 +408,7 @@ func (m *Ci) releaseVersion(ctx context.Context, buildNumber int) (string, error
 func (m *Ci) Scaffold() *dagger.Directory {
 	return m.toolchain().
 		WithWorkdir("/src").
-		WithExec([]string{"flutter", "create", "--org", "de.relaxandplay", "--project-name", "phoneme_party",
+		WithExec([]string{"flutter", "create", "--org", "de.sharedinbox", "--project-name", "phoneme_party",
 			"--platforms", "android,ios", "--empty", "."}).
 		Directory("/src")
 }
