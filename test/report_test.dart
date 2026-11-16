@@ -11,6 +11,7 @@ import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/net/feedback.dart';
+import 'package:phoneme_party/net/quiz_report.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/ui/feedback_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -158,6 +159,7 @@ void main() {
       book,
       io: dev.io,
       feedback: outbox,
+      quizReports: _NoQuizReports(),
     );
     await t.pumpWidget(
       MaterialApp(
@@ -181,6 +183,7 @@ void main() {
     await t.tap(find.text('open'));
     await t.pumpAndSettle();
     expect(find.byKey(const Key('text')), findsNothing);
+    expect(find.byKey(const Key('quizReports')), findsNothing);
     // the sum: math.Random(1) of FakeDevices
     final q = find.textContaining('what is').evaluate().single.widget as Text;
     final m = RegExp(r'(\d+) × (\d+)').firstMatch(q.data!)!;
@@ -194,11 +197,24 @@ void main() {
     await t.pump();
     expect(find.text('phone: Test Phone'), findsOneWidget);
     expect(find.text('studyLang: de-DE'), findsOneWidget);
+    // quiz reports: off until switched on, behind the gate, kept
+    final sw = find.byKey(const Key('quizReports'));
+    expect(t.widget<SwitchListTile>(sw).value, isFalse);
+    await t.tap(sw);
+    await t.pumpAndSettle();
+    expect(progress.quizReports, isTrue);
+    expect(t.widget<SwitchListTile>(sw).value, isTrue);
+    expect((await Progress.load()).quizReports, isTrue);
     final shownId =
         find.textContaining('id: ').evaluate().single.widget as Text;
     await t.tap(find.text('Idea'));
     await t.enterText(find.byKey(const Key('text')), 'Mehr Tiere bitte');
     await t.pump();
+    await t.scrollUntilVisible(
+      find.text('Send'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     await t.tap(find.text('Send'));
     await t.pumpAndSettle();
     expect(net.sent.single['text'], 'Mehr Tiere bitte');
@@ -221,4 +237,9 @@ class _GatedTransport implements FeedbackTransport {
     await gate.future;
     return inner.send(json);
   }
+}
+
+class _NoQuizReports implements QuizReportSender {
+  @override
+  Future<SendResult> send(QuizReport report) async => SendResult.done;
 }

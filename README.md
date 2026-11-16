@@ -12,8 +12,10 @@ Speaking clearly should be fun. A free, offline pronunciation game for kids,
 built with Flutter. Native successor of the web app
 [guettli/pp](https://github.com/guettli/pp).
 
-- **Offline, no server, no AI token.** Speech recognition runs on the phone.
-  The recording never leaves the device.
+- **Offline, no AI token.** Speech recognition runs on the phone. The
+  recording stays on the device, unless a grown-up switches on quiz reports
+  (then 🐞 in the quiz sends that question with its recording; see
+  PRIVACY.md). Feedback and quiz reports go to `server/feedback`.
 - Five study languages: German (de-DE), British English (en-GB), French
   (fr-FR), Italian (it-IT), Spanish (es-ES), about 170 words each.
 - Only concrete things kids know (animals, food, body, toys, vehicles,
@@ -109,8 +111,14 @@ Answers for the Play Console:
     not shared, encrypted in transit, deletion on request (the screen
     shows the report id; `kubectl -n pp-app exec deploy/feedback --
     /feedback delete <id>`), deleted automatically after 12 months.
-  - Audio is processed only on the device and therefore not "collected"
-    in Google's sense; nothing else is collected (no ids, no location).
+  - *Audio → Voice or sound recordings*: only quiz reports (off until a
+    grown-up switches them on behind the parent gate; each one sent by a
+    tap on 🐞). Optional, purpose *App functionality* (improving the
+    speech recognition), not shared, encrypted in transit, deleted after
+    90 days (`server/feedback/quiz.go`), deletion on request
+    (`/feedback delete <id>`; `/feedback quiz-list`, `/feedback cat
+    <file>.wav` to listen). Otherwise audio is processed only on the
+    device. Nothing else is collected (no ids, no location).
 - **Permissions:** `RECORD_AUDIO` (the game), `INTERNET` (feedback).
 
 ## Development

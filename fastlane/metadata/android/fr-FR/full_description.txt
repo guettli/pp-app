@@ -10,7 +10,7 @@ Le téléphone montre une image et dit le mot. Puis c’est ton tour : répète-
 • Liste des mots : chaque mot avec son image (et, quand cela a du sens, taille et poids approximatifs) ; touche un mot pour l’entendre.
 
 Respect de la vie privée dès la conception
-• La reconnaissance vocale fonctionne sur le téléphone. Les enregistrements ne quittent jamais l’appareil et ne sont pas conservés.
+• La reconnaissance vocale fonctionne sur le téléphone. Les enregistrements ne sont pas conservés et restent sur l’appareil – sauf si un parent active l’envoi des devinettes, pour envoyer une question avec l’enregistrement au développeur.
 • Pas de compte, pas de publicité, pas d’achats intégrés, pas de suivi.
 • Le jeu fonctionne sans internet. La seule chose que l’application envoie est un message qu’un adulte écrit et envoie volontairement (derrière une multiplication pour les parents).
 

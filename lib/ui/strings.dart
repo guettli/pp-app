@@ -43,6 +43,11 @@ class S {
   String get send => _t['send']!;
   String get feedbackSent => _t['feedbackSent']!;
   String get feedbackQueued => _t['feedbackQueued']!;
+  String get quizReports => _t['quizReports']!;
+  String get quizReportsInfo => _t['quizReportsInfo']!;
+  String get quizReportSend => _t['quizReportSend']!;
+  String get quizReportSent => _t['quizReportSent']!;
+  String get quizReportFailed => _t['quizReportFailed']!;
   String parentGate(int a, int b) =>
       _t['parentGate']!.replaceAll('{a}', '$a').replaceAll('{b}', '$b');
   String newStars(int n) => _t['newStars']!.replaceAll('{n}', '$n');
@@ -82,6 +87,12 @@ class S {
       'send': 'Senden',
       'feedbackSent': 'Danke! Gesendet.',
       'feedbackQueued': 'Danke! Wird gesendet, sobald Internet da ist.',
+      'quizReports': 'Rätsel-Aufnahmen senden können',
+      'quizReportsInfo':
+          'Im Rätsel erscheint ein 🐞-Knopf. Ein Tipp darauf sendet die letzte Frage mit der Aufnahme des Kindes an den Entwickler, damit er die Spracherkennung verbessern kann. Gespeichert 90 Tage, nicht veröffentlicht.',
+      'quizReportSend': 'Diese Frage an den Entwickler senden',
+      'quizReportSent': 'Gesendet. Danke!',
+      'quizReportFailed': 'Nicht gesendet. Ist Internet da?',
       'notHeardVoice':
           'Ich habe nichts gehört. Tippe auf 🎤 und versuch es noch einmal.',
     },
@@ -119,6 +130,12 @@ class S {
       'send': 'Send',
       'feedbackSent': 'Thank you! Sent.',
       'feedbackQueued': 'Thank you! It will be sent when there is internet.',
+      'quizReports': 'Allow sending quiz recordings',
+      'quizReportsInfo':
+          'A 🐞 button appears in the quiz. Tapping it sends the last question with the child’s recording to the developer, to improve the speech recognition. Kept 90 days, not published.',
+      'quizReportSend': 'Send this question to the developer',
+      'quizReportSent': 'Sent. Thank you!',
+      'quizReportFailed': 'Not sent. Is there internet?',
       'notHeardVoice': 'I did not hear anything. Tap 🎤 and try again.',
     },
     'fr': {
@@ -155,6 +172,12 @@ class S {
       'send': 'Envoyer',
       'feedbackSent': 'Merci ! Envoyé.',
       'feedbackQueued': 'Merci ! Ce sera envoyé dès qu’il y aura internet.',
+      'quizReports': 'Permettre d’envoyer les enregistrements des devinettes',
+      'quizReportsInfo':
+          'Un bouton 🐞 apparaît dans les devinettes. Il envoie la dernière question avec l’enregistrement de l’enfant au développeur, pour améliorer la reconnaissance vocale. Gardé 90 jours, jamais publié.',
+      'quizReportSend': 'Envoyer cette question au développeur',
+      'quizReportSent': 'Envoyé. Merci !',
+      'quizReportFailed': 'Pas envoyé. Y a-t-il internet ?',
       'notHeardVoice': 'Je n’ai rien entendu. Touche 🎤 et réessaie.',
     },
     'it': {
@@ -191,6 +214,12 @@ class S {
       'send': 'Invia',
       'feedbackSent': 'Grazie! Inviato.',
       'feedbackQueued': 'Grazie! Verrà inviato appena c’è internet.',
+      'quizReports': 'Consenti l’invio delle registrazioni degli indovinelli',
+      'quizReportsInfo':
+          'Negli indovinelli compare un pulsante 🐞. Invia l’ultima domanda con la registrazione del bambino allo sviluppatore, per migliorare il riconoscimento vocale. Conservata 90 giorni, mai pubblicata.',
+      'quizReportSend': 'Invia questa domanda allo sviluppatore',
+      'quizReportSent': 'Inviato. Grazie!',
+      'quizReportFailed': 'Non inviato. C’è internet?',
       'notHeardVoice': 'Non ho sentito niente. Tocca 🎤 e riprova.',
     },
     'es': {
@@ -227,6 +256,12 @@ class S {
       'send': 'Enviar',
       'feedbackSent': '¡Gracias! Enviado.',
       'feedbackQueued': '¡Gracias! Se enviará cuando haya internet.',
+      'quizReports': 'Permitir enviar grabaciones de las adivinanzas',
+      'quizReportsInfo':
+          'En las adivinanzas aparece un botón 🐞. Envía la última pregunta con la grabación del niño al desarrollador, para mejorar el reconocimiento de voz. Se guarda 90 días, no se publica.',
+      'quizReportSend': 'Enviar esta pregunta al desarrollador',
+      'quizReportSent': 'Enviado. ¡Gracias!',
+      'quizReportFailed': 'No enviado. ¿Hay internet?',
       'notHeardVoice': 'No he oído nada. Toca 🎤 e inténtalo otra vez.',
     },
   };

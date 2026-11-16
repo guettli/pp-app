@@ -5,6 +5,7 @@ import 'data/phrases.dart';
 import 'data/progress.dart';
 import 'game/game_io.dart';
 import 'net/feedback.dart';
+import 'net/quiz_report.dart';
 import 'phonetics/phoneme_distance.dart';
 import 'phonetics/recognizer.dart';
 import 'quiz/facts.dart';
@@ -19,6 +20,7 @@ class AppState {
     required this.io,
     Facts? facts,
     this.feedback,
+    this.quizReports,
   }) : facts = facts ?? Facts(const {});
 
   final Recognizer recognizer;
@@ -34,6 +36,9 @@ class AppState {
 
   /// Reports from the feedback screen; null: no feedback (tests).
   final FeedbackOutbox? feedback;
+
+  /// Sends quiz reports (when switched on); null: none (tests).
+  final QuizReportSender? quizReports;
 
   static Future<AppState> load() async {
     final progress = await Progress.load();
@@ -53,6 +58,7 @@ class AppState {
         await SharedPreferences.getInstance(),
         HttpFeedbackTransport(),
       ),
+      quizReports: HttpQuizReportSender(),
     );
   }
 

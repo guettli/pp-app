@@ -3,6 +3,11 @@
 // questions a round, about the words the child already plays with. A word
 // the phone did not understand is asked once more instead of being marked
 // wrong. Tapping a picture says its word (not while listening).
+//
+// If a grown-up switched on quiz reports (feedback screen), a 🐞 button
+// sends the question just played, with the child's recordings, to the
+// developer (lib/net/quiz_report.dart). Without that, recordings are
+// dropped after scoring.
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -15,6 +20,9 @@ import '../game/feedback.dart';
 import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
+import '../net/device_info.dart';
+import '../net/feedback.dart' show FeedbackReport, SendResult;
+import '../net/quiz_report.dart';
 import '../ui/emoji_image.dart';
 import '../ui/round_button.dart';
 import '../ui/strings.dart';
@@ -26,12 +34,21 @@ import 'word_listener.dart';
 enum _Phase { ready, speaking, listening, thinking, result }
 
 class QuizScreen extends StatefulWidget {
-  const QuizScreen({super.key, required this.app, this.round});
+  const QuizScreen({
+    super.key,
+    required this.app,
+    this.round,
+    this.info = deviceInfo,
+  });
 
   final AppState app;
 
   /// The questions; a new random round if null.
   final List<QuizQuestion>? round;
+
+  /// App version, phone and Android version for a quiz report (replaced
+  /// in tests).
+  final Future<Map<String, String>> Function() info;
 
   /// Questions per round.
   static const questions = 8;
@@ -57,6 +74,13 @@ class _QuizScreenState extends State<QuizScreen>
 
   /// Per question: right (true), wrong (false), not yet (null).
   late final List<bool?> _results = List.filled(_round.length, null);
+
+  /// The tries of the question played last, for a quiz report (only kept
+  /// when reports are on; memory only).
+  List<QuizTry> _tries = [];
+  int _triesOf = -1;
+  bool _reportSending = false;
+  bool _reportSent = false;
 
   /// What the child said for the current question (shown in the result).
   Phrase? _chosen;
@@ -227,23 +251,29 @@ class _QuizScreenState extends State<QuizScreen>
       return;
     }
     if (!heard.speech) {
+      _keepTry(heard, '', null);
       _fail(id, (s) => s.notHeardVoice);
       return;
     }
     setState(() => _phase = _Phase.thinking);
     Phrase? said;
+    String? ipa;
     try {
       final rec = await widget.app.recognizer
           .recognize(heard.audio)
           .timeout(const Duration(seconds: 20));
       said = heardOption(widget.app.comparer, _q.options, rec.ipa, _lang);
       debugPrint('quiz: heard "${rec.ipa}" -> ${said?.text}');
+      ipa = rec.ipa;
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
+      // not when the try was dropped meanwhile (paused, closed)
+      if (_current(id)) _keepTry(heard, '', null);
       _fail(id, (s) => s.tryAgain);
       return;
     }
     if (!_current(id)) return;
+    _keepTry(heard, ipa, said);
     if (said == null && _unclear == 0) {
       // misheard, or a word that is not one of the three: once more
       _unclear++;
@@ -256,6 +286,89 @@ class _QuizScreenState extends State<QuizScreen>
       return;
     }
     await _answered(id, said);
+  }
+
+  /// Keeps a try of the current question for a quiz report: the last two
+  /// (the server takes two; a question is asked twice at most).
+  void _keepTry(Heard heard, String ipa, Phrase? said) {
+    if (!_reportsOn) return;
+    if (_triesOf != _index) {
+      _tries = [];
+      _triesOf = _index;
+    }
+    _reportSent = false;
+    _tries = [
+      ..._tries.skip(_tries.length >= 2 ? 1 : 0),
+      QuizTry(
+        pcm: heard.pcm,
+        speech: heard.speech,
+        heard: ipa,
+        said: said?.text,
+        scores: optionScores(widget.app.comparer, _q.options, ipa, _lang),
+      ),
+    ];
+  }
+
+  bool get _reportsOn =>
+      widget.app.quizReports != null && widget.app.progress.quizReports;
+
+  /// 🐞: sends the question played last with its recordings.
+  Future<void> _sendReport() async {
+    final sender = widget.app.quizReports;
+    // any time, also while the next question runs: it does not touch the
+    // game, only the result waits
+    if (sender == null || _tries.isEmpty || _reportSending) return;
+    if (_phase == _Phase.result) {
+      _flow++; // stay on the result until the child goes on
+      _onward?.cancel();
+    }
+    final q = _round[_triesOf];
+    final uiLang = Localizations.maybeLocaleOf(context)?.languageCode ?? '';
+    final tries = _tries;
+    setState(() => _reportSending = true);
+    Map<String, String> device;
+    try {
+      device = await widget.info();
+    } catch (_) {
+      device = const {};
+    }
+    final report = QuizReport(
+      id: FeedbackReport.newId(math.Random.secure()),
+      created: DateTime.now(),
+      info: {...device, 'studyLang': _lang, 'uiLang': uiLang},
+      lang: _lang,
+      question: _lines.question(q.ask),
+      asked: _lines.ask(q),
+      options: [
+        for (final o in q.options)
+          (text: o.text, ipa: [for (final w in o.accepted) w.ipa]),
+      ],
+      answer: q.answer.text,
+      tries: tries,
+    );
+    SendResult result;
+    try {
+      result = await sender.send(report);
+    } catch (e, st) {
+      debugPrint('quiz report failed: $e\n$st');
+      result = SendResult.later;
+    }
+    if (!mounted) return;
+    final s = S.of(context);
+    setState(() {
+      _reportSending = false;
+      // not if new tries came meanwhile
+      if (result == SendResult.done && identical(tries, _tries)) {
+        _reportSent = true;
+      }
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result == SendResult.done ? s.quizReportSent : s.quizReportFailed,
+        ),
+      ),
+    );
   }
 
   void _fail(int id, String Function(S) message) {
@@ -600,8 +713,24 @@ class _QuizScreenState extends State<QuizScreen>
             child: EmojiImage(busy ? '👂' : '🎤', size: 60),
           ),
         ),
-        // keeps the mic button centred
-        const SizedBox(width: 76),
+        // also keeps the mic button centred
+        if (_reportsOn)
+          RoundButton(
+            tooltip: s.quizReportSend,
+            onTap: _tries.isNotEmpty && !_reportSending && !_reportSent
+                ? _sendReport
+                : null,
+            color: const Color(0xFF6D4C41),
+            child: _reportSending
+                ? const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                : const EmojiImage('🐞', size: 40),
+          )
+        else
+          const SizedBox(width: 76),
       ],
     );
   }

@@ -9,11 +9,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
+import 'package:phoneme_party/net/feedback.dart' show SendResult;
+import 'package:phoneme_party/net/quiz_report.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/quiz/quiz_lines.dart';
 import 'package:phoneme_party/quiz/quiz_rules.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
+import 'package:phoneme_party/ui/round_button.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -253,9 +256,12 @@ void main() {
       List<Child>? child,
       bool fixed = true,
       void Function(FakeDevices dev)? prepare,
+      FakeQuizReports? reports,
+      bool reportsOn = true,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
+      if (reports != null && reportsOn) await progress.setQuizReports(true);
       final t0 = t.binding.clock.now();
       final log = IoLog(() => t.binding.clock.now().difference(t0));
       var c = 0;
@@ -277,6 +283,7 @@ void main() {
         book,
         io: dev.io,
         facts: facts,
+        quizReports: reports,
       );
       final nav = GlobalKey<NavigatorState>();
       await t.pumpWidget(
@@ -284,7 +291,11 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => QuizScreen(app: app, round: fixed ? three() : null),
+          builder: (_) => QuizScreen(
+            app: app,
+            round: fixed ? three() : null,
+            info: () async => {'phone': 'test'},
+          ),
         ),
       );
       await t.pump();
@@ -472,6 +483,113 @@ void main() {
       await expectClean(t, dev.log);
     });
 
+    final bug = find.byTooltip('Send this question to the developer');
+
+    testWidgets('quiz reports off: no 🐞, nothing sent', (t) async {
+      final reports = FakeQuizReports();
+      final (dev, _, dialog) = await play(
+        t,
+        [ipa('Haus'), ipa('Apfel'), ipa('Elefant')],
+        reports: reports,
+        reportsOn: false,
+      );
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      expect(bug, findsNothing);
+      expect(reports.sent, isEmpty);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🐞 sends the question with the recording, the result waits', (
+      t,
+    ) async {
+      final reports = FakeQuizReports();
+      final (dev, _, dialog) = await play(t, [
+        ipa('Haus'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      expect(bug, findsOneWidget);
+      // nothing to send before the first answer
+      RoundButton button() => t.widget<RoundButton>(
+        find.ancestor(of: bug, matching: find.byType(RoundButton)),
+      );
+      expect(button().onTap, isNull);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(reports.sent, hasLength(1));
+      final r = reports.sent.single;
+      expect(r.answer, 'Vogel');
+      expect(r.asked, lines.ask(three()[0]));
+      expect(r.options.map((o) => o.text), ['Baum', 'Vogel', 'Haus']);
+      expect(r.tries, hasLength(1));
+      final tr = r.tries.single;
+      expect(tr.said, 'Haus');
+      expect(tr.speech, isTrue);
+      expect(tr.heard, ipa('Haus'));
+      expect(tr.pcm.length, greaterThan(16000)); // the child's word
+      expect(tr.scores.firstWhere((s) => s.option == 'Haus').score, 1.0);
+      final wav = pcmWav(tr.pcm);
+      expect(String.fromCharCodes(wav.sublist(0, 4)), 'RIFF');
+      expect(r.toJson()['tries'][0]['audio'], isA<String>());
+      expect(find.text('Sent. Thank you!'), findsOneWidget);
+      // the result stays until a tap; sent once
+      for (var i = 0; i < 100; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(dev.log.started('mic'), hasLength(1));
+      await t.tap(bug);
+      await t.pump();
+      expect(reports.sent, hasLength(1));
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      expect(reports.sent, hasLength(1));
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🐞 after "once more": both tries; offline: a message', (
+      t,
+    ) async {
+      final reports = FakeQuizReports()..result = SendResult.later;
+      final (dev, _, dialog) = await play(t, [
+        ipa('Schmetterling'),
+        ipa('Krokodil'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.text('Not sent. Is there internet?'), findsOneWidget);
+      expect(reports.sent.single.tries.map((t) => t.said), [null, null]);
+      expect(reports.sent.single.tries.map((t) => t.heard), [
+        ipa('Schmetterling'),
+        ipa('Krokodil'),
+      ]);
+      // not sent: can be tried again
+      reports.result = SendResult.done;
+      await t.tap(bug);
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(reports.sent, hasLength(2));
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      await expectClean(t, dev.log);
+    });
+
     testWidgets('a picture says its word', (t) async {
       final (dev, _, _) = await play(t, [ipa('Vogel')], child: [Child.silent]);
       await until(
@@ -486,4 +604,15 @@ void main() {
       await expectClean(t, dev.log);
     });
   });
+}
+
+class FakeQuizReports implements QuizReportSender {
+  final sent = <QuizReport>[];
+  SendResult result = SendResult.done;
+
+  @override
+  Future<SendResult> send(QuizReport report) async {
+    sent.add(report);
+    return result;
+  }
 }

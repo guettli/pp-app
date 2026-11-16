@@ -1,8 +1,9 @@
 // Feedback and bug reports, sent by a grown-up from the feedback screen.
 // This directory (lib/net/) is the only place where the app talks to the
-// internet (CI checks that). Recordings never leave the phone: a report is
-// the typed text plus what the screen shows before sending (app version,
-// languages, phone model, Android version).
+// internet (CI checks that). A report is the typed text plus what the
+// screen shows before sending (app version, languages, phone model,
+// Android version). Recordings leave the phone only in quiz reports
+// (quiz_report.dart), which a grown-up has to switch on.
 //
 // Reports go into an outbox first, so one written without internet is
 // sent later (on the next start, or the next report).
@@ -92,25 +93,33 @@ class HttpFeedbackTransport implements FeedbackTransport {
   final Uri endpoint;
 
   @override
-  Future<SendResult> send(Map<String, dynamic> json) async {
+  Future<SendResult> send(Map<String, dynamic> json) =>
+      sendBytes(utf8.encode(jsonEncode(json)));
+
+  /// Posts [body] (JSON); [timeout] is for the whole exchange: a stalled
+  /// answer must not hold the outbox.
+  Future<SendResult> sendBytes(
+    List<int> body, {
+    Duration timeout = const Duration(seconds: 40),
+  }) async {
     final client = HttpClient()
       ..connectionTimeout = const Duration(seconds: 15);
     try {
-      // the whole exchange: a stalled answer must not hold the outbox
-      return await _send(client, json).timeout(const Duration(seconds: 40));
+      return await _send(client, body).timeout(timeout);
     } catch (e) {
-      debugPrint('feedback not sent: $e');
+      debugPrint('report not sent: $e');
       return SendResult.later;
     } finally {
       client.close(force: true);
     }
   }
 
-  Future<SendResult> _send(HttpClient client, Map<String, dynamic> json) async {
+  Future<SendResult> _send(HttpClient client, List<int> body) async {
     final req = await client.postUrl(endpoint);
     req.followRedirects = false;
     req.headers.contentType = ContentType.json;
-    req.add(utf8.encode(jsonEncode(json)));
+    req.contentLength = body.length;
+    req.add(body);
     final res = await req.close();
     await res.drain<void>();
     final code = res.statusCode;
