@@ -82,6 +82,19 @@ signed with the upload key (`dagger call -m ci build-aab ...`; Play App
 Signing re-signs what phones get). It is checked like the APK: package id,
 name, permissions, versionCode = build number, not a debug key.
 
+CI uploads each release's bundle to the **internal testing** track
+(`dagger call -m ci upload-to-play`, `tool/play_upload.py`) when the
+repository secret `PLAY_STORE_CONFIG_JSON` is set. It is the JSON key of
+the Play service account of guettli/sharedinbox
+(`playstore@sharedinbox-496103.iam.gserviceaccount.com`), which the Play
+Console allows to release this app too. A copy is in
+`secrets/play-store.enc.yaml` (SOPS, like the upload key):
+
+```sh
+sops decrypt --extract '["play_store_config_json"]' secrets/play-store.enc.yaml \
+  | gh secret set PLAY_STORE_CONFIG_JSON -R guettli/pp-app
+```
+
 - Listing texts: `fastlane/metadata/android/<locale>/` (title,
   short and full description; `test/store_listing_test.dart` checks
   Google's length limits). Default language en-US.
