@@ -82,6 +82,11 @@ signed with the upload key (`dagger call -m ci build-aab ...`; Play App
 Signing re-signs what phones get). It is checked like the APK: package id,
 name, permissions, versionCode = build number, not a debug key.
 
+Installed from Play, the app updates itself (`lib/net/app_update.dart`,
+Play in-app updates, flexible): at start it asks Play for a newer
+version; Play asks once and downloads it in the background; the next
+start installs it. Installed from an APK: no update check.
+
 CI uploads each release's bundle to the **internal testing** track
 (`dagger call -m ci upload-to-play`, `tool/play_upload.py`) when the
 repository secret `PLAY_STORE_CONFIG_JSON` is set. It is the JSON key of
