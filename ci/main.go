@@ -568,3 +568,24 @@ func (m *Ci) TtsRescore(report *dagger.File) *dagger.File {
 		WithExec([]string{"dart", "run", "tool/tts_check/check.dart", "rescore", "/tmp/in.json", "/tmp/out.json"}).
 		File("/tmp/out.json")
 }
+
+// UploadToPlay puts a release bundle on Google Play's internal testing
+// track (tool/play_upload.py). playStoreConfig is the service account JSON.
+func (m *Ci) UploadToPlay(
+	ctx context.Context,
+	aab *dagger.File,
+	playStoreConfig *dagger.Secret,
+	// versionCode of aab (the build number); checked against the upload.
+	buildNumber int,
+) (string, error) {
+	return dag.Container().
+		From("python:3.12-alpine").
+		WithMountedCache("/root/.cache/pip", dag.CacheVolume("pip")).
+		WithExec([]string{"pip", "install", "-q", "google-auth==2.38.0", "requests==2.32.3"}).
+		WithFile("/play_upload.py", m.Source.File("tool/play_upload.py")).
+		WithFile("/app.aab", aab).
+		WithSecretVariable("PLAY_STORE_CONFIG_JSON", playStoreConfig).
+		WithUser("nobody").
+		WithExec([]string{"python3", "/play_upload.py", "/app.aab", strconv.Itoa(buildNumber)}).
+		Stdout(ctx)
+}

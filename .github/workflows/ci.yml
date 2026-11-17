@@ -125,3 +125,15 @@ jobs:
               --target "$GITHUB_SHA" --title "Der Hase lacht $VERSION" \
               --generate-notes --latest
           fi
+      # internal testing track; the key is the service account of
+      # guettli/sharedinbox (README, "Google Play"). Without it: skipped.
+      - name: Upload to Google Play (internal testing)
+        env:
+          PLAY_STORE_CONFIG_JSON: ${{ secrets.PLAY_STORE_CONFIG_JSON }}
+        run: |
+          if [ -z "$PLAY_STORE_CONFIG_JSON" ]; then
+            echo "::warning::PLAY_STORE_CONFIG_JSON not set, not uploaded to Google Play"
+            exit 0
+          fi
+          dagger call -q -m ci upload-to-play --aab dist/phoneme-party-google-play.aab \
+            --play-store-config env://PLAY_STORE_CONFIG_JSON --build-number "$BUILD_NUMBER"
