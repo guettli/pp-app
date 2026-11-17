@@ -144,9 +144,16 @@ class QuizQuestion {
 const sizeRatio = 4.0;
 
 /// Weight is harder to judge than size: mouse (20 g), ring (10 g) and
-/// scarf (200 g) all feel light to a child. So the answer must be at
-/// least twenty times heavier (or lighter) than both others.
-const weightRatio = 20.0;
+/// scarf (200 g) all feel light to a child. So the heavier thing must be
+/// five times heavier and at least 3 kg more: something hard to lift
+/// against things you hold in one hand.
+const weightRatio = 5.0;
+const minWeightDiffKg = 3.0;
+
+/// Whether [more] is clearly bigger (or heavier) than [less].
+bool clearlyMore(double more, double less, {required bool bySize}) => bySize
+    ? more >= less * sizeRatio
+    : more >= less * weightRatio && more - less >= minWeightDiffKg;
 
 /// [sounds similar]: two options must not be confused by the recogniser
 /// (or the child), e.g. "Bär" and "Bett".
@@ -197,11 +204,10 @@ QuizQuestion? makeQuestion(
   final extreme = ask.extreme!;
   final bySize = extreme == Extreme.biggest || extreme == Extreme.smallest;
   final most = extreme == Extreme.biggest || extreme == Extreme.heaviest;
-  final ratio = bySize ? sizeRatio : weightRatio;
   double? value(Phrase p) =>
       bySize ? facts.of(p)!.sizeCm : facts.of(p)!.weightKg;
   final measured = known.where((p) => value(p) != null).toList();
-  // random tries: the answer must beat both others by [ratio]
+  // random tries: the answer must clearly beat both others
   for (var t = 0; t < 60 && measured.length >= 3; t++) {
     final chosen = <Phrase>[];
     for (final p in measured..shuffle(rng)) {
@@ -214,8 +220,8 @@ QuizQuestion? makeQuestion(
     if (avoidAnswers.contains(answer.text) && t < 30) continue;
     final next = value(chosen[1])!; // the middle one
     final ok = most
-        ? value(answer)! >= next * ratio
-        : value(answer)! * ratio <= next;
+        ? clearlyMore(value(answer)!, next, bySize: bySize)
+        : clearlyMore(next, value(answer)!, bySize: bySize);
     if (ok) return QuizQuestion(ask, chosen..shuffle(rng), answer);
   }
   return null;

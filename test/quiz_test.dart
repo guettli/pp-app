@@ -60,12 +60,13 @@ void expectFair(QuizQuestion q, Similar similar) {
   final e = q.ask.extreme!;
   final bySize = e == Extreme.biggest || e == Extreme.smallest;
   final most = e == Extreme.biggest || e == Extreme.heaviest;
-  final ratio = bySize ? sizeRatio : weightRatio;
   double v(Phrase p) => (bySize ? facts.of(p)!.sizeCm : facts.of(p)!.weightKg)!;
   for (final p in o) {
     if (p == q.answer) continue;
     expect(
-      most ? v(q.answer) >= v(p) * ratio : v(q.answer) * ratio <= v(p),
+      most
+          ? clearlyMore(v(q.answer), v(p), bySize: bySize)
+          : clearlyMore(v(p), v(q.answer), bySize: bySize),
       isTrue,
       reason: '$q',
     );
@@ -135,6 +136,15 @@ void main() {
       ),
       '¿Cuál es un animal? ¿casa, árbol u oso?',
     );
+  });
+
+  test('weights must differ clearly: 5x and 3 kg', () {
+    bool heavier(double a, double b) => clearlyMore(a, b, bySize: false);
+    expect(heavier(0.2, 0.02), isFalse); // scarf, mouse
+    expect(heavier(4, 0.2), isTrue); // cat, scarf
+    expect(heavier(3, 0.5), isFalse); // drum, book: only 2.5 kg more
+    expect(heavier(1200, 500), isFalse); // car, horse: not 5x
+    expect(heavier(12000, 1200), isTrue); // bus, car
   });
 
   test('questions are fair, in every language, for many rounds', () {
