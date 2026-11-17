@@ -142,7 +142,11 @@ class QuizQuestion {
 /// Things compared by size must differ at least this much, so nobody
 /// has to think about whether a dog or a chair is bigger.
 const sizeRatio = 4.0;
-const weightRatio = 10.0;
+
+/// Weight is harder to judge than size: mouse (20 g), ring (10 g) and
+/// scarf (200 g) all feel light to a child. So the answer must be at
+/// least twenty times heavier (or lighter) than both others.
+const weightRatio = 20.0;
 
 /// [sounds similar]: two options must not be confused by the recogniser
 /// (or the child), e.g. "Bär" and "Bett".
