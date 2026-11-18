@@ -4,6 +4,7 @@ import '../app_state.dart';
 import '../data/phrases.dart';
 import '../game/play_screen.dart';
 import '../game/world_scene.dart';
+import '../listen/listen_screen.dart';
 import '../quiz/quiz_screen.dart';
 import '../voice/voice_screen.dart';
 import 'emoji_image.dart';
@@ -152,6 +153,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   _tile(() => QuizScreen(app: app), const ['🦉'], s.quizTitle),
                   const SizedBox(width: 12),
+                  _tile(() => ListenScreen(app: app), const [
+                    '👂',
+                  ], s.listenTitle),
+                ],
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+            sliver: SliverToBoxAdapter(
+              child: Row(
+                children: [
                   _tile(
                     () => VoiceGameScreen(app: app, game: VoiceGame.hold),
                     const ['🎈'],

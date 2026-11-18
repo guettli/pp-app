@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
+import 'package:phoneme_party/listen/listen_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
@@ -96,6 +97,35 @@ void main() {
         await t.pump(const Duration(milliseconds: 50));
       }
       expect(t.takeException(), isNull);
+      await close(t);
+    });
+  }
+
+  for (final (name, size, text) in [
+    ('portrait', const Size(360, 640), 1.0),
+    ('landscape', const Size(640, 360), 1.0),
+    ('large text', const Size(360, 640), 1.6),
+    ('landscape, large text', const Size(640, 360), 1.6),
+  ]) {
+    testWidgets('listen, $name', (t) async {
+      await show(
+        t,
+        (app) => ListenScreen(app: app),
+        size: size,
+        text: text,
+      );
+      for (var i = 0; i < 40; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(t.takeException(), isNull);
+      // the answer shows its word under the picture: tap until it is found
+      for (var o = 0; o < 4; o++) {
+        await t.tap(find.byKey(ValueKey('listen-option-$o')));
+        for (var i = 0; i < 20; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        expect(t.takeException(), isNull);
+      }
       await close(t);
     });
   }

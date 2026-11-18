@@ -75,6 +75,16 @@ class Progress {
     return true;
   }
 
+  /// Most stars (0..3) for one round of "listen closely".
+  int listenBest(String lang) => _prefs.getInt('listen|$lang') ?? 0;
+
+  /// Stores [stars] if it is a new best; returns whether it was.
+  Future<bool> recordListen(String lang, int stars) async {
+    if (stars <= listenBest(lang)) return false;
+    await _prefs.setInt('listen|$lang', stars);
+    return true;
+  }
+
   /// A grown-up switched on quiz reports (feedback screen, behind the
   /// parent gate): the quiz then shows a button that sends the question
   /// with the child's recording to the developer. Stays on until switched

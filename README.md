@@ -50,6 +50,11 @@ built with Flutter. Native successor of the web app
   per picture, the same for every language): every property is yes, no or
   unclear, and only clear "no"s are offered as wrong answers. A word the
   phone did not understand is asked once more instead of being marked wrong.
+- **👂 Listen closely:** the phone says a word, the child taps its
+  picture among four (no microphone, no reading). Eight words a round from
+  the open worlds; in the second half one wrong picture sounds like the
+  answer (Maus / Haus). A wrong tap: the phone says what that picture is
+  and the word again; only the first tap counts for the stars.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
   (`lib/voice/`); the sound is only measured, never recorded.
 - **📖 Word list:** every word with picture, rough size and weight and its
