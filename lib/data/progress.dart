@@ -85,6 +85,16 @@ class Progress {
     return true;
   }
 
+  /// Most stars (0..3) for one round of the letter puzzle.
+  int spellBest(String lang) => _prefs.getInt('spell|$lang') ?? 0;
+
+  /// Stores [stars] if it is a new best; returns whether it was.
+  Future<bool> recordSpell(String lang, int stars) async {
+    if (stars <= spellBest(lang)) return false;
+    await _prefs.setInt('spell|$lang', stars);
+    return true;
+  }
+
   /// A grown-up switched on quiz reports (feedback screen, behind the
   /// parent gate): the quiz then shows a button that sends the question
   /// with the child's recording to the developer. Stays on until switched

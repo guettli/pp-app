@@ -32,6 +32,7 @@ class S {
   String get newRecord => _t['newRecord']!;
   String get quizTitle => _t['quizTitle']!;
   String get listenTitle => _t['listenTitle']!;
+  String get spellTitle => _t['spellTitle']!;
   String get wordsTitle => _t['wordsTitle']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
@@ -75,6 +76,7 @@ class S {
       'newRecord': 'Neuer Rekord!',
       'quizTitle': 'Rätsel',
       'listenTitle': 'Hör genau',
+      'spellTitle': 'Buchstaben',
       'wordsTitle': 'Wörter',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
@@ -119,6 +121,7 @@ class S {
       'newRecord': 'New record!',
       'quizTitle': 'Quiz',
       'listenTitle': 'Listen',
+      'spellTitle': 'Letters',
       'wordsTitle': 'Words',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
@@ -162,6 +165,7 @@ class S {
       'newRecord': 'Nouveau record !',
       'quizTitle': 'Devinettes',
       'listenTitle': 'Écoute bien',
+      'spellTitle': 'Lettres',
       'wordsTitle': 'Mots',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
@@ -205,6 +209,7 @@ class S {
       'newRecord': 'Nuovo record!',
       'quizTitle': 'Indovinelli',
       'listenTitle': 'Ascolta bene',
+      'spellTitle': 'Lettere',
       'wordsTitle': 'Parole',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
@@ -248,6 +253,7 @@ class S {
       'newRecord': '¡Nuevo récord!',
       'quizTitle': 'Adivinanzas',
       'listenTitle': 'Escucha bien',
+      'spellTitle': 'Letras',
       'wordsTitle': 'Palabras',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',

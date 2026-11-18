@@ -12,6 +12,7 @@ import 'package:phoneme_party/listen/listen_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
+import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -122,6 +123,37 @@ void main() {
       for (var o = 0; o < 4; o++) {
         await t.tap(find.byKey(ValueKey('listen-option-$o')));
         for (var i = 0; i < 20; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        expect(t.takeException(), isNull);
+      }
+      await close(t);
+    });
+  }
+
+  for (final (name, size, text) in [
+    ('portrait', const Size(360, 640), 1.0),
+    ('landscape', const Size(640, 360), 1.0),
+    ('large text', const Size(360, 640), 1.6),
+    ('landscape, large text', const Size(640, 360), 1.6),
+  ]) {
+    testWidgets('spell, $name', (t) async {
+      await show(
+        t,
+        (app) => SpellScreen(app: app),
+        size: size,
+        text: text,
+      );
+      for (var i = 0; i < 40; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(t.takeException(), isNull);
+      // every tile once: letters land in the slots, wrong ones shake
+      for (var i = 0; i < 9; i++) {
+        final tile = find.byKey(ValueKey('spell-tile-$i'));
+        if (tile.evaluate().isEmpty) break;
+        await t.tap(tile);
+        for (var j = 0; j < 4; j++) {
           await t.pump(const Duration(milliseconds: 50));
         }
         expect(t.takeException(), isNull);
