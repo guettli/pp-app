@@ -268,6 +268,7 @@ void main() {
       void Function(FakeDevices dev)? prepare,
       FakeQuizReports? reports,
       bool reportsOn = true,
+      bool fromMemory = true,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
@@ -277,6 +278,7 @@ void main() {
       var c = 0;
       final dev = FakeDevices(
         log,
+        fromMemory: fromMemory,
         child: () => child == null
             ? Child.speaks
             : child[(c++).clamp(0, child.length - 1)],
@@ -530,6 +532,14 @@ void main() {
         dev.log,
       );
       await t.tap(bug);
+      await t.pump();
+      // asked first; nothing sent yet
+      expect(
+        find.text('Send this question with the recording to the developer?'),
+        findsOneWidget,
+      );
+      expect(reports.sent, isEmpty);
+      await t.tap(find.text('Send'));
       for (var i = 0; i < 20; i++) {
         await t.pump(const Duration(milliseconds: 50));
       }
@@ -563,6 +573,169 @@ void main() {
       await expectClean(t, dev.log);
     });
 
+    testWidgets('🐞: cancel sends nothing; the recording can be heard', (
+      t,
+    ) async {
+      final reports = FakeQuizReports();
+      final (dev, _, dialog) = await play(t, [
+        ipa('Haus'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('report-play-0')));
+      for (var i = 0; i < 10; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(dev.player.plays, 1);
+      expect(dev.mic.recording, isFalse);
+      await t.tap(find.text('Cancel'));
+      for (var i = 0; i < 100; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(reports.sent, isEmpty);
+      // the game waits on the result, the replay is off
+      expect(dev.log.started('mic'), hasLength(1));
+      expect(dev.log.intervals('replay'), hasLength(1)); // ended
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      expect(reports.sent, isEmpty);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🐞 twice quickly: one dialog, one report', (t) async {
+      final reports = FakeQuizReports();
+      final (dev, _, _) = await play(t, [
+        ipa('Haus'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      await t.tap(bug, warnIfMissed: false);
+      await t.pump();
+      expect(find.text('Send'), findsOneWidget);
+      await t.tap(find.text('Send'));
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(reports.sent, hasLength(1));
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('play, then Cancel at once: the replay never runs on', (
+      t,
+    ) async {
+      final reports = FakeQuizReports();
+      final (dev, _, dialog) = await play(t, [
+        ipa('Haus'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      await t.pump();
+      await t.tap(find.byKey(const ValueKey('report-play-0')));
+      await t.tap(find.text('Cancel'));
+      for (var i = 0; i < 10; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(dev.player.starting, isFalse);
+      // tapping outside a dialog is Cancel too; the game goes on with 🎤
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      expect(reports.sent, isEmpty);
+      // the child's recording never played while the mic was open
+      expect(dev.log.soundsWhileRecording(), isEmpty, reason: '${dev.log}');
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🐞 dialog, outside tap: nothing sent', (t) async {
+      final reports = FakeQuizReports();
+      final (dev, _, _) = await play(t, [
+        ipa('Haus'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      await t.pump();
+      await t.tapAt(const Offset(5, 5));
+      for (var i = 0; i < 10; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.text('Send'), findsNothing);
+      expect(reports.sent, isEmpty);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🐞 while the next question is asked: it holds, mic off', (
+      t,
+    ) async {
+      final reports = FakeQuizReports();
+      final (dev, _, dialog) = await play(t, [
+        ipa('Vogel'),
+        ipa('Apfel'),
+        ipa('Elefant'),
+      ], reports: reports);
+      await until(t, () => dev.log.started('mic').length == 2, dev.log);
+      await t.tap(bug);
+      await t.pump();
+      expect(dev.mic.recording, isFalse);
+      expect(dev.speaker.speaking, isFalse);
+      await t.tap(find.text('Send'));
+      for (var i = 0; i < 60; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(reports.sent.single.answer, 'Vogel');
+      // waits for 🎤
+      expect(dev.log.started('mic'), hasLength(2));
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🐞 with a player that is not memory-only: no listening', (
+      t,
+    ) async {
+      final reports = FakeQuizReports();
+      final (dev, _, _) = await play(
+        t,
+        [ipa('Haus'), ipa('Apfel'), ipa('Elefant')],
+        reports: reports,
+        fromMemory: false,
+      );
+      await until(
+        t,
+        () => dev.log.started('tts').contains(lines.answerIs('Vogel')),
+        dev.log,
+      );
+      await t.tap(bug);
+      await t.pump();
+      expect(find.byKey(const ValueKey('report-play-0')), findsNothing);
+      await t.tap(find.text('Cancel'));
+      await t.pump();
+      await expectClean(t, dev.log);
+    });
+
     testWidgets('🐞 after "once more": both tries; offline: a message', (
       t,
     ) async {
@@ -579,6 +752,8 @@ void main() {
         dev.log,
       );
       await t.tap(bug);
+      await t.pump();
+      await t.tap(find.text('Send'));
       for (var i = 0; i < 20; i++) {
         await t.pump(const Duration(milliseconds: 50));
       }
@@ -591,6 +766,11 @@ void main() {
       // not sent: can be tried again
       reports.result = SendResult.done;
       await t.tap(bug);
+      await t.pump();
+      // two tries: two recordings to listen to
+      expect(find.byKey(const ValueKey('report-play-0')), findsOneWidget);
+      expect(find.byKey(const ValueKey('report-play-1')), findsOneWidget);
+      await t.tap(find.text('Send'));
       for (var i = 0; i < 20; i++) {
         await t.pump(const Duration(milliseconds: 50));
       }
