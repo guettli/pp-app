@@ -100,14 +100,17 @@ class Facts {
 /// Which thing is the most ...: compared by size or weight.
 enum Extreme { biggest, smallest, heaviest, lightest }
 
-/// What the phone asks: a [Prop] ("What can fly?") or an [Extreme]
-/// ("What is the biggest?").
+/// What the phone asks: a [Prop] ("What can fly?"), an [Extreme]
+/// ("What is the biggest?"), or for the sound detective a word to start
+/// like ("What starts like Maus?", [like]).
 class Ask {
-  const Ask.prop(Prop this.prop) : extreme = null;
-  const Ask.extreme(Extreme this.extreme) : prop = null;
+  const Ask.prop(Prop this.prop) : extreme = null, like = null;
+  const Ask.extreme(Extreme this.extreme) : prop = null, like = null;
+  const Ask.startsLike(Phrase this.like) : prop = null, extreme = null;
 
   final Prop? prop;
   final Extreme? extreme;
+  final Phrase? like;
 
   static final all = [
     for (final p in Prop.values) Ask.prop(p),
@@ -116,13 +119,17 @@ class Ask {
 
   @override
   bool operator ==(Object other) =>
-      other is Ask && other.prop == prop && other.extreme == extreme;
+      other is Ask &&
+      other.prop == prop &&
+      other.extreme == extreme &&
+      other.like == like;
 
   @override
-  int get hashCode => Object.hash(prop, extreme);
+  int get hashCode => Object.hash(prop, extreme, like);
 
   @override
-  String toString() => (prop ?? extreme)!.name;
+  String toString() =>
+      like != null ? 'startsLike(${like!.text})' : (prop ?? extreme)!.name;
 }
 
 class QuizQuestion {

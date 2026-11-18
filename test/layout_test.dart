@@ -200,6 +200,26 @@ void main() {
     });
   }
 
+  for (final (name, size, text) in [
+    ('portrait', const Size(360, 640), 1.0),
+    ('landscape', const Size(640, 360), 1.0),
+    ('large text', const Size(360, 640), 1.6),
+  ]) {
+    testWidgets('sound detective, $name', (t) async {
+      await show(
+        t,
+        (app) => QuizScreen(app: app, sounds: true),
+        size: size,
+        text: text,
+      );
+      for (var i = 0; i < 40; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(t.takeException(), isNull);
+      await close(t);
+    });
+  }
+
   testWidgets('quiz, large text', (t) async {
     await show(t, (app) => QuizScreen(app: app), text: 1.6);
     for (var i = 0; i < 40; i++) {

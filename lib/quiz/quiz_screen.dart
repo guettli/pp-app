@@ -30,6 +30,7 @@ import '../ui/strings.dart';
 import 'facts.dart';
 import 'quiz_lines.dart';
 import 'quiz_rules.dart';
+import 'sound_rules.dart';
 import 'word_listener.dart';
 
 enum _Phase { ready, speaking, listening, thinking, result }
@@ -40,9 +41,14 @@ class QuizScreen extends StatefulWidget {
     required this.app,
     this.round,
     this.info = deviceInfo,
+    this.sounds = false,
   });
 
   final AppState app;
+
+  /// The sound detective: "What starts like Maus?" (quiz/sound_rules.dart)
+  /// instead of questions about the things.
+  final bool sounds;
 
   /// The questions; a new random round if null.
   final List<QuizQuestion>? round;
@@ -112,6 +118,18 @@ class _QuizScreenState extends State<QuizScreen>
     final pool = app.knownWords();
     bool similar(Phrase a, Phrase b) =>
         soundsSimilar(app.comparer, book.lang, a, b);
+    if (widget.sounds) {
+      List<QuizQuestion> make(List<Phrase> from) => makeSoundRound(
+        from,
+        app.comparer,
+        book.lang,
+        _rng,
+        count: QuizScreen.questions,
+        similar: similar,
+      );
+      final round = make(pool);
+      return round.length >= QuizScreen.questions ? round : make(book.phrases);
+    }
     final round = makeRound(
       pool,
       app.facts,
@@ -453,7 +471,10 @@ class _QuizScreenState extends State<QuizScreen>
     final stars = quizStars(right, _round.length);
     var record = false;
     try {
-      record = await widget.app.progress.recordQuiz(_lang, stars);
+      final progress = widget.app.progress;
+      record = widget.sounds
+          ? await progress.recordSounds(_lang, stars)
+          : await progress.recordQuiz(_lang, stars);
     } catch (e, st) {
       debugPrint('saving the quiz record failed: $e\n$st');
     }
@@ -490,7 +511,7 @@ class _QuizScreenState extends State<QuizScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: Text(s.quizTitle),
+        title: Text(widget.sounds ? s.soundsTitle : s.quizTitle),
       ),
       body: SafeArea(
         child: Stack(
@@ -503,14 +524,17 @@ class _QuizScreenState extends State<QuizScreen>
                 children: [
                   ProgressDots(results: _results, index: _index),
                   const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Text(
-                      _lines.question(_q.ask),
-                      textAlign: TextAlign.center,
-                      style: _text.copyWith(fontSize: 28),
+                  if (_q.ask.like case final like?)
+                    _likeHeader(like)
+                  else
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        _lines.question(_q.ask),
+                        textAlign: TextAlign.center,
+                        style: _text.copyWith(fontSize: 28),
+                      ),
                     ),
-                  ),
                   Expanded(child: _options()),
                   AnimatedOpacity(
                     opacity: _phase == _Phase.listening ? 1 : 0,
@@ -526,6 +550,41 @@ class _QuizScreenState extends State<QuizScreen>
                 ],
               ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// "What starts like Maus?" with the picture of the mouse (a tap says
+  /// it). Shrinks on a low screen (landscape, large text).
+  Widget _likeHeader(Phrase like) {
+    final height = MediaQuery.sizeOf(context).height;
+    return LayoutBuilder(
+      builder: (context, c) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: height * 0.17),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          child: SizedBox(
+            width: c.maxWidth - 32,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                GestureDetector(
+                  key: const ValueKey('quiz-like'),
+                  onTap: () => _sayOption(like),
+                  child: EmojiImage(like.emoji, size: 56),
+                ),
+                const SizedBox(width: 12),
+                Flexible(
+                  child: Text(
+                    _lines.question(_q.ask),
+                    textAlign: TextAlign.center,
+                    style: _text.copyWith(fontSize: 28),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
