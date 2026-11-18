@@ -35,6 +35,9 @@ bool sameForTheEar(Phrase a, Phrase b) {
   return false;
 }
 
+/// Words this close (see [Closeness]) sound the same to a child.
+const sameSound = 0.95;
+
 /// [count] questions with [options] pictures each, answers from [pool]
 /// (no answer twice). The first half gets random wrong pictures; in the
 /// second half one wrong picture is the word from [pool] that sounds most
@@ -50,16 +53,18 @@ List<ListenQuestion> makeListenRound(
   final round = <ListenQuestion>[];
   for (final answer in answers) {
     if (round.length == count) break;
-    final others = [
+    // scored once per word (the comparison is not free on a cheap phone)
+    final close = <Phrase, double>{
       for (final p in pool)
-        if (p != answer && !sameForTheEar(p, answer)) p,
-    ];
+        if (p != answer && !sameForTheEar(p, answer)) p: closeness(p, answer),
+    };
+    // written differently but said the same: not a fair wrong picture
+    close.removeWhere((_, c) => c >= sameSound);
+    final others = close.keys.toList();
     if (others.length < options - 1) continue;
     final chosen = <Phrase>[];
     if (round.length >= count ~/ 2) {
-      final ranked = [...others]
-        ..sort((a, b) => closeness(b, answer).compareTo(closeness(a, answer)));
-      chosen.add(ranked.first);
+      chosen.add(others.reduce((a, b) => close[b]! > close[a]! ? b : a));
     }
     others.shuffle(rng);
     for (final p in others) {

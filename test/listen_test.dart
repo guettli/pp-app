@@ -76,11 +76,11 @@ void main() {
         closeness: closeness('de-DE'),
       );
       for (final q in round.skip(4)) {
+        final c = closeness('de-DE');
         final others = [
           for (final p in book.phrases)
-            if (!sameForTheEar(p, q.answer)) p,
+            if (!sameForTheEar(p, q.answer) && c(p, q.answer) < sameSound) p,
         ];
-        final c = closeness('de-DE');
         others.sort((a, b) => c(b, q.answer).compareTo(c(a, q.answer)));
         expect(q.options, contains(others.first), reason: '$q');
       }
@@ -198,6 +198,73 @@ void main() {
       await wait(t, 6000);
       expect(find.text('1 / 2'), findsOneWidget);
       expect(progress.listenBest('de-DE'), 1);
+      await close(t, dev.log);
+    });
+
+    testWidgets('background while the word is said: quiet, then again', (
+      t,
+    ) async {
+      final (dev, _) = await play(t);
+      await t.pump(const Duration(milliseconds: 100));
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await t.pump(const Duration(milliseconds: 50));
+      expect(dev.speaker.speaking, isFalse);
+      await wait(t, 2000);
+      expect(dev.log.started('tts'), ['Kuh']);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), ['Kuh', 'Kuh']);
+      await t.tap(find.byKey(const ValueKey('listen-option-1')));
+      await wait(t, 6000);
+      expect(dev.log.started('tts'), contains('Bett'));
+      await close(t, dev.log);
+    });
+
+    testWidgets('background during the praise: it waits for ➡', (t) async {
+      final (dev, _) = await play(t);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('listen-option-1')));
+      await wait(t, 800);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await wait(t, 3000);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await wait(t, 3000);
+      expect(dev.log.started('tts'), isNot(contains('Bett')));
+      await t.tap(find.byIcon(Icons.arrow_forward_rounded));
+      await wait(t, 1500);
+      expect(dev.log.started('tts').last, 'Bett');
+      await close(t, dev.log);
+    });
+
+    testWidgets('➡ during the last praise: it stops, the dialog once', (
+      t,
+    ) async {
+      final (dev, _) = await play(t);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('listen-option-1')));
+      await wait(t, 6000);
+      await t.tap(find.byKey(const ValueKey('listen-option-0')));
+      await wait(t, 800); // the praise has started
+      expect(dev.speaker.speaking, isTrue);
+      await t.tap(find.byIcon(Icons.arrow_forward_rounded));
+      await t.pump(const Duration(milliseconds: 50));
+      expect(dev.speaker.speaking, isFalse);
+      await wait(t, 3000);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      await close(t, dev.log);
+    });
+
+    testWidgets('closing the screen mid-word stops everything', (t) async {
+      final (dev, _) = await play(t);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('listen-option-0'))); // wrong
+      await t.pump(const Duration(milliseconds: 700));
+      await t.pageBack();
+      await wait(t, 3000);
+      expect(dev.speaker.speaking, isFalse);
+      final said = dev.log.started('tts').length;
+      await wait(t, 3000);
+      expect(dev.log.started('tts'), hasLength(said));
       await close(t, dev.log);
     });
 

@@ -123,7 +123,9 @@ class _ListenScreenState extends State<ListenScreen>
         setState(() => _phase = _Phase.choosing);
       }
     } else if (state == AppLifecycleState.resumed) {
-      _paused = false; // goes on with a tap (➡ after a result)
+      _paused = false;
+      // back while choosing: the word again; after a result ➡ goes on
+      if (_phase == _Phase.choosing && !_over) _repeat();
     }
   }
 
@@ -219,6 +221,9 @@ class _ListenScreenState extends State<ListenScreen>
   void _next() {
     _onward?.cancel();
     if (!mounted || _over || _phase != _Phase.result) return;
+    // ➡ during the praise: it stops at once
+    _flow++;
+    _quietly(_tts.stop);
     if (_index + 1 >= _round.length) {
       _finish();
       return;
@@ -336,28 +341,22 @@ class _ListenScreenState extends State<ListenScreen>
           onTap: () => _tap(o),
           child: Padding(
             padding: const EdgeInsets.all(12),
-            child: LayoutBuilder(
-              builder: (_, c) => Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    EmojiImage(
-                      o.emoji,
-                      size: c.maxHeight * (result ? 0.6 : 0.8),
-                    ),
-                    // the word is shown with the answer, not before:
-                    // this is a game for the ears
-                    if (result && isAnswer)
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          o.text,
-                          style: _text.copyWith(fontSize: 24),
-                        ),
-                      ),
-                  ],
+            child: Column(
+              children: [
+                Expanded(
+                  flex: 3,
+                  child: FittedBox(child: EmojiImage(o.emoji, size: 160)),
                 ),
-              ),
+                // the word is shown with the answer, not before: this is
+                // a game for the ears
+                if (result && isAnswer)
+                  Expanded(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(o.text, style: _text.copyWith(fontSize: 24)),
+                    ),
+                  ),
+              ],
             ),
           ),
         ),

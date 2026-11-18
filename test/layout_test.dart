@@ -105,6 +105,7 @@ void main() {
     ('portrait', const Size(360, 640), 1.0),
     ('landscape', const Size(640, 360), 1.0),
     ('large text', const Size(360, 640), 1.6),
+    ('landscape, large text', const Size(640, 360), 1.6),
   ]) {
     testWidgets('listen, $name', (t) async {
       await show(
@@ -117,6 +118,14 @@ void main() {
         await t.pump(const Duration(milliseconds: 50));
       }
       expect(t.takeException(), isNull);
+      // the answer shows its word under the picture: tap until it is found
+      for (var o = 0; o < 4; o++) {
+        await t.tap(find.byKey(ValueKey('listen-option-$o')));
+        for (var i = 0; i < 20; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        expect(t.takeException(), isNull);
+      }
       await close(t);
     });
   }
