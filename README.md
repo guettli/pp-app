@@ -14,8 +14,8 @@ built with Flutter. Native successor of the web app
 
 - **Offline, no AI token.** Speech recognition runs on the phone. The
   recording stays on the device, unless a grown-up switches on quiz reports
-  (then 🐞 in the quiz sends that question with its recording; see
-  PRIVACY.md). Feedback and quiz reports go to `server/feedback`.
+  (then 🐞 in the quiz sends that question with its recording, after
+  asking; the dialog can play the recording first; see PRIVACY.md). Feedback and quiz reports go to `server/feedback`.
 - Five study languages: German (de-DE), British English (en-GB), French
   (fr-FR), Italian (it-IT), Spanish (es-ES), about 170 words each.
 - Only concrete things kids know (animals, food, body, toys, vehicles,

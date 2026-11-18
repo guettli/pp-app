@@ -68,7 +68,9 @@ legitimate interest in fixing the app (Art. 6(1)(f) GDPR).
 
 Behind the same multiplication, a grown-up can switch on quiz reports. It
 stays on until it is switched off there. Then the quiz shows a 🐞 button;
-each tap sends **one** report about the question just played, so the
+a tap asks first (on Android the recordings can be listened to on the
+phone; they stay in memory), and
+"Send" sends **one** report about the question just played, so the
 developer can hear why the app did not understand the child and improve
 the speech recognition:
 
@@ -181,8 +183,10 @@ Interesse, die App zu verbessern (Art. 6 Abs. 1 lit. f DSGVO).
 
 Hinter derselben Malaufgabe kann ein Erwachsener Rätsel-Meldungen
 einschalten. Sie bleiben eingeschaltet, bis man sie dort ausschaltet.
-Dann zeigt das Rätsel einen 🐞-Knopf; jeder Tipp sendet **eine** Meldung
-über die gerade gespielte Frage, damit der Entwickler hören kann, warum
+Dann zeigt das Rätsel einen 🐞-Knopf; ein Tipp fragt zuerst nach (unter
+Android lassen sich die Aufnahmen auf dem Handy anhören; sie bleiben im
+Arbeitsspeicher), und „Senden“ sendet
+**eine** Meldung über die gerade gespielte Frage, damit der Entwickler hören kann, warum
 die App das Kind nicht verstanden hat, und die Spracherkennung verbessern
 kann:
 
