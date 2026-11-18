@@ -332,8 +332,12 @@ class FakeSpeaker implements Speaker {
   /// The pitch of each [speak], in order.
   final pitches = <double>[];
 
+  /// [speak] throws (no voice for the language).
+  bool failSpeak = false;
+
   @override
   Future<void> speak(String text, {double pitch = 1}) {
+    if (failSpeak) return Future.error(StateError('no voice'));
     pitches.add(pitch);
     if (speaking) {
       log.problem('tts dropped "$text": still speaking');

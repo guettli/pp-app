@@ -151,14 +151,17 @@ class _ListenScreenState extends State<ListenScreen>
 
   bool _current(int id) => mounted && id == _flow && !_paused;
 
-  Future<void> _say(String text) async {
+  /// Says [text]; false if the TTS failed (no voice for the language).
+  Future<bool> _say(String text) async {
     try {
       await _tts.stop();
       await _tts
           .speak(text)
           .timeout(Duration(seconds: 3 + text.length ~/ 4), onTimeout: () {});
+      return true;
     } catch (e, st) {
       debugPrint('tts failed: $e\n$st');
+      return false;
     }
   }
 
@@ -199,11 +202,10 @@ class _ListenScreenState extends State<ListenScreen>
   Future<void> _repeat() async {
     if (_phase == _Phase.result || _over) return;
     final id = ++_flow;
-    setState(() {
-      _phase = _Phase.speaking;
-      if (_reading) _helped = true;
-    });
-    await _say(_q.answer.text);
+    setState(() => _phase = _Phase.speaking);
+    final said = await _say(_q.answer.text);
+    // a help only if the phone could say it
+    if (_reading && said && id == _flow) _helped = true;
     if (_current(id) && _phase == _Phase.speaking) {
       setState(() => _phase = _Phase.choosing);
     }
@@ -330,9 +332,10 @@ class _ListenScreenState extends State<ListenScreen>
 
   /// The word to read, big.
   Widget _word() => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
     child: SizedBox(
-      height: 64,
+      // in landscape the pictures need the height
+      height: MediaQuery.sizeOf(context).height < 500 ? 40 : 64,
       child: FittedBox(
         fit: BoxFit.scaleDown,
         child: Text(

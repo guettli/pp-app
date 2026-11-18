@@ -193,18 +193,22 @@ class _HomeScreenState extends State<HomeScreen> {
             SliverPadding(
               padding: EdgeInsets.fromLTRB(16, i == 0 ? 16 : 12, 16, 0),
               sliver: SliverToBoxAdapter(
-                child: Row(
-                  children: [
-                    for (final (j, g) in row.indexed) ...[
-                      if (j > 0) const SizedBox(width: 12),
-                      _tile(g.screen, g.emojis, g.name),
+                // tiles of a row as high as the highest (names may wrap)
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (final (j, g) in row.indexed) ...[
+                        if (j > 0) const SizedBox(width: 12),
+                        _tile(g.screen, g.emojis, g.name),
+                      ],
+                      // a short last row keeps the tile width
+                      for (var j = row.length; j < 3; j++) ...[
+                        const SizedBox(width: 12),
+                        const Expanded(child: SizedBox()),
+                      ],
                     ],
-                    // a short last row keeps the tile width
-                    for (var j = row.length; j < 3; j++) ...[
-                      const SizedBox(width: 12),
-                      const Expanded(child: SizedBox()),
-                    ],
-                  ],
+                  ),
                 ),
               ),
             ),

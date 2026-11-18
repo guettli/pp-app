@@ -310,6 +310,33 @@ void main() {
       await close(t, dev.log);
     });
 
+    testWidgets('reading: back from the background, still quiet', (t) async {
+      final (dev, _) = await play(t, reading: true);
+      await wait(t, 500);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await wait(t, 500);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await wait(t, 2000);
+      expect(dev.log.started('tts'), isEmpty);
+      await close(t, dev.log);
+    });
+
+    testWidgets('reading: a 🔊 that cannot speak costs no star', (t) async {
+      final (dev, progress) = await play(t, reading: true);
+      dev.speaker.failSpeak = true;
+      await wait(t, 500);
+      await t.tap(find.byTooltip('Listen'));
+      await wait(t, 1500);
+      dev.speaker.failSpeak = false;
+      await t.tap(find.byKey(const ValueKey('listen-option-1')));
+      await wait(t, 6000);
+      await t.tap(find.byKey(const ValueKey('listen-option-0')));
+      await wait(t, 6000);
+      expect(find.text('2 / 2'), findsOneWidget);
+      expect(progress.readPickBest('de-DE'), 3);
+      await close(t, dev.log);
+    });
+
     testWidgets('reading: 🔊 helps, but then no star for the word', (t) async {
       final (dev, progress) = await play(t, reading: true);
       await wait(t, 500);

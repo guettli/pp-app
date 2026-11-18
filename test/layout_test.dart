@@ -141,7 +141,7 @@ void main() {
         await t.pump(const Duration(milliseconds: 50));
       }
       expect(t.takeException(), isNull);
-      // the answer shows its word under the picture: tap until it is found
+      // tap until the answer is found (its result state)
       for (var o = 0; o < 4; o++) {
         await t.tap(find.byKey(ValueKey('listen-option-$o')));
         for (var i = 0; i < 20; i++) {
