@@ -55,6 +55,12 @@ built with Flutter. Native successor of the web app
   the open worlds; in the second half one wrong picture sounds like the
   answer (Maus / Haus). A wrong tap: the phone says what that picture is
   and the word again; only the first tap counts for the stars.
+- **✏️ Letters:** the picture, the phone says the word, and the child
+  spells it by tapping letter tiles in order (small letters on the tiles,
+  the word above as written). Six words a round, short ones first; later
+  words get one or two extra tiles. A wrong tile shakes; after two wrong
+  tiles for the same place the right one glows. A word without a wrong
+  tile is a star. Multi-word phrases and words with hyphens are left out.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
   (`lib/voice/`); the sound is only measured, never recorded.
 - **📖 Word list:** every word with picture, rough size and weight and its
