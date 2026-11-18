@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'data/phrases.dart';
 import 'data/progress.dart';
 import 'game/game_io.dart';
+import 'net/app_update.dart';
 import 'net/feedback.dart';
 import 'net/quiz_report.dart';
 import 'phonetics/phoneme_distance.dart';
@@ -21,6 +22,7 @@ class AppState {
     Facts? facts,
     this.feedback,
     this.quizReports,
+    this.updater,
   }) : facts = facts ?? Facts(const {});
 
   final Recognizer recognizer;
@@ -40,6 +42,9 @@ class AppState {
   /// Sends quiz reports (when switched on); null: none (tests).
   final QuizReportSender? quizReports;
 
+  /// Updates from Google Play; null: none (tests).
+  final AppUpdater? updater;
+
   static Future<AppState> load() async {
     final progress = await Progress.load();
     final comparer = PhonemeComparer.fromJson(
@@ -47,6 +52,7 @@ class AppState {
     );
     final book = await PhraseBook.load(progress.studyLang ?? 'de-DE');
     final recognizer = await PhoneRecognizer.load();
+    final prefs = await SharedPreferences.getInstance();
     return AppState(
       recognizer,
       comparer,
@@ -54,11 +60,9 @@ class AppState {
       book,
       io: GameIo.device(),
       facts: await Facts.load(),
-      feedback: FeedbackOutbox(
-        await SharedPreferences.getInstance(),
-        HttpFeedbackTransport(),
-      ),
+      feedback: FeedbackOutbox(prefs, HttpFeedbackTransport()),
       quizReports: HttpQuizReportSender(),
+      updater: PlayAppUpdater(prefs),
     );
   }
 

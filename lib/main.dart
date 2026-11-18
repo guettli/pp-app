@@ -65,6 +65,8 @@ class _LoaderState extends State<_Loader> {
   late final Future<AppState> _app = AppState.load().then((app) {
     // reports written without internet go out now
     app.feedback?.flush();
+    // a new version from Play: loads now, installs on the next start
+    app.updater?.run();
     return app;
   });
 

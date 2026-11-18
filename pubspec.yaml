@@ -15,6 +15,7 @@ dependencies:
   record: 7.1.2
   flutter_tts: 4.2.5
   audioplayers: 6.8.1
+  in_app_update: 5.0.0
   shared_preferences: 2.5.6
 
 dev_dependencies:
