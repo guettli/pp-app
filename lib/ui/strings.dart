@@ -34,6 +34,7 @@ class S {
   String get listenTitle => _t['listenTitle']!;
   String get spellTitle => _t['spellTitle']!;
   String get readPickTitle => _t['readPickTitle']!;
+  String get readAloudTitle => _t['readAloudTitle']!;
   String get wordsTitle => _t['wordsTitle']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
@@ -79,6 +80,7 @@ class S {
       'listenTitle': 'Hör genau',
       'spellTitle': 'Buchstaben',
       'readPickTitle': 'Wort zum Bild',
+      'readAloudTitle': 'Lies vor',
       'wordsTitle': 'Wörter',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
@@ -125,6 +127,7 @@ class S {
       'listenTitle': 'Listen',
       'spellTitle': 'Letters',
       'readPickTitle': 'Word to picture',
+      'readAloudTitle': 'Read aloud',
       'wordsTitle': 'Words',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
@@ -170,6 +173,7 @@ class S {
       'listenTitle': 'Écoute bien',
       'spellTitle': 'Lettres',
       'readPickTitle': 'Mot et image',
+      'readAloudTitle': 'Lis à voix haute',
       'wordsTitle': 'Mots',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
@@ -215,6 +219,7 @@ class S {
       'listenTitle': 'Ascolta bene',
       'spellTitle': 'Lettere',
       'readPickTitle': 'Parola e immagine',
+      'readAloudTitle': 'Leggi ad alta voce',
       'wordsTitle': 'Parole',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
@@ -260,6 +265,7 @@ class S {
       'listenTitle': 'Escucha bien',
       'spellTitle': 'Letras',
       'readPickTitle': 'Palabra e imagen',
+      'readAloudTitle': 'Lee en voz alta',
       'wordsTitle': 'Palabras',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',

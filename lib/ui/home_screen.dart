@@ -6,6 +6,7 @@ import '../game/play_screen.dart';
 import '../game/world_scene.dart';
 import '../listen/listen_screen.dart';
 import '../quiz/quiz_screen.dart';
+import '../read/read_aloud_screen.dart';
 import '../spell/spell_screen.dart';
 import '../voice/voice_screen.dart';
 import 'emoji_image.dart';
@@ -101,6 +102,11 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: () => ListenScreen(app: app, reading: true),
       emojis: const ['📖', '🐮'],
       name: s.readPickTitle,
+    ),
+    (
+      screen: () => ReadAloudScreen(app: app),
+      emojis: const ['📖', '🎤'],
+      name: s.readAloudTitle,
     ),
     (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),

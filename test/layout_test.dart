@@ -12,6 +12,7 @@ import 'package:phoneme_party/listen/listen_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
+import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
@@ -159,6 +160,21 @@ void main() {
     ('large text', const Size(360, 640), 1.6),
     ('landscape, large text', const Size(640, 360), 1.6),
   ]) {
+    testWidgets('read aloud, $name', (t) async {
+      await show(
+        t,
+        (app) => ReadAloudScreen(app: app),
+        size: size,
+        text: text,
+      );
+      // the child says nothing: the hint shows, the mic waits
+      for (var i = 0; i < 300; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(t.takeException(), isNull);
+      await close(t);
+    });
+
     testWidgets('spell, $name', (t) async {
       await show(
         t,

@@ -59,6 +59,11 @@ built with Flutter. Native successor of the web app
   and not said (silent reading). Later in the round one wrong picture is
   written alike (Hase / Hose). 🔊 says the word as a help; that word then
   gets no star.
+- **📖🎤 Read aloud:** a word is written, nothing is said and no
+  picture shown; the child reads it aloud. The phone listens by itself and
+  scores it like the word game, then shows the picture and says the word.
+  0 stars: once more. Six words a round, short ones first; the round's
+  stars are the average.
 - **✏️ Letters:** the picture, the phone says the word, and the child
   spells it by tapping letter tiles in order (small letters on the tiles,
   the word above as written). Six words a round, short ones first; later
