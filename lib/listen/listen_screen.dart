@@ -5,6 +5,12 @@
 // A wrong tap is not a dead end: the phone says what the tapped picture
 // is ("Haus") and the word again, and the child tries once more. Only
 // the first tap counts for the stars. No microphone.
+//
+// With [ListenScreen.reading] it is "Word to picture" (📖): the word is
+// written, nothing is said, and later in the round one wrong picture is
+// a word that is written alike (Hase / Hose). 🔊 says the word as a help;
+// that question then counts like a wrong first tap. A wrong tap says only
+// what the tapped picture is.
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -27,9 +33,17 @@ import 'listen_rules.dart';
 enum _Phase { speaking, choosing, result }
 
 class ListenScreen extends StatefulWidget {
-  const ListenScreen({super.key, required this.app, this.round});
+  const ListenScreen({
+    super.key,
+    required this.app,
+    this.round,
+    this.reading = false,
+  });
 
   final AppState app;
+
+  /// The word is written, not said ("Word to picture").
+  final bool reading;
 
   /// The questions; a new random round if null (tests set it).
   final List<ListenQuestion>? round;
@@ -55,6 +69,10 @@ class _ListenScreenState extends State<ListenScreen>
 
   /// Pictures of the current question tapped wrongly.
   final _wrong = <Phrase>{};
+
+  /// 🔊 was used for the current question (reading only).
+  bool _helped = false;
+  bool get _reading => widget.reading;
   String? _lastPraise;
 
   /// Incremented to stop what runs (new question, pause, closing).
@@ -69,8 +87,9 @@ class _ListenScreenState extends State<ListenScreen>
 
   List<ListenQuestion> _makeRound() {
     final app = widget.app;
-    double closeness(Phrase a, Phrase b) =>
-        app.comparer.compare(a.ipa, b.ipa, app.book.lang).score;
+    double closeness(Phrase a, Phrase b) => _reading
+        ? spellingCloseness(a.text, b.text)
+        : app.comparer.compare(a.ipa, b.ipa, app.book.lang).score;
     final round = makeListenRound(
       app.knownWords(),
       _rng,
@@ -124,21 +143,25 @@ class _ListenScreenState extends State<ListenScreen>
       }
     } else if (state == AppLifecycleState.resumed) {
       _paused = false;
-      // back while choosing: the word again; after a result ➡ goes on
-      if (_phase == _Phase.choosing && !_over) _repeat();
+      // back while choosing: the word again (it is written when reading);
+      // after a result ➡ goes on
+      if (_phase == _Phase.choosing && !_over && !_reading) _repeat();
     }
   }
 
   bool _current(int id) => mounted && id == _flow && !_paused;
 
-  Future<void> _say(String text) async {
+  /// Says [text]; false if the TTS failed (no voice for the language).
+  Future<bool> _say(String text) async {
     try {
       await _tts.stop();
       await _tts
           .speak(text)
           .timeout(Duration(seconds: 3 + text.length ~/ 4), onTimeout: () {});
+      return true;
     } catch (e, st) {
       debugPrint('tts failed: $e\n$st');
+      return false;
     }
   }
 
@@ -159,11 +182,15 @@ class _ListenScreenState extends State<ListenScreen>
   }
 
   /// Says the word of the current question; the pictures can be tapped
-  /// already while it is said.
+  /// already while it is said. When reading: nothing is said.
   Future<void> _ask() async {
     if (_over || !mounted || _round.isEmpty) return;
     final id = ++_flow;
     _onward?.cancel();
+    if (_reading) {
+      setState(() => _phase = _Phase.choosing);
+      return;
+    }
     setState(() => _phase = _Phase.speaking);
     await _say(_q.answer.text);
     if (_current(id) && _phase == _Phase.speaking) {
@@ -171,12 +198,14 @@ class _ListenScreenState extends State<ListenScreen>
     }
   }
 
-  /// 🔊: the word again.
+  /// 🔊: the word again (when reading: a help, no star for this one).
   Future<void> _repeat() async {
     if (_phase == _Phase.result || _over) return;
     final id = ++_flow;
     setState(() => _phase = _Phase.speaking);
-    await _say(_q.answer.text);
+    final said = await _say(_q.answer.text);
+    // a help only if the phone could say it
+    if (_reading && said && id == _flow) _helped = true;
     if (_current(id) && _phase == _Phase.speaking) {
       setState(() => _phase = _Phase.choosing);
     }
@@ -186,7 +215,7 @@ class _ListenScreenState extends State<ListenScreen>
     if (_phase == _Phase.result || _over || _wrong.contains(p)) return;
     final id = ++_flow;
     if (p == _q.answer) {
-      final first = _wrong.isEmpty;
+      final first = _wrong.isEmpty && !_helped;
       setState(() {
         _phase = _Phase.result;
         _results[_index] = first;
@@ -210,9 +239,11 @@ class _ListenScreenState extends State<ListenScreen>
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (!_current(id)) return;
     await _say(p.text);
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    if (!_current(id)) return;
-    await _say(_q.answer.text);
+    if (!_reading) {
+      await Future<void>.delayed(const Duration(milliseconds: 300));
+      if (!_current(id)) return;
+      await _say(_q.answer.text);
+    }
     if (_current(id) && _phase == _Phase.speaking) {
       setState(() => _phase = _Phase.choosing);
     }
@@ -231,6 +262,7 @@ class _ListenScreenState extends State<ListenScreen>
     setState(() {
       _index++;
       _wrong.clear();
+      _helped = false;
     });
     _ask();
   }
@@ -242,7 +274,10 @@ class _ListenScreenState extends State<ListenScreen>
     final stars = quizStars(right, _round.length);
     var record = false;
     try {
-      record = await widget.app.progress.recordListen(_lang, stars);
+      final progress = widget.app.progress;
+      record = _reading
+          ? await progress.recordReadPick(_lang, stars)
+          : await progress.recordListen(_lang, stars);
     } catch (e, st) {
       debugPrint('saving the listen record failed: $e\n$st');
     }
@@ -271,7 +306,7 @@ class _ListenScreenState extends State<ListenScreen>
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: Text(s.listenTitle),
+        title: Text(_reading ? s.readPickTitle : s.listenTitle),
       ),
       body: SafeArea(
         child: Stack(
@@ -283,6 +318,7 @@ class _ListenScreenState extends State<ListenScreen>
               Column(
                 children: [
                   ProgressDots(results: _results, index: _index),
+                  if (_reading) _word(),
                   Expanded(child: _options()),
                   _controls(s),
                   const SizedBox(height: 24),
@@ -293,6 +329,23 @@ class _ListenScreenState extends State<ListenScreen>
       ),
     );
   }
+
+  /// The word to read, big.
+  Widget _word() => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+    child: SizedBox(
+      // in landscape the pictures need the height
+      height: MediaQuery.sizeOf(context).height < 500 ? 40 : 64,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Text(
+          _q.answer.text,
+          key: const ValueKey('read-word'),
+          style: _text.copyWith(fontSize: 52),
+        ),
+      ),
+    ),
+  );
 
   /// The pictures, 2 x 2 (a row of four when wide).
   Widget _options() => LayoutBuilder(
@@ -349,7 +402,7 @@ class _ListenScreenState extends State<ListenScreen>
                 ),
                 // the word is shown with the answer, not before: this is
                 // a game for the ears
-                if (result && isAnswer)
+                if (result && isAnswer && !_reading)
                   Expanded(
                     child: FittedBox(
                       fit: BoxFit.scaleDown,

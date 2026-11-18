@@ -33,6 +33,7 @@ class S {
   String get quizTitle => _t['quizTitle']!;
   String get listenTitle => _t['listenTitle']!;
   String get spellTitle => _t['spellTitle']!;
+  String get readPickTitle => _t['readPickTitle']!;
   String get wordsTitle => _t['wordsTitle']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
@@ -77,6 +78,7 @@ class S {
       'quizTitle': 'Rätsel',
       'listenTitle': 'Hör genau',
       'spellTitle': 'Buchstaben',
+      'readPickTitle': 'Wort zum Bild',
       'wordsTitle': 'Wörter',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
@@ -122,6 +124,7 @@ class S {
       'quizTitle': 'Quiz',
       'listenTitle': 'Listen',
       'spellTitle': 'Letters',
+      'readPickTitle': 'Word to picture',
       'wordsTitle': 'Words',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
@@ -166,6 +169,7 @@ class S {
       'quizTitle': 'Devinettes',
       'listenTitle': 'Écoute bien',
       'spellTitle': 'Lettres',
+      'readPickTitle': 'Mot et image',
       'wordsTitle': 'Mots',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
@@ -210,6 +214,7 @@ class S {
       'quizTitle': 'Indovinelli',
       'listenTitle': 'Ascolta bene',
       'spellTitle': 'Lettere',
+      'readPickTitle': 'Parola e immagine',
       'wordsTitle': 'Parole',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
@@ -254,6 +259,7 @@ class S {
       'quizTitle': 'Adivinanzas',
       'listenTitle': 'Escucha bien',
       'spellTitle': 'Letras',
+      'readPickTitle': 'Palabra e imagen',
       'wordsTitle': 'Palabras',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',
