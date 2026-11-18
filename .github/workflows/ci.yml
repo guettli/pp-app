@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Release the current main without a code change (e.g. to test the
+  # in-app update with a newer versionCode).
+  workflow_dispatch:
 
 # One Dagger CLI per job, installed directly: dagger-for-github@v8.4.1 probes
 # an installed CLI with `dagger --silent version`, which v1.0 rejects, so a
@@ -62,7 +65,7 @@ jobs:
   # releases/latest/download/... and phones can install updates directly.
   release:
     needs: check
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
