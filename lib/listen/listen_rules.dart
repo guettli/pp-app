@@ -77,3 +77,24 @@ List<ListenQuestion> makeListenRound(
   }
   return round;
 }
+
+/// How alike two words are written, 0..1: 1 - edit distance / longer
+/// length, ignoring capitals (Hase / Hose: 0.75).
+double spellingCloseness(String a, String b) {
+  final x = a.toLowerCase().runes.toList();
+  final y = b.toLowerCase().runes.toList();
+  final longer = math.max(x.length, y.length);
+  if (longer == 0) return 1;
+  var prev = List<int>.generate(y.length + 1, (j) => j);
+  for (var i = 1; i <= x.length; i++) {
+    final cur = List<int>.filled(y.length + 1, 0)..[0] = i;
+    for (var j = 1; j <= y.length; j++) {
+      cur[j] = math.min(
+        math.min(prev[j] + 1, cur[j - 1] + 1),
+        prev[j - 1] + (x[i - 1] == y[j - 1] ? 0 : 1),
+      );
+    }
+    prev = cur;
+  }
+  return 1 - prev[y.length] / longer;
+}

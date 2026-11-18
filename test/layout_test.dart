@@ -129,6 +129,28 @@ void main() {
       }
       await close(t);
     });
+
+    testWidgets('word to picture, $name', (t) async {
+      await show(
+        t,
+        (app) => ListenScreen(app: app, reading: true),
+        size: size,
+        text: text,
+      );
+      for (var i = 0; i < 40; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(t.takeException(), isNull);
+      // the answer shows its word under the picture: tap until it is found
+      for (var o = 0; o < 4; o++) {
+        await t.tap(find.byKey(ValueKey('listen-option-$o')));
+        for (var i = 0; i < 20; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        expect(t.takeException(), isNull);
+      }
+      await close(t);
+    });
   }
 
   for (final (name, size, text) in [

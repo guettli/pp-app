@@ -55,6 +55,10 @@ built with Flutter. Native successor of the web app
   the open worlds; in the second half one wrong picture sounds like the
   answer (Maus / Haus). A wrong tap: the phone says what that picture is
   and the word again; only the first tap counts for the stars.
+- **📖 Word to picture:** like Listen closely, but the word is written
+  and not said (silent reading). Later in the round one wrong picture is
+  written alike (Hase / Hose). 🔊 says the word as a help; that word then
+  gets no star.
 - **✏️ Letters:** the picture, the phone says the word, and the child
   spells it by tapping letter tiles in order (small letters on the tiles,
   the word above as written). Six words a round, short ones first; later

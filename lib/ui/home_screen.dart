@@ -78,6 +78,47 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
+  /// The games besides the worlds, in the order shown.
+  List<({Widget Function() screen, List<String> emojis, String name})> _games(
+    S s,
+  ) => [
+    (
+      screen: () => QuizScreen(app: app),
+      emojis: const ['🦉'],
+      name: s.quizTitle,
+    ),
+    (
+      screen: () => ListenScreen(app: app),
+      emojis: const ['👂'],
+      name: s.listenTitle,
+    ),
+    (
+      screen: () => SpellScreen(app: app),
+      emojis: const ['✏️'],
+      name: s.spellTitle,
+    ),
+    (
+      screen: () => ListenScreen(app: app, reading: true),
+      emojis: const ['📖', '🐮'],
+      name: s.readPickTitle,
+    ),
+    (
+      screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
+      emojis: const ['🎈'],
+      name: s.holdTitle,
+    ),
+    (
+      screen: () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
+      emojis: const ['🐻', '🐭'],
+      name: s.pitchTitle,
+    ),
+  ];
+
+  static List<List<T>> _rows<T>(List<T> all, int n) => [
+    for (var i = 0; i < all.length; i += n)
+      all.sublist(i, i + n > all.length ? all.length : i + n),
+  ];
+
   /// A game besides the worlds: big pictures, the name for the grown-ups.
   Widget _tile(Widget Function() screen, List<String> emojis, String name) {
     return Expanded(
@@ -147,44 +188,26 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: CustomScrollView(
         slivers: [
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            sliver: SliverToBoxAdapter(
-              child: Row(
-                children: [
-                  _tile(() => QuizScreen(app: app), const ['🦉'], s.quizTitle),
-                  const SizedBox(width: 12),
-                  _tile(() => ListenScreen(app: app), const [
-                    '👂',
-                  ], s.listenTitle),
-                  const SizedBox(width: 12),
-                  _tile(() => SpellScreen(app: app), const [
-                    '✏️',
-                  ], s.spellTitle),
-                ],
+          // the games besides the worlds, three in a row
+          for (final (i, row) in _rows(_games(s), 3).indexed)
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(16, i == 0 ? 16 : 12, 16, 0),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  children: [
+                    for (final (j, g) in row.indexed) ...[
+                      if (j > 0) const SizedBox(width: 12),
+                      _tile(g.screen, g.emojis, g.name),
+                    ],
+                    // a short last row keeps the tile width
+                    for (var j = row.length; j < 3; j++) ...[
+                      const SizedBox(width: 12),
+                      const Expanded(child: SizedBox()),
+                    ],
+                  ],
+                ),
               ),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-            sliver: SliverToBoxAdapter(
-              child: Row(
-                children: [
-                  _tile(
-                    () => VoiceGameScreen(app: app, game: VoiceGame.hold),
-                    const ['🎈'],
-                    s.holdTitle,
-                  ),
-                  const SizedBox(width: 12),
-                  _tile(
-                    () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
-                    const ['🐻', '🐭'],
-                    s.pitchTitle,
-                  ),
-                ],
-              ),
-            ),
-          ),
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid.builder(

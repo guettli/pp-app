@@ -121,7 +121,10 @@ void main() {
       ListenQuestion(w('Bett'), [w('Bett'), w('Ei'), w('Kuh'), w('Ohr')]),
     ];
 
-    Future<(FakeDevices, Progress)> play(WidgetTester t) async {
+    Future<(FakeDevices, Progress)> play(
+      WidgetTester t, {
+      bool reading = false,
+    }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
       final t0 = t.binding.clock.now();
@@ -141,7 +144,8 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => ListenScreen(app: app, round: two()),
+          builder: (_) =>
+              ListenScreen(app: app, round: two(), reading: reading),
         ),
       );
       await t.pump();
@@ -278,5 +282,81 @@ void main() {
       expect(dev.log.started('tts'), contains('Bett'));
       await close(t, dev.log);
     });
+
+    testWidgets('reading: nothing said, the word written, three stars', (
+      t,
+    ) async {
+      final (dev, progress) = await play(t, reading: true);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), isEmpty);
+      expect(find.text('Kuh'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('listen-option-1')));
+      await wait(t, 6000);
+      expect(find.text('Bett'), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('listen-option-0')));
+      await wait(t, 6000);
+      expect(find.text('2 / 2'), findsOneWidget);
+      expect(progress.readPickBest('de-DE'), 3);
+      expect(progress.listenBest('de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('reading: a wrong tap says only that picture', (t) async {
+      final (dev, _) = await play(t, reading: true);
+      await wait(t, 500);
+      await t.tap(find.byKey(const ValueKey('listen-option-0'))); // Ei
+      await wait(t, 3000);
+      expect(dev.log.started('tts'), ['Ei']);
+      await close(t, dev.log);
+    });
+
+    testWidgets('reading: 🔊 helps, but then no star for the word', (t) async {
+      final (dev, progress) = await play(t, reading: true);
+      await wait(t, 500);
+      await t.tap(find.byTooltip('Listen'));
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), ['Kuh']);
+      await t.tap(find.byKey(const ValueKey('listen-option-1')));
+      await wait(t, 6000);
+      await t.tap(find.byKey(const ValueKey('listen-option-0')));
+      await wait(t, 6000);
+      expect(find.text('1 / 2'), findsOneWidget);
+      expect(progress.readPickBest('de-DE'), 1);
+      await close(t, dev.log);
+    });
+  });
+
+  group('reading rounds', () {
+    test('written alike', () {
+      expect(spellingCloseness('Hase', 'Hose'), 0.75);
+      expect(spellingCloseness('Hund', 'hund'), 1);
+      expect(spellingCloseness('Ei', 'Ohr'), 0);
+      expect(spellingCloseness('Ei', 'Bett'), 0.25); // the e
+    });
+
+    for (final lang in langs) {
+      test('$lang: second half, the word written most alike is there', () {
+        final book = books[lang]!;
+        final pool = [for (var w = 0; w < 3; w++) ...book.world(w)];
+        double c(Phrase a, Phrase b) => spellingCloseness(a.text, b.text);
+        for (var seed = 0; seed < 10; seed++) {
+          final round = makeListenRound(pool, math.Random(seed), closeness: c);
+          expect(round, hasLength(8));
+          for (final q in round.skip(4)) {
+            final others = [
+              for (final p in pool)
+                if (!sameForTheEar(p, q.answer) && c(p, q.answer) < sameSound)
+                  p,
+            ];
+            final best = others.map((p) => c(p, q.answer)).reduce(math.max);
+            expect(
+              q.options.any((o) => o != q.answer && c(o, q.answer) == best),
+              isTrue,
+              reason: '$q',
+            );
+          }
+        }
+      });
+    }
   });
 }
