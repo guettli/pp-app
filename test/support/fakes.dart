@@ -195,6 +195,9 @@ class FakeMic implements MicSource {
   /// child does).
   Duration? endsAfter;
 
+  /// The child starts this much later (thinks, reads) before speaking.
+  Duration speechDelay = Duration.zero;
+
   @override
   Future<Stream<Uint8List>> start({bool voiceProcessing = true}) async {
     await stop();
@@ -241,7 +244,7 @@ class FakeMic implements MicSource {
           what,
           what == Child.speaksAtOnce
               ? (log.now() - log.quietSince).inMilliseconds
-              : t,
+              : t - speechDelay.inMilliseconds,
         ),
       );
       t += 20;
