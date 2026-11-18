@@ -172,7 +172,8 @@ when the picture shows several (🍒 Kirschen).
 
 Every merge to `main` publishes a GitHub release `v<major>.<minor>.<run>`
 (major/minor from `pubspec.yaml`, the workflow run number is also the
-Android versionCode) with both APKs. Pull requests get the APK as a workflow
+Android versionCode) with both APKs. `gh workflow run CI --ref main`
+releases main again without a code change. Pull requests get the APK as a workflow
 artifact.
 
 The ONNX model is downloaded during `build-apk` (pinned Hugging Face revision,
