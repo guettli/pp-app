@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,4 +75,15 @@ class AppState {
 
   int worldStars(int world) => progress.worldStars(book, world);
   bool worldOpen(int world) => progress.worldOpen(book, world);
+
+  /// The words of the open worlds, at least of the first [minWorlds]: the
+  /// words the child already plays with (quiz, listen, spell).
+  List<Phrase> knownWords({int minWorlds = 3}) {
+    var open = 0;
+    while (open < book.worldCount && worldOpen(open)) {
+      open++;
+    }
+    final n = math.min(math.max(open, minWorlds), book.worldCount);
+    return [for (var w = 0; w < n; w++) ...book.world(w)];
+  }
 }

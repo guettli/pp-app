@@ -25,6 +25,7 @@ import '../net/feedback.dart' show FeedbackReport, SendResult;
 import '../net/quiz_report.dart';
 import '../ui/emoji_image.dart';
 import '../ui/round_button.dart';
+import '../ui/round_parts.dart';
 import '../ui/strings.dart';
 import 'facts.dart';
 import 'quiz_lines.dart';
@@ -108,15 +109,7 @@ class _QuizScreenState extends State<QuizScreen>
   List<QuizQuestion> _makeRound() {
     final app = widget.app;
     final book = app.book;
-    var open = 0;
-    while (open < book.worldCount && app.worldOpen(open)) {
-      open++;
-    }
-    open = math.max(open, 3);
-    final pool = [
-      for (var w = 0; w < math.min(open, book.worldCount); w++)
-        ...book.world(w),
-    ];
+    final pool = app.knownWords();
     bool similar(Phrase a, Phrase b) =>
         soundsSimilar(app.comparer, book.lang, a, b);
     final round = makeRound(
@@ -474,52 +467,12 @@ class _QuizScreenState extends State<QuizScreen>
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
       if (mounted && !_paused) _say(text);
     });
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      // the back button must not close it: the round is over
-      builder: (ctx) => PopScope(
-        canPop: false,
-        child: AlertDialog(
-          title: Row(
-            children: [
-              const EmojiImage('🏆', size: 48),
-              const SizedBox(width: 12),
-              Flexible(child: Text(s.worldDone)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < 3; i++)
-                    Opacity(
-                      opacity: i < stars ? 1 : 0.25,
-                      child: const EmojiImage('⭐', size: 40),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '$right / ${_round.length}',
-                style: const TextStyle(fontSize: 22),
-              ),
-              if (record) Text(s.newRecord),
-            ],
-          ),
-          actions: [
-            FilledButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                Navigator.of(context).pop();
-              },
-              child: Text(s.ok),
-            ),
-          ],
-        ),
-      ),
+    await showRoundEnd(
+      context,
+      stars: stars,
+      right: right,
+      total: _round.length,
+      record: record,
     );
   }
 
@@ -548,7 +501,7 @@ class _QuizScreenState extends State<QuizScreen>
             else
               Column(
                 children: [
-                  _progressRow(),
+                  ProgressDots(results: _results, index: _index),
                   const SizedBox(height: 16),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -577,35 +530,6 @@ class _QuizScreenState extends State<QuizScreen>
       ),
     );
   }
-
-  /// One dot per question: a star when right.
-  Widget _progressRow() => Padding(
-    padding: const EdgeInsets.only(top: 8),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (final (i, r) in _results.indexed)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 3),
-            child: r == true
-                ? const EmojiImage('⭐', size: 26)
-                : Container(
-                    width: 18,
-                    height: 18,
-                    margin: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: r == false ? Colors.white24 : null,
-                      border: Border.all(
-                        color: i == _index ? Colors.white : Colors.white38,
-                        width: i == _index ? 3 : 2,
-                      ),
-                    ),
-                  ),
-          ),
-      ],
-    ),
-  );
 
   Widget _options() {
     final result = _phase == _Phase.result;
