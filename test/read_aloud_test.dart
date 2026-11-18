@@ -106,8 +106,11 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              ReadAloudScreen(app: app, round: [w('Ei'), w('Bett')]),
+          builder: (_) => ReadAloudScreen(
+            app: app,
+            round: [w('Ei'), w('Bett')],
+            intro: false,
+          ),
         ),
       );
       await t.pump();

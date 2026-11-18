@@ -144,8 +144,12 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              ListenScreen(app: app, round: two(), reading: reading),
+          builder: (_) => ListenScreen(
+            app: app,
+            round: two(),
+            reading: reading,
+            intro: false,
+          ),
         ),
       );
       await t.pump();

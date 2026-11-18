@@ -25,6 +25,7 @@ import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
 import '../quiz/quiz_rules.dart' show quizStars;
 import '../ui/emoji_image.dart';
+import '../ui/intros.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
@@ -38,7 +39,11 @@ class ListenScreen extends StatefulWidget {
     required this.app,
     this.round,
     this.reading = false,
+    this.intro = true,
   });
+
+  /// Say what to do before the first word (off in tests of the flow).
+  final bool intro;
 
   final AppState app;
 
@@ -69,6 +74,12 @@ class _ListenScreenState extends State<ListenScreen>
 
   /// Pictures of the current question tapped wrongly.
   final _wrong = <Phrase>{};
+
+  /// The intro (what to do) was said: once, before the first word.
+  late bool _introDone = !widget.intro;
+
+  /// The intro is being said: pictures do not react yet.
+  bool _introPlaying = false;
 
   /// 🔊 was used for the current question (reading only).
   bool _helped = false;
@@ -137,6 +148,7 @@ class _ListenScreenState extends State<ListenScreen>
       _donePraise?.cancel();
       _quietly(_tts.stop);
       _quietly(_sfx.stop);
+      _introPlaying = false;
       // a word cut off: the pictures stay tappable, 🔊 says it again
       if (_phase == _Phase.speaking && mounted) {
         setState(() => _phase = _Phase.choosing);
@@ -187,6 +199,22 @@ class _ListenScreenState extends State<ListenScreen>
     if (_over || !mounted || _round.isEmpty) return;
     final id = ++_flow;
     _onward?.cancel();
+    if (!_introDone) {
+      _introDone = true;
+      // no taps before the word: a tap now could cost the star
+      setState(() {
+        _phase = _Phase.speaking;
+        _introPlaying = true;
+      });
+      await _say(
+        introLine(
+          _reading ? GameIntro.readTapPicture : GameIntro.tapPicture,
+          _lang,
+        ),
+      );
+      if (mounted) setState(() => _introPlaying = false);
+      if (!_current(id) || _phase != _Phase.speaking) return;
+    }
     if (_reading) {
       setState(() => _phase = _Phase.choosing);
       return;
@@ -213,6 +241,7 @@ class _ListenScreenState extends State<ListenScreen>
 
   Future<void> _tap(Phrase p) async {
     if (_phase == _Phase.result || _over || _wrong.contains(p)) return;
+    if (_introPlaying) return;
     final id = ++_flow;
     if (p == _q.answer) {
       final first = _wrong.isEmpty && !_helped;
