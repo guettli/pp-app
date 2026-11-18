@@ -16,8 +16,12 @@ class QuizLines {
   final Map<String, String> _t;
   final String code;
 
-  /// "What can fly?"
-  String question(Ask ask) => _t[ask.toString()]!;
+  /// "What can fly?", "What starts like Maus?"
+  String question(Ask ask) {
+    final like = ask.like;
+    if (like != null) return _t['startsLike']!.replaceAll('{w}', like.text);
+    return _t[ask.toString()]!;
+  }
 
   /// "What can fly? Tree, bird or house?"
   String ask(QuizQuestion q) {
@@ -62,6 +66,7 @@ class QuizLines {
       'lightest': 'Was ist am leichtesten?',
       'or': 'oder',
       'answerIs': 'Die Antwort ist: {w}.',
+      'startsLike': 'Was fängt an wie {w}?',
       'notUnderstood': 'Das habe ich nicht verstanden. Noch einmal!',
       'label.animal': 'Tier',
       'label.flies': 'fliegt',
@@ -101,6 +106,7 @@ class QuizLines {
       'lightest': 'Which one is the lightest?',
       'or': 'or',
       'answerIs': 'The answer is: {w}.',
+      'startsLike': 'Which one starts like {w}?',
       'notUnderstood': 'I did not catch that. Once more!',
       'label.animal': 'animal',
       'label.flies': 'flies',
@@ -140,6 +146,7 @@ class QuizLines {
       'lightest': 'Lequel est le plus léger\u00A0?',
       'or': 'ou',
       'answerIs': 'La réponse est\u00A0: {w}.',
+      'startsLike': 'Qu’est-ce qui commence comme {w}\u00A0?',
       'notUnderstood': 'Je n’ai pas compris. Encore une fois\u00A0!',
       'label.animal': 'animal',
       'label.flies': 'vole',
@@ -179,6 +186,7 @@ class QuizLines {
       'lightest': 'Qual è il più leggero?',
       'or': 'o',
       'answerIs': 'La risposta è: {w}.',
+      'startsLike': 'Cosa comincia come {w}?',
       'notUnderstood': 'Non ho capito. Ancora una volta!',
       'label.animal': 'animale',
       'label.flies': 'vola',
@@ -218,6 +226,7 @@ class QuizLines {
       'lightest': '¿Cuál es el más ligero?',
       'or': 'o',
       'answerIs': 'La respuesta es: {w}.',
+      'startsLike': '¿Qué empieza como {w}?',
       'notUnderstood': 'No te he entendido. ¡Otra vez!',
       'label.animal': 'animal',
       'label.flies': 'vuela',

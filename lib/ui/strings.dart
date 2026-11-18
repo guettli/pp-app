@@ -35,6 +35,7 @@ class S {
   String get spellTitle => _t['spellTitle']!;
   String get readPickTitle => _t['readPickTitle']!;
   String get readAloudTitle => _t['readAloudTitle']!;
+  String get soundsTitle => _t['soundsTitle']!;
   String get wordsTitle => _t['wordsTitle']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
@@ -81,6 +82,7 @@ class S {
       'spellTitle': 'Buchstaben',
       'readPickTitle': 'Wort zum Bild',
       'readAloudTitle': 'Lies vor',
+      'soundsTitle': 'Anlaut-Detektiv',
       'wordsTitle': 'Wörter',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
@@ -128,6 +130,7 @@ class S {
       'spellTitle': 'Letters',
       'readPickTitle': 'Word to picture',
       'readAloudTitle': 'Read aloud',
+      'soundsTitle': 'Sound detective',
       'wordsTitle': 'Words',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
@@ -174,6 +177,7 @@ class S {
       'spellTitle': 'Lettres',
       'readPickTitle': 'Mot et image',
       'readAloudTitle': 'Lis à voix haute',
+      'soundsTitle': 'Détective des sons',
       'wordsTitle': 'Mots',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
@@ -220,6 +224,7 @@ class S {
       'spellTitle': 'Lettere',
       'readPickTitle': 'Parola e immagine',
       'readAloudTitle': 'Leggi ad alta voce',
+      'soundsTitle': 'Detective dei suoni',
       'wordsTitle': 'Parole',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
@@ -266,6 +271,7 @@ class S {
       'spellTitle': 'Letras',
       'readPickTitle': 'Palabra e imagen',
       'readAloudTitle': 'Lee en voz alta',
+      'soundsTitle': 'Detective de sonidos',
       'wordsTitle': 'Palabras',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',

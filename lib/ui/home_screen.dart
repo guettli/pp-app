@@ -109,6 +109,11 @@ class _HomeScreenState extends State<HomeScreen> {
       name: s.readAloudTitle,
     ),
     (
+      screen: () => QuizScreen(app: app, sounds: true),
+      emojis: const ['🔔'],
+      name: s.soundsTitle,
+    ),
+    (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
       emojis: const ['🎈'],
       name: s.holdTitle,

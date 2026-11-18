@@ -64,6 +64,11 @@ built with Flutter. Native successor of the web app
   scores it like the word game, then shows the picture and says the word.
   0 stars: once more. Six words a round, short ones first; the round's
   stars are the average.
+- **🔔 Sound detective:** "What starts like Maus?" with the picture of
+  the mouse; three pictures, one starts with the same sound (Mond), the
+  child says it (the quiz with other questions, `lib/quiz/sound_rules.dart`).
+  Only consonants count as first sounds; the wrong ones start clearly
+  differently (PanPhon cost ≥ 0.15, so never b against p).
 - **✏️ Letters:** the picture, the phone says the word, and the child
   spells it by tapping letter tiles in order (small letters on the tiles,
   the word above as written). Six words a round, short ones first; later
