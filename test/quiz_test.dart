@@ -306,6 +306,7 @@ void main() {
           builder: (_) => QuizScreen(
             app: app,
             round: fixed ? three() : null,
+            intro: false,
             info: () async => {'phone': 'test'},
           ),
         ),

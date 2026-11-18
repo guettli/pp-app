@@ -19,13 +19,22 @@ import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
 import '../quiz/quiz_rules.dart' show quizStars;
 import '../ui/emoji_image.dart';
+import '../ui/intros.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
 import 'spell_rules.dart';
 
 class SpellScreen extends StatefulWidget {
-  const SpellScreen({super.key, required this.app, this.round});
+  const SpellScreen({
+    super.key,
+    required this.app,
+    this.round,
+    this.intro = true,
+  });
+
+  /// Say what to do before the first word (off in tests of the flow).
+  final bool intro;
 
   final AppState app;
 
@@ -108,7 +117,7 @@ class _SpellScreenState extends State<SpellScreen> with WidgetsBindingObserver {
     _sfx = io.soundPlayer();
     _rng = io.random();
     _tts.setLanguage(_lang);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _sayWord());
+    WidgetsBinding.instance.addPostFrameCallback((_) => _start());
   }
 
   @override
@@ -168,11 +177,24 @@ class _SpellScreenState extends State<SpellScreen> with WidgetsBindingObserver {
     });
   }
 
+  /// The word was said (or asked for) at least once.
+  bool _wordSaid = false;
+
+  /// What to do, then the first word.
+  Future<void> _start() async {
+    if (_round.isEmpty) return;
+    final id = _flow;
+    if (widget.intro) await _say(introLine(GameIntro.tapLetters, _lang));
+    // not again if the picture or 🔊 said it meanwhile
+    if (_current(id) && !_wordSaid) await _sayWord();
+  }
+
   /// The picture or 🔊: the word (again). Does not stop what runs: after
   /// the last letter the game still goes on by itself.
   Future<void> _sayWord() async {
     // not during the praise of a finished word: it would cut it off
     if (_over || !mounted || _round.isEmpty || _paused || _done) return;
+    _wordSaid = true;
     await _say(_p.phrase.text);
   }
 

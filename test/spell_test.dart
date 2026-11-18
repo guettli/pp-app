@@ -138,7 +138,7 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => SpellScreen(app: app, round: two()),
+          builder: (_) => SpellScreen(app: app, round: two(), intro: false),
         ),
       );
       await t.pump();

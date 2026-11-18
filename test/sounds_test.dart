@@ -166,7 +166,8 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => QuizScreen(app: app, sounds: true, round: [q]),
+          builder: (_) =>
+              QuizScreen(app: app, sounds: true, round: [q], intro: false),
         ),
       );
       await t.pump();

@@ -42,6 +42,11 @@ built with Flutter. Native successor of the web app
 
 ## More games (above the worlds)
 
+Each game first says what to do, in the study language ("Hör gut zu und
+sag das richtige Wort!", "… tippe auf das richtige Bild!", …,
+`lib/ui/intros.dart`): a child who cannot read must know whether to tap
+or to speak.
+
 - **🦉 Quiz:** the phone asks "Was kann fliegen? Baum, Vogel oder Haus?",
   shows the three pictures, and the child answers by saying the word.
   Eight questions a round about the words of the open worlds: what flies,

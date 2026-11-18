@@ -25,6 +25,7 @@ import '../net/device_info.dart';
 import '../net/feedback.dart' show FeedbackReport, SendResult;
 import '../net/quiz_report.dart';
 import '../ui/emoji_image.dart';
+import '../ui/intros.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
@@ -43,7 +44,11 @@ class QuizScreen extends StatefulWidget {
     this.round,
     this.info = deviceInfo,
     this.sounds = false,
+    this.intro = true,
   });
+
+  /// Say what to do before the first word (off in tests of the flow).
+  final bool intro;
 
   final AppState app;
 
@@ -91,6 +96,9 @@ class _QuizScreenState extends State<QuizScreen>
   List<QuizTry> _tries = [];
   int _triesOf = -1;
   bool _reportSending = false;
+
+  /// The intro (what to do) was said: once, before the first word.
+  late bool _introDone = !widget.intro;
 
   /// The report dialog is open (or about to): one at a time, and the
   /// replay may only play while it is open.
@@ -252,6 +260,12 @@ class _QuizScreenState extends State<QuizScreen>
       return;
     }
     if (!_current(id)) return;
+    if (!_introDone) {
+      await _say(introLine(GameIntro.sayWord, _lang));
+      // cut off (paused, 🐞): said again with the next try
+      if (!_current(id)) return;
+      _introDone = true;
+    }
     await _say(_lines.ask(_q));
     // let the speaker's echo fade before the mic opens
     await Future<void>.delayed(const Duration(milliseconds: 250));

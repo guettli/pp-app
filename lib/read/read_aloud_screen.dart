@@ -25,11 +25,12 @@ import '../game/rules.dart';
 import '../game/voice_effects.dart';
 import '../quiz/word_listener.dart';
 import '../ui/emoji_image.dart';
+import '../ui/intros.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
 
-enum _Phase { ready, listening, thinking, result }
+enum _Phase { ready, speaking, listening, thinking, result }
 
 /// Up to [count] words from [pool] to read: at most [maxChars] letters,
 /// short ones first.
@@ -53,7 +54,15 @@ int readRoundStars(List<int> stars) => stars.isEmpty
     : (stars.reduce((a, b) => a + b) / stars.length).round().clamp(0, 3);
 
 class ReadAloudScreen extends StatefulWidget {
-  const ReadAloudScreen({super.key, required this.app, this.round});
+  const ReadAloudScreen({
+    super.key,
+    required this.app,
+    this.round,
+    this.intro = true,
+  });
+
+  /// Say what to do before the first word (off in tests of the flow).
+  final bool intro;
 
   final AppState app;
 
@@ -85,6 +94,9 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
 
   /// Best stars per word so far (null: not read yet).
   late final List<int?> _stars = List.filled(_round.length, null);
+
+  /// The intro (what to do) was said: once, before the first word.
+  late bool _introDone = !widget.intro;
 
   /// Stars of the last try of the current word (shown in the result).
   int _last = 0;
@@ -210,6 +222,18 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
     }
     // paused or closed meanwhile: the mic must not open
     if (!_current(id)) return;
+    if (!_introDone) {
+      // busy: 🎤 and ➡ wait until it is said
+      setState(() => _phase = _Phase.speaking);
+      await _say(introLine(GameIntro.readAloud, _lang));
+      // let the speaker's echo fade before the mic opens
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      // cut off (paused): said again with the next try
+      if (!_current(id)) return;
+      _introDone = true;
+      await _quietly(_tts.stop);
+      if (!_current(id)) return;
+    }
     setState(() => _phase = _Phase.listening);
     final heard = await _listener.listen(
       // reading takes a moment before the first sound
@@ -319,7 +343,7 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
         _quietly(_tts.stop);
         setState(() => _phase = _Phase.ready);
         _listen();
-      case _Phase.thinking:
+      case _Phase.thinking || _Phase.speaking:
         break;
     }
   }
@@ -443,7 +467,7 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
 
   Widget _controls(S s) {
     final listening = _phase == _Phase.listening;
-    final busy = _phase == _Phase.thinking;
+    final busy = _phase == _Phase.thinking || _phase == _Phase.speaking;
     final level = listening ? (_listener.level * 8).clamp(0.0, 0.3) : 0.0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
