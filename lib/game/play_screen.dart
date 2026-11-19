@@ -504,8 +504,8 @@ class _PlayScreenState extends State<PlayScreen>
         }
         _buffer.add(kept);
         ep.addPcm16(kept);
-        if (ep.heardSpeech) _recorder.heardVoice();
         if (!mounted || _phase != _Phase.listening) return;
+        if (ep.heardSpeech) _recorder.heardVoice();
         final db = 20 * math.log(math.max(ep.level, 1e-5)) / math.ln10;
         setState(() => _level = ((db + 50) / 50).clamp(0.0, 1.0));
         if (ep.done) _stop();

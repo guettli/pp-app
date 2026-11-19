@@ -1,5 +1,4 @@
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/game/screen_awake.dart';
 import 'package:phoneme_party/quiz/word_listener.dart';
@@ -10,30 +9,11 @@ import 'support/fakes.dart';
 import 'support/sounds.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   test('speaking keeps the screen on until shortly after the last voice', () {
-    final calls = <bool>[];
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('de.sharedinbox.pp2/screen'),
-          (call) async {
-            expect(call.method, 'keepOn');
-            calls.add(call.arguments as bool);
-            return null;
-          },
-        );
-    addTearDown(
-      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .setMockMethodCallHandler(
-            const MethodChannel('de.sharedinbox.pp2/screen'),
-            null,
-          ),
-    );
     fakeAsync((async) {
-      final s = ScreenAwake.instance;
+      final calls = <bool>[];
+      final s = ScreenAwake(keepOn: (on) async => calls.add(on));
       s.voice();
-      async.flushMicrotasks();
       expect(calls, [true]);
       // talking on for 3 s, a piece every 100 ms: asked only once
       for (var i = 0; i < 30; i++) {
@@ -43,8 +23,14 @@ void main() {
       expect(calls, [true]);
       async.elapse(ScreenAwake.hold - const Duration(milliseconds: 100));
       expect(calls, [true], reason: 'still within the hold');
-      async.elapse(ScreenAwake.hold);
-      expect(calls, [true, false], reason: 'the usual timeout runs again');
+      async.elapse(ScreenAwake.hold + const Duration(milliseconds: 100));
+      expect(calls, [true, false], reason: 'at most twice the hold');
+      // speaking again later: on again
+      async.elapse(const Duration(seconds: 30));
+      s.voice();
+      expect(calls, [true, false, true]);
+      async.elapse(ScreenAwake.hold * 2);
+      expect(calls, [true, false, true, false]);
     });
   });
 

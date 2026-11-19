@@ -35,7 +35,8 @@ class MainActivity : FlutterActivity() {
         // Speaking counts like touching (lib/game/screen_awake.dart): kept
         // on while the child talks. Clearing the flag pokes the idle timer
         // (the window manager's wake lock is ON_AFTER_RELEASE), so the
-        // usual screen timeout starts from the last word.
+        // usual screen timeout starts again; that poke does not change the
+        // lights, so the screen goes off at the end without dimming first.
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             "de.sharedinbox.pp2/screen",
