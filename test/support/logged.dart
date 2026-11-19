@@ -38,6 +38,9 @@ class LoggedMic implements MicSource {
 
   @override
   Future<void> dispose() => inner.dispose();
+
+  @override
+  void heardVoice() => inner.heardVoice();
 }
 
 class LoggedSpeaker implements Speaker {

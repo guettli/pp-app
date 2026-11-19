@@ -308,6 +308,12 @@ class FakeMic implements MicSource {
 
   @override
   Future<void> dispose() => stop();
+
+  /// How often the app was told the child is speaking (keeps the screen on).
+  int voices = 0;
+
+  @override
+  void heardVoice() => voices++;
 }
 
 /// Speaks 60 ms per letter plus 300 ms, like flutter_tts with

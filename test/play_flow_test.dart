@@ -120,6 +120,7 @@ void flows(bool ios) {
     expect(g.said, [for (final p in g.words) p.text]);
     expect(g.recordings, g.words.length);
     expect(f.rec.calls, g.words.length);
+    expect(f.dev.mic.voices, greaterThan(0), reason: 'keeps the screen on');
     expect(g.replays, g.words.length, reason: 'one replay per word');
     // once per word and once for the world, never twice the same in a row
     final praise = g.praise;
@@ -160,6 +161,7 @@ void flows(bool ios) {
     expect(g.recordings, 1);
     expect(f.rec.calls, 0);
     expect(g.replays, 0);
+    expect(f.dev.mic.voices, 0, reason: 'the screen may go off');
     await g.tap('Speak');
     await g.until(() => g.recordings == 2);
     expect(g.said, [g.words[0].text, g.words[0].text]);
