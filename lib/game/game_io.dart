@@ -10,6 +10,8 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:record/record.dart';
 
+import 'screen_awake.dart';
+
 /// The microphone: 16 kHz mono little-endian 16-bit PCM.
 abstract class MicSource {
   Future<bool> hasPermission();
@@ -20,6 +22,10 @@ abstract class MicSource {
   Future<Stream<Uint8List>> start({bool voiceProcessing = true});
   Future<void> stop();
   Future<void> dispose();
+
+  /// The child is speaking into the mic: counts like a touch, so the
+  /// screen does not go off (see screen_awake.dart).
+  void heardVoice();
 }
 
 /// Text to speech. [speak] completes when the text has been said.
@@ -108,6 +114,9 @@ class RecordMic implements MicSource {
 
   @override
   Future<void> dispose() => _recorder.dispose();
+
+  @override
+  void heardVoice() => ScreenAwake.instance.voice();
 }
 
 class TtsSpeaker implements Speaker {

@@ -58,6 +58,7 @@ class VoiceListener {
             take.add(f);
             onFrame?.call(take, f);
           }
+          if (take.started) mic.heardVoice();
           if (take.done) _finish(done, take);
         },
         onError: (Object e, StackTrace st) {

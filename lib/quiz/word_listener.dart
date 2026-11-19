@@ -80,6 +80,7 @@ class WordListener {
         (chunk) {
           _buffer.add(chunk);
           ep.addPcm16(chunk);
+          if (ep.heardSpeech) mic.heardVoice();
           onChunk?.call();
           if (ep.done) _finishHeard(done);
         },
