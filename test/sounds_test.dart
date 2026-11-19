@@ -59,9 +59,64 @@ void main() {
     expect(firstSound(comparer, w('zucca', 'it-IT'), 'it-IT'), isNotNull);
     expect(firstSound(comparer, w('zucca', 'it-IT'), 'it-IT')!.length, 2);
     // ts is not clearly other than t or s, so never offered against them
-    expect(clearlyOther(comparer, 't', 'ts', 'de-DE'), isFalse);
-    expect(clearlyOther(comparer, 'ʃ', 'tʃ', 'en-GB'), isFalse);
-    expect(clearlyOther(comparer, 'm', 'ts', 'de-DE'), isTrue);
+    expect(clearlyOther(comparer, ['t'], ['ts'], 'de-DE'), isFalse);
+    expect(clearlyOther(comparer, ['ʃ'], ['tʃ'], 'en-GB'), isFalse);
+    expect(clearlyOther(comparer, ['m'], ['ts'], 'de-DE'), isTrue);
+  });
+
+  test('the onset is every consonant before the first vowel', () {
+    expect(firstSound(comparer, w('Stuhl'), 'de-DE'), 'ʃt');
+    expect(firstSound(comparer, w('Spinne'), 'de-DE'), 'ʃp');
+    expect(firstSound(comparer, w('Schuh'), 'de-DE'), 'ʃ');
+    expect(firstSound(comparer, w('Maus'), 'de-DE'), 'm');
+    expect(onsetOf(comparer, '/t͡svɛrk/', 'de-DE'), 'tsv');
+    expect(onsetOf(comparer, '/ʃtɛrn/', 'de-DE'), 'ʃt');
+    // only the first word of a phrase
+    expect(onsetOf(comparer, '/ˈaɪs kriːm/', 'en-GB'), isNull);
+    // Schuh and Spinne are not offered against Stuhl (both start with ʃ)
+    expect(clearlyOther(comparer, ['ʃ'], ['ʃ', 't'], 'de-DE'), isFalse);
+  });
+
+  test('Stuhl never starts like Spinne', () {
+    final book = books['de-DE']!;
+    final stuhl = w('Stuhl');
+    var asked = 0;
+    for (var seed = 0; seed < 50; seed++) {
+      final q = makeSoundQuestion(
+        stuhl,
+        book.phrases,
+        comparer,
+        'de-DE',
+        math.Random(seed),
+        // as in the app
+        similar: (a, b) => soundsSimilar(comparer, 'de-DE', a, b),
+      );
+      if (q == null) continue;
+      asked++;
+      expect(firstSound(comparer, q.answer, 'de-DE'), 'ʃt', reason: '$q');
+      expect(q.options.map((o) => o.text), isNot(contains('Spinne')));
+    }
+    expect(asked, greaterThan(0)); // Stern starts like Stuhl
+  });
+
+  test('German r and ʁ are one sound', () {
+    expect(onsetOf(comparer, '/trɔmˈpeːtə/', 'de-DE'), 'tʁ');
+    expect(onsetOf(comparer, '/ˈtʁaktoːɐ̯/', 'de-DE'), 'tʁ');
+  });
+
+  test('glides after a consonant: part of the vowel in fr, it, es', () {
+    expect(onsetOf(comparer, '/pwasɔ̃/', 'fr-FR'), 'p');
+    expect(onsetOf(comparer, '/tʁwa/', 'fr-FR'), 'tʁ');
+    expect(onsetOf(comparer, '/ˈpweɾta/', 'es-ES'), 'p');
+    expect(onsetOf(comparer, '/ˈpjɛːde/', 'it-IT'), 'p');
+    expect(onsetOf(comparer, '/ˈtjuːlɪp/', 'en-GB'), 't');
+    expect(onsetOf(comparer, '/kwiːn/', 'en-GB'), 'kw');
+    // a glide at the start stays: huevo starts with w
+    expect(onsetOf(comparer, '/ˈweβo/', 'es-ES'), 'w');
+    // and is not clearly other than a vowel start
+    expect(clearlyOther(comparer, null, ['w'], 'es-ES'), isFalse);
+    // the first word of a phrase
+    expect(onsetOf(comparer, '/flamɑ̃ ʁoz/', 'fr-FR'), 'fl');
   });
 
   test('marks do not change the first sound', () {
@@ -78,7 +133,11 @@ void main() {
       ('l', 'r'),
       ('s', 'ʃ'),
     ]) {
-      expect(clearlyOther(comparer, a, b, 'en-GB'), isFalse, reason: '$a $b');
+      expect(
+        clearlyOther(comparer, [a], [b], 'en-GB'),
+        isFalse,
+        reason: '$a $b',
+      );
     }
   });
 
@@ -108,14 +167,15 @@ void main() {
           for (final a in q.answer.accepted) {
             expect(onsetOf(comparer, a.ipa, lang), onset, reason: '$q');
           }
+          final sounds = onsetSounds(comparer, like.ipa, lang)!;
           for (final o in q.options) {
             if (o == q.answer) continue;
             for (final a in o.accepted) {
               expect(
                 clearlyOther(
                   comparer,
-                  onsetOf(comparer, a.ipa, lang),
-                  onset,
+                  onsetSounds(comparer, a.ipa, lang),
+                  sounds,
                   lang,
                 ),
                 isTrue,
