@@ -1,9 +1,11 @@
 // The sound detective (🔔): "What starts like Maus?" – three pictures, one
-// starts with the same sound (Mond), the child says it. Hearing the first
-// sound of a word is where reading and writing start.
+// starts the same way (Mond), the child says it. Hearing how a word starts
+// is where reading and writing start.
 //
-// Only consonants count as first sounds: vowels differ by small shades
-// (e / ɛ) a child cannot be asked to hear.
+// "The same way" is the whole consonant group before the first vowel (the
+// onset): Stuhl /ʃt/ starts like Stern, not like Spinne /ʃp/ or Schuh /ʃ/,
+// although all begin with /ʃ/. Words starting with a vowel are left out:
+// vowels differ by small shades (e / ɛ) a child cannot be asked to hear.
 import 'dart:math' as math;
 
 import '../data/phrases.dart';
@@ -18,7 +20,7 @@ const _vowels = 'aeiouyæøœɑɒɔəɛɜɪʊʏɐʌɤɯɨʉ';
 const _affricates = ['ts', 'pf', 'tʃ', 'dʒ', 'dz'];
 
 /// Without length marks, aspiration, palatalisation and other marks:
-/// t and tʰ are the same first sound for a child.
+/// t and tʰ are the same sound for a child.
 String _bare(String sound) => String.fromCharCodes(
   sound.runes.where(
     (c) =>
@@ -27,22 +29,39 @@ String _bare(String sound) => String.fromCharCodes(
   ),
 );
 
-/// The first sound of [ipa]: an affricate, else the first phoneme without
-/// marks; null if it starts with a vowel.
-String? onsetOf(PhonemeComparer comparer, String ipa, String lang) {
+bool _isVowel(String sound) =>
+    sound.isNotEmpty &&
+    _vowels.contains(String.fromCharCode(sound.runes.first));
+
+/// The consonants of [ipa] before its first vowel, an affricate as one
+/// sound (Stuhl: [ʃ, t], Zwerg: [ts, v], Maus: [m]); null if it starts
+/// with a vowel.
+List<String>? onsetSounds(PhonemeComparer comparer, String ipa, String lang) {
   final s = ipa.replaceAll(RegExp('[/\\[\\]ˈˌ.‍‿͡]'), '').trim();
-  for (final a in _affricates) {
-    if (s.startsWith(a)) return a;
+  final (phonemes, words) = comparer.tokenize(s, lang);
+  final sounds = [
+    for (var i = 0; i < phonemes.length && words[i] == 0; i++)
+      _bare(phonemes[i]),
+  ]..removeWhere((x) => x.isEmpty);
+  final out = <String>[];
+  for (var i = 0; i < sounds.length; i++) {
+    if (_isVowel(sounds[i])) break;
+    if (i + 1 < sounds.length &&
+        _affricates.contains(sounds[i] + sounds[i + 1])) {
+      out.add(sounds[i] + sounds[i + 1]);
+      i++;
+    } else {
+      out.add(sounds[i]);
+    }
   }
-  final (phonemes, _) = comparer.tokenize(s, lang);
-  if (phonemes.isEmpty) return null;
-  final first = _bare(phonemes.first);
-  if (first.isEmpty) return null;
-  if (_vowels.contains(String.fromCharCode(first.runes.first))) return null;
-  return first;
+  return out.isEmpty ? null : out;
 }
 
-/// The first sound of [p] (the word the app says).
+/// The onset of [ipa] as one string ("ʃt", "m"), null for a vowel start.
+String? onsetOf(PhonemeComparer comparer, String ipa, String lang) =>
+    onsetSounds(comparer, ipa, lang)?.join();
+
+/// The onset of [p] (the word the app says).
 String? firstSound(PhonemeComparer comparer, Phrase p, String lang) =>
     onsetOf(comparer, p.ipa, lang);
 
@@ -51,23 +70,24 @@ String? firstSound(PhonemeComparer comparer, Phrase p, String lang) =>
 /// against each other.
 const minOnsetCost = 0.2;
 
-/// The single sounds of an onset: an affricate is two (t + s).
-List<String> _parts(String onset) => _affricates.contains(onset)
-    ? [onset.substring(0, 1), onset.substring(1)]
-    : [onset];
+/// The single sounds of a sound: an affricate is two (t + s).
+List<String> _parts(String sound) => _affricates.contains(sound)
+    ? [sound.substring(0, 1), sound.substring(1)]
+    : [sound];
 
-/// Whether a word starting with [sound] (null: a vowel) is clearly not one
-/// starting with [onset]: every part of one is far from every part of the
-/// other (so ts is not offered against t or s).
+/// Whether a word with the onset [sounds] (null: a vowel start) clearly
+/// does not start like one with [onset]: their first sounds are far apart,
+/// every part of one from every part of the other (so ts is not offered
+/// against t or s, Schuh /ʃ/ not against Stuhl /ʃt/).
 bool clearlyOther(
   PhonemeComparer comparer,
-  String? sound,
-  String onset,
+  List<String>? sounds,
+  List<String> onset,
   String lang,
 ) {
-  if (sound == null) return true;
-  for (final x in _parts(sound)) {
-    for (final y in _parts(onset)) {
+  if (sounds == null) return true;
+  for (final x in _parts(sounds.first)) {
+    for (final y in _parts(onset.first)) {
       if (comparer.phonemeCost(x, y, lang) < minOnsetCost) return false;
     }
   }
@@ -80,14 +100,18 @@ bool _allStartWith(PhonemeComparer c, Phrase p, String onset, String lang) =>
     p.accepted.every((w) => onsetOf(c, w.ipa, lang) == onset);
 
 /// No name the child may say for [p] starts like [onset].
-bool _noneStartsLike(PhonemeComparer c, Phrase p, String onset, String lang) =>
-    p.accepted.every(
-      (w) => clearlyOther(c, onsetOf(c, w.ipa, lang), onset, lang),
-    );
+bool _noneStartsLike(
+  PhonemeComparer c,
+  Phrase p,
+  List<String> onset,
+  String lang,
+) => p.accepted.every(
+  (w) => clearlyOther(c, onsetSounds(c, w.ipa, lang), onset, lang),
+);
 
 /// One "starts like" question from [pool], or null: a [like] word, the
-/// answer with the same first sound, two wrong ones that start clearly
-/// differently. Never the same picture twice, never [similar] options
+/// answer with the same onset, two wrong ones whose first sound is clearly
+/// different. Never the same picture twice, never [similar] options
 /// (the recogniser must tell them apart), never the [like] word itself.
 QuizQuestion? makeSoundQuestion(
   Phrase like,
@@ -98,8 +122,9 @@ QuizQuestion? makeSoundQuestion(
   Similar? similar,
   Set<String> avoidAnswers = const {},
 }) {
-  final onset = firstSound(comparer, like, lang);
-  if (onset == null) return null;
+  final sounds = onsetSounds(comparer, like.ipa, lang);
+  if (sounds == null) return null;
+  final onset = sounds.join();
   bool apart(List<Phrase> chosen, Phrase p) => chosen.every(
     (c) => c.emoji != p.emoji && !(similar?.call(c, p) ?? false),
   );
@@ -116,7 +141,7 @@ QuizQuestion? makeSoundQuestion(
   ];
   final wrongs = [
     for (final p in others)
-      if (_noneStartsLike(comparer, p, onset, lang)) p,
+      if (_noneStartsLike(comparer, p, sounds, lang)) p,
   ];
   for (final answer in rights) {
     final chosen = [answer];

@@ -70,10 +70,13 @@ or to speak.
   0 stars: once more. Six words a round, short ones first; the round's
   stars are the average.
 - **🔔 Sound detective:** "What starts like Maus?" with the picture of
-  the mouse; three pictures, one starts with the same sound (Mond), the
-  child says it (the quiz with other questions, `lib/quiz/sound_rules.dart`).
-  Only consonants count as first sounds; the wrong ones start clearly
-  differently (PanPhon cost ≥ 0.15, so never b against p).
+  the mouse; three pictures, one starts the same way (Mond), the child
+  says it (the quiz with other questions, `lib/quiz/sound_rules.dart`).
+  "The same way" is every consonant before the first vowel: Stuhl /ʃt/
+  starts like Stern, not like Spinne /ʃp/ or Schuh /ʃ/. Words starting
+  with a vowel are left out; the wrong ones start with a clearly
+  different sound (PanPhon cost ≥ 0.2 for every part: never b against p,
+  ts against t, Schuh against Stuhl).
 - **✏️ Letters:** the picture, the phone says the word, and the child
   spells it by tapping letter tiles in order (small letters on the tiles,
   the word above as written). Six words a round, short ones first; later
