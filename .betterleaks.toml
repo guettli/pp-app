@@ -1,0 +1,16 @@
+# Betterleaks config, used by the pre-commit hook (see prek.toml).
+# Scan all files: betterleaks dir . --config .betterleaks.toml
+#
+# Inherits the built-in rules and filters. The [[allowlists]] below are added
+# on top of them (unlike a top-level `filter`, which would replace the
+# built-in global filter in betterleaks v1).
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "sha256 checksum of a release artifact, not a token"
+condition = "AND"
+paths = ['''^ci/main\.go$''']
+regexTarget = "line"
+regexes = ['''tokensSHA256''']
