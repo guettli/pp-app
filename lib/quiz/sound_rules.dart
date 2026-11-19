@@ -19,6 +19,18 @@ const _vowels = 'aeiouyæøœɑɒɔəɛɜɪʊʏɐʌɤɯɨʉ';
 /// joiner. At the start of a word these letter pairs are always one.
 const _affricates = ['ts', 'pf', 'tʃ', 'dʒ', 'dz'];
 
+const _glides = {'j', 'w', 'ɥ'};
+
+/// Whether a glide right after a consonant belongs to the vowel: in
+/// French, Italian and Spanish (poisson /pw/, piede /pj/, puerta /pw/: a
+/// teacher says they start with p), and an English yod (tulip /tj/).
+/// English w stays in the group (queen /kw/, squirrel /skw/).
+bool _glideIsVowel(String glide, String lang) {
+  final code = lang.split('-').first;
+  if (code == 'fr' || code == 'it' || code == 'es') return true;
+  return code == 'en' && glide == 'j';
+}
+
 /// Without length marks, aspiration, palatalisation and other marks:
 /// t and tʰ are the same sound for a child.
 String _bare(String sound) => String.fromCharCodes(
@@ -43,9 +55,20 @@ List<String>? onsetSounds(PhonemeComparer comparer, String ipa, String lang) {
     for (var i = 0; i < phonemes.length && words[i] == 0; i++)
       _bare(phonemes[i]),
   ]..removeWhere((x) => x.isEmpty);
+  // German r and ʁ are one sound (Trompete /tr/, Traktor /tʁ/)
+  if (lang == 'de-DE') {
+    for (var i = 0; i < sounds.length; i++) {
+      if (sounds[i] == 'r') sounds[i] = 'ʁ';
+    }
+  }
   final out = <String>[];
   for (var i = 0; i < sounds.length; i++) {
     if (_isVowel(sounds[i])) break;
+    if (out.isNotEmpty &&
+        _glides.contains(sounds[i]) &&
+        _glideIsVowel(sounds[i], lang)) {
+      break;
+    }
     if (i + 1 < sounds.length &&
         _affricates.contains(sounds[i] + sounds[i + 1])) {
       out.add(sounds[i] + sounds[i + 1]);
@@ -85,7 +108,11 @@ bool clearlyOther(
   List<String> onset,
   String lang,
 ) {
-  if (sounds == null) return true;
+  // a vowel start is not clearly other than a glide (uno / huevo /w/)
+  if (sounds == null) return !_glides.contains(onset.first);
+  if (_glides.contains(onset.first) && _glides.contains(sounds.first)) {
+    return false;
+  }
   for (final x in _parts(sounds.first)) {
     for (final y in _parts(onset.first)) {
       if (comparer.phonemeCost(x, y, lang) < minOnsetCost) return false;
@@ -108,6 +135,13 @@ bool _noneStartsLike(
 ) => p.accepted.every(
   (w) => clearlyOther(c, onsetSounds(c, w.ipa, lang), onset, lang),
 );
+
+/// Words with the same onset share sounds by design (Stuhl / Stern), so
+/// the usual "sounds similar" check would reject every answer; only a
+/// near copy of the like word (nonna / nonno) is no fair answer.
+bool _nearlySame(PhonemeComparer c, Phrase a, Phrase b, String lang) =>
+    c.compare(a.ipa, b.ipa, lang).score >= 0.8 ||
+    c.compare(b.ipa, a.ipa, lang).score >= 0.8;
 
 /// One "starts like" question from [pool], or null: a [like] word, the
 /// answer with the same onset, two wrong ones whose first sound is clearly
@@ -136,7 +170,7 @@ QuizQuestion? makeSoundQuestion(
     for (final p in others)
       if (_allStartWith(comparer, p, onset, lang) &&
           !avoidAnswers.contains(p.text) &&
-          !(similar?.call(p, like) ?? false))
+          !_nearlySame(comparer, p, like, lang))
         p,
   ];
   final wrongs = [

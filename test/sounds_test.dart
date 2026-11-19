@@ -88,6 +88,8 @@ void main() {
         comparer,
         'de-DE',
         math.Random(seed),
+        // as in the app
+        similar: (a, b) => soundsSimilar(comparer, 'de-DE', a, b),
       );
       if (q == null) continue;
       asked++;
@@ -95,6 +97,26 @@ void main() {
       expect(q.options.map((o) => o.text), isNot(contains('Spinne')));
     }
     expect(asked, greaterThan(0)); // Stern starts like Stuhl
+  });
+
+  test('German r and ʁ are one sound', () {
+    expect(onsetOf(comparer, '/trɔmˈpeːtə/', 'de-DE'), 'tʁ');
+    expect(onsetOf(comparer, '/ˈtʁaktoːɐ̯/', 'de-DE'), 'tʁ');
+  });
+
+  test('glides after a consonant: part of the vowel in fr, it, es', () {
+    expect(onsetOf(comparer, '/pwasɔ̃/', 'fr-FR'), 'p');
+    expect(onsetOf(comparer, '/tʁwa/', 'fr-FR'), 'tʁ');
+    expect(onsetOf(comparer, '/ˈpweɾta/', 'es-ES'), 'p');
+    expect(onsetOf(comparer, '/ˈpjɛːde/', 'it-IT'), 'p');
+    expect(onsetOf(comparer, '/ˈtjuːlɪp/', 'en-GB'), 't');
+    expect(onsetOf(comparer, '/kwiːn/', 'en-GB'), 'kw');
+    // a glide at the start stays: huevo starts with w
+    expect(onsetOf(comparer, '/ˈweβo/', 'es-ES'), 'w');
+    // and is not clearly other than a vowel start
+    expect(clearlyOther(comparer, null, ['w'], 'es-ES'), isFalse);
+    // the first word of a phrase
+    expect(onsetOf(comparer, '/flamɑ̃ ʁoz/', 'fr-FR'), 'fl');
   });
 
   test('marks do not change the first sound', () {
