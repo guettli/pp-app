@@ -265,6 +265,39 @@ void main() {
       await close(t, dev.log);
     });
 
+    testWidgets('paused during the intro: the first clue on resume', (t) async {
+      final (dev, progress) = await play(t, ThinkGame.riddle, [
+        cow(),
+      ], intro: true);
+      await t.pump(const Duration(milliseconds: 100));
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+      await wait(t, 2000);
+      expect(dev.log.started('tts'), [introLine(GameIntro.riddle, 'de-DE')]);
+      t.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+      await wait(t, 2000);
+      expect(dev.log.started('tts').last, 'Ich lebe auf dem Bauernhof.');
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 6000);
+      expect(progress.riddleBest('de-DE'), 3);
+      await close(t, dev.log);
+    });
+
+    testWidgets('a wrong tap, then 🔊 at once: the next clue is kept', (
+      t,
+    ) async {
+      final (dev, _) = await play(t, ThinkGame.riddle, [cow()]);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // Schaf
+      await t.pump(const Duration(milliseconds: 100));
+      await t.tap(find.byKey(const ValueKey('think-repeat')));
+      await wait(t, 3000);
+      expect(
+        dev.log.started('tts').last,
+        'Ich lebe auf dem Bauernhof. Ich fresse Gras.',
+      );
+      await close(t, dev.log);
+    });
+
     testWidgets('the intro first, no taps during it', (t) async {
       final (dev, progress) = await play(t, ThinkGame.riddle, [
         cow(),

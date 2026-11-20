@@ -140,7 +140,13 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     } else if (state == AppLifecycleState.resumed) {
       _paused = false;
       // back while choosing: what was said so far, once more
-      if (_phase == _Phase.choosing && !_over && _given > 0) _repeat();
+      // paused before the first clue (during the intro): ask it now
+      if (_over) return;
+      if (_given == 0) {
+        _ask();
+      } else if (_phase == _Phase.choosing) {
+        _repeat();
+      }
     }
   }
 
@@ -245,8 +251,10 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     }
     // wrong: what the child tapped, then the next clue (or the last one
     // again)
+    // the next clue is due at once: 🔊 or another tap meanwhile keep it
     setState(() {
       _wrong.add(p);
+      if (_moreClues) _given++;
       _phase = _Phase.speaking;
     });
     unawaited(_sound(jingle(0, _rng)));
@@ -255,7 +263,6 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     await _say(p.text);
     await Future<void>.delayed(const Duration(milliseconds: 300));
     if (!_current(id)) return;
-    if (_moreClues) setState(() => _given++);
     await _speakThen(id, _q.clues[_given - 1]);
   }
 
