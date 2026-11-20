@@ -36,6 +36,9 @@ class S {
   String get readPickTitle => _t['readPickTitle']!;
   String get readAloudTitle => _t['readAloudTitle']!;
   String get soundsTitle => _t['soundsTitle']!;
+  String get needsTitle => _t['needsTitle']!;
+  String get riddleTitle => _t['riddleTitle']!;
+  String get hint => _t['hint']!;
   String get wordsTitle => _t['wordsTitle']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
@@ -86,6 +89,9 @@ class S {
       'readPickTitle': 'Wort zum Bild',
       'readAloudTitle': 'Lies vor',
       'soundsTitle': 'Anlaut-Detektiv',
+      'needsTitle': 'Was brauche ich?',
+      'riddleTitle': 'Wer bin ich?',
+      'hint': 'Noch ein Tipp',
       'wordsTitle': 'Wörter',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
@@ -137,6 +143,9 @@ class S {
       'readPickTitle': 'Word to picture',
       'readAloudTitle': 'Read aloud',
       'soundsTitle': 'Sound detective',
+      'needsTitle': 'What do I need?',
+      'riddleTitle': 'Who am I?',
+      'hint': 'Another clue',
       'wordsTitle': 'Words',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
@@ -188,6 +197,9 @@ class S {
       'readPickTitle': 'Mot et image',
       'readAloudTitle': 'Lis à voix haute',
       'soundsTitle': 'Détective des sons',
+      'needsTitle': 'De quoi ai-je besoin ?',
+      'riddleTitle': 'Qui suis-je ?',
+      'hint': 'Un autre indice',
       'wordsTitle': 'Mots',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
@@ -239,6 +251,9 @@ class S {
       'readPickTitle': 'Parola e immagine',
       'readAloudTitle': 'Leggi ad alta voce',
       'soundsTitle': 'Detective dei suoni',
+      'needsTitle': 'Cosa mi serve?',
+      'riddleTitle': 'Chi sono?',
+      'hint': 'Un altro indizio',
       'wordsTitle': 'Parole',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
@@ -290,6 +305,9 @@ class S {
       'readPickTitle': 'Palabra e imagen',
       'readAloudTitle': 'Lee en voz alta',
       'soundsTitle': 'Detective de sonidos',
+      'needsTitle': '¿Qué necesito?',
+      'riddleTitle': '¿Quién soy?',
+      'hint': 'Otra pista',
       'wordsTitle': 'Palabras',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',

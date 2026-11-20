@@ -8,6 +8,7 @@ import '../listen/listen_screen.dart';
 import '../quiz/quiz_screen.dart';
 import '../read/read_aloud_screen.dart';
 import '../spell/spell_screen.dart';
+import '../think/think_screen.dart';
 import '../voice/voice_screen.dart';
 import 'emoji_image.dart';
 import 'feedback_screen.dart';
@@ -112,6 +113,16 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: () => QuizScreen(app: app, sounds: true),
       emojis: const ['🔔'],
       name: s.soundsTitle,
+    ),
+    (
+      screen: () => ThinkScreen(app: app, game: ThinkGame.needs),
+      emojis: const ['🧤', '☂️'],
+      name: s.needsTitle,
+    ),
+    (
+      screen: () => ThinkScreen(app: app, game: ThinkGame.riddle),
+      emojis: const ['🐮', '🔊'],
+      name: s.riddleTitle,
     ),
     (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
