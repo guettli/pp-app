@@ -83,6 +83,18 @@ or to speak.
   words get one or two extra tiles. A wrong tile shakes; after two wrong
   tiles for the same place the right one glows. A word without a wrong
   tile is a star. Multi-word phrases and words with hyphens are left out.
+- **🧤☂️ What do I need?** (thinking, no letters, no numbers): the phone
+  tells a small problem ("Meine Hände sind kalt. Was brauche ich?"), the
+  child taps the picture that helps among three (🧤). Six problems a
+  round. Anything that might help too if a child thinks around a corner
+  (a hammer for a locked door) is never offered as a wrong picture. The
+  texts in all languages are in `lib/think/think_data.dart`.
+- **🐮🔊 Who am I?** a thing tells about itself, three clues from vague
+  to clear ("Ich lebe auf dem Bauernhof." "Ich fresse Gras." "Ich sage
+  Muh!"); the child taps one of four pictures when sure. 💡 gives the next
+  clue at any time, waiting costs nothing; a wrong tap brings the next
+  clue and costs the star. The last clue fits only the answer among all
+  riddles.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
   (`lib/voice/`); the sound is only measured, never recorded.
 - **📖 Word list:** every word with picture, rough size and weight and its

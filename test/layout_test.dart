@@ -14,6 +14,7 @@ import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
+import 'package:phoneme_party/think/think_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -130,6 +131,29 @@ void main() {
       }
       await close(t);
     });
+
+    for (final game in ThinkGame.values) {
+      testWidgets('${game.name}, $name', (t) async {
+        await show(
+          t,
+          (app) => ThinkScreen(app: app, game: game),
+          size: size,
+          text: text,
+        );
+        for (var i = 0; i < 300; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+        }
+        expect(t.takeException(), isNull);
+        for (var o = 0; o < (game == ThinkGame.needs ? 3 : 4); o++) {
+          await t.tap(find.byKey(ValueKey('think-option-$o')));
+          for (var i = 0; i < 20; i++) {
+            await t.pump(const Duration(milliseconds: 50));
+          }
+          expect(t.takeException(), isNull);
+        }
+        await close(t);
+      });
+    }
 
     testWidgets('word to picture, $name', (t) async {
       await show(
