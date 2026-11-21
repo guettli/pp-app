@@ -201,7 +201,8 @@ class _SpellScreenState extends State<SpellScreen> with WidgetsBindingObserver {
   void _tap(int tile) {
     if (_over || _done || _used[tile] || _round.isEmpty) return;
     final want = _p.letters[_placed];
-    if (sameLetter(_p.tiles[tile], want)) {
+    // exactly as written: the E of Ente is a capital, its e is not
+    if (_p.tiles[tile] == want) {
       setState(() {
         _used[tile] = true;
         _placed++;
@@ -233,7 +234,7 @@ class _SpellScreenState extends State<SpellScreen> with WidgetsBindingObserver {
     if (_done || _missesHere < SpellScreen.hintAfter) return null;
     final want = _p.letters[_placed];
     for (final (i, t) in _p.tiles.indexed) {
-      if (!_used[i] && sameLetter(t, want)) return i;
+      if (!_used[i] && t == want) return i;
     }
     return null;
   }
@@ -460,8 +461,9 @@ class _SpellScreenState extends State<SpellScreen> with WidgetsBindingObserver {
               child: Center(
                 child: FittedBox(
                   child: Text(
-                    // tiles in small letters; the word above as written
-                    letter.toLowerCase(),
+                    // as in the word: H for Hai, not h (a preschooler
+                    // knows capital letters, h and H are two letters)
+                    letter,
                     style: _text.copyWith(fontSize: size * 0.6),
                   ),
                 ),

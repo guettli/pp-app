@@ -69,11 +69,6 @@ void main() {
       expect(looksAlike('o', 'u'), isFalse);
     });
 
-    test('same letter: capital or not', () {
-      expect(sameLetter('H', 'h'), isTrue);
-      expect(sameLetter('ä', 'a'), isFalse);
-    });
-
     for (final lang in langs) {
       test('$lang: rounds from the first three worlds', () {
         final book = books[lang]!;
@@ -118,7 +113,10 @@ void main() {
       ),
     ];
 
-    Future<(FakeDevices, Progress)> play(WidgetTester t) async {
+    Future<(FakeDevices, Progress)> play(
+      WidgetTester t, {
+      List<SpellPuzzle>? round,
+    }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
       final t0 = t.binding.clock.now();
@@ -138,7 +136,8 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) => SpellScreen(app: app, round: two(), intro: false),
+          builder: (_) =>
+              SpellScreen(app: app, round: round ?? two(), intro: false),
         ),
       );
       await t.pump();
@@ -165,6 +164,36 @@ void main() {
       await t.pumpWidget(const SizedBox());
       await wait(t);
     }
+
+    testWidgets('the tiles as written in the word: E, not e', (t) async {
+      final (dev, _) = await play(t);
+      await wait(t, 1500);
+      final e = find.descendant(
+        of: find.byKey(const ValueKey('spell-tile-1')),
+        matching: find.text('E'),
+      );
+      expect(e, findsOneWidget);
+      await close(t, dev.log);
+    });
+
+    testWidgets('the small e is not the capital E of Ente', (t) async {
+      final ente = SpellPuzzle(
+        w('Ente'),
+        const ['E', 'n', 't', 'e'],
+        const ['e', 'n', 'E', 't'],
+      );
+      final (dev, progress) = await play(t, round: [ente]);
+      await wait(t, 1000);
+      await tile(t, 0); // e: wrong for the first letter
+      await wait(t, 600);
+      for (final i in [2, 1, 3, 0]) {
+        await tile(t, i);
+      }
+      await wait(t, 6000);
+      expect(find.text('0 / 1'), findsOneWidget);
+      expect(progress.spellBest('de-DE'), 0);
+      await close(t, dev.log);
+    });
 
     testWidgets('all right: on by itself, three stars', (t) async {
       final (dev, progress) = await play(t);

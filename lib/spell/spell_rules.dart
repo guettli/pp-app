@@ -35,10 +35,6 @@ class SpellPuzzle {
   String toString() => '${phrase.text}: ${tiles.join(' ')}';
 }
 
-/// Two letters are the same tile for the child: "H" and "h" (the first
-/// letter of a German noun is a capital; the tile shows it as written).
-bool sameLetter(String a, String b) => a.toLowerCase() == b.toLowerCase();
-
 /// The letter without its accent: "é" -> "e", "ñ" -> "n", "ä" -> "a"
 /// (lowercase). Letters of their own like "ß" or "œ" stay as they are.
 String baseLetter(String l) {

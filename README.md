@@ -91,8 +91,9 @@ and high also listen (and so do the worlds).
   different sound (PanPhon cost ≥ 0.2 for every part: never b against p,
   ts against t, Schuh against Stuhl).
 - **✏️ Letters:** the picture, the phone says the word, and the child
-  spells it by tapping letter tiles in order (small letters on the tiles,
-  the word above as written). Six words a round, short ones first; later
+  spells it by tapping letter tiles in order (the tiles as written in the
+  word: H a i for Hai, a child need not match h to H; the tile must
+  match exactly, the e of Ente is not its E). Six words a round, short ones first; later
   words get one or two extra tiles. A wrong tile shakes; after two wrong
   tiles for the same place the right one glows. A word without a wrong
   tile is a star. Multi-word phrases and words with hyphens are left out.
