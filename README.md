@@ -42,6 +42,13 @@ built with Flutter. Native successor of the web app
 
 ## More games (above the worlds)
 
+Above the worlds, the games are sorted into four groups, two big tiles a
+row, by what the child practises: 👂 listening (listen closely, sound
+detective), 📖 reading (word to picture, letter puzzle, read aloud),
+🎤 speaking (hold it long, low and high) and 🤔 thinking (what do I
+need, who am I, quiz). A group opens a screen with its games
+(`lib/ui/game_tile.dart`).
+
 Each game first says what to do, in the study language ("Hör gut zu und
 sag das richtige Wort!", "… tippe auf das richtige Bild!", …,
 `lib/ui/intros.dart`): a child who cannot read must know whether to tap
@@ -50,8 +57,8 @@ or to speak.
 Every game tile shows what the game does with sound, for the
 grown-ups: 🔊 the phone talks, 🎤 it listens; the one a game does not
 use is crossed out (`lib/ui/audio_badge.dart`). Every game talks while
-playing; the quiz, read aloud, hold it long and low and high also
-listen (and so do the worlds).
+playing; the quiz, sound detective, read aloud, hold it long and low
+and high also listen (and so do the worlds).
 
 - **🦉 Quiz:** the phone asks "Was kann fliegen? Baum, Vogel oder Haus?",
   shows the three pictures, and the child answers by saying the word.
