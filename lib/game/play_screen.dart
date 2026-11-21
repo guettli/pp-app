@@ -396,6 +396,8 @@ class _PlayScreenState extends State<PlayScreen>
       // just "Ei" otherwise); the microphone is still closed
       if (!_introDone) {
         _introDone = true;
+        // speaking, not starting: no spinner on the mic while it talks
+        setState(() => _phase = _Phase.speaking);
         await _speakText(introLine(GameIntro.repeat, _lang));
         if (!_current(round)) return;
       }

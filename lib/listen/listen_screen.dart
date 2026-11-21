@@ -249,7 +249,7 @@ class _ListenScreenState extends State<ListenScreen>
         _phase = _Phase.result;
         _results[_index] = first;
       });
-      unawaited(_sound(jingle(first ? 3 : 1, _rng)));
+      unawaited(_sound(jingle(first ? 3 : 2, _rng)));
       // right after a wrong tap: still right, a "well done" (not "almost")
       final praise = pickPraise(_lang, first ? 3 : 2, _rng, avoid: _lastPraise);
       _lastPraise = praise;
