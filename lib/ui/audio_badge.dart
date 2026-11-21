@@ -7,8 +7,7 @@ import 'package:flutter/material.dart';
 import 'strings.dart';
 
 /// The four ways a game uses sound: does the phone talk (output), does it
-/// listen to the child (input)? Spoken intros do not count: they are
-/// there in every game.
+/// listen to the child (input)?
 enum Audio {
   none(talks: false, listens: false),
   input(talks: false, listens: true),
@@ -43,7 +42,6 @@ class AudioBadge extends StatelessWidget {
           on ? yes : no,
           size: size,
           color: on ? const Color(0xFFFFD54F) : Colors.white38,
-          semanticLabel: on ? sayOn : sayOff,
         ),
       );
     }

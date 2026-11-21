@@ -47,15 +47,11 @@ sag das richtige Wort!", "… tippe auf das richtige Bild!", …,
 `lib/ui/intros.dart`): a child who cannot read must know whether to tap
 or to speak.
 
-Every tile (worlds too) shows what the game does with sound, for the
+Every game tile shows what the game does with sound, for the
 grown-ups: 🔊 the phone talks, 🎤 it listens; the one a game does not
-use is crossed out (`lib/ui/audio_badge.dart`). Spoken intros do not
-count, every game has one.
-
-| | 🔊 talks | 🔇 quiet |
-|---|---|---|
-| 🎤 listens | worlds, quiz, low and high | read aloud, hold it long |
-| mic off | listen, letter puzzle, sounds, what do I need, who am I | word to picture |
+use is crossed out (`lib/ui/audio_badge.dart`). Every game talks while
+playing; the quiz, read aloud, hold it long and low and high also
+listen (and so do the worlds).
 
 - **🦉 Quiz:** the phone asks "Was kann fliegen? Baum, Vogel oder Haus?",
   shows the three pictures, and the child answers by saying the word.

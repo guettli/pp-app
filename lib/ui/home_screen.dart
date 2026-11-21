@@ -108,13 +108,13 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: () => ListenScreen(app: app, reading: true),
       emojis: const ['📖', '🐮'],
       name: s.readPickTitle,
-      audio: Audio.none,
+      audio: Audio.output,
     ),
     (
       screen: () => ReadAloudScreen(app: app),
       emojis: const ['📖', '🎤'],
       name: s.readAloudTitle,
-      audio: Audio.input,
+      audio: Audio.both,
     ),
     (
       screen: () => QuizScreen(app: app, sounds: true),
@@ -138,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
       emojis: const ['🎈'],
       name: s.holdTitle,
-      audio: Audio.input,
+      audio: Audio.both,
     ),
     (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
@@ -315,9 +315,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             )
                           else
                             const EmojiImage('🔒', size: 22),
-                          const SizedBox(height: 4),
-                          // the worlds: the phone says the word, the child says it
-                          const AudioBadge(Audio.both, size: 14),
                         ],
                       ),
                     ),
