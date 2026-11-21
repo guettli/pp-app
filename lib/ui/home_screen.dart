@@ -13,6 +13,7 @@ import '../voice/voice_screen.dart';
 import 'audio_badge.dart';
 import 'emoji_image.dart';
 import 'feedback_screen.dart';
+import 'game_tile.dart';
 import 'strings.dart';
 import 'word_list_screen.dart';
 
@@ -81,122 +82,84 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  /// The games besides the worlds, in the order shown.
-  List<
-    ({Widget Function() screen, List<String> emojis, String name, Audio audio})
-  >
-  _games(S s) => [
-    (
+  /// The games besides the worlds, by kind, in the order shown.
+  List<GameGroup> _groups(S s) {
+    final quiz = (
       screen: () => QuizScreen(app: app),
       emojis: const ['🦉'],
       name: s.quizTitle,
       audio: Audio.both,
-    ),
-    (
+    );
+    final listen = (
       screen: () => ListenScreen(app: app),
       emojis: const ['👂'],
       name: s.listenTitle,
       audio: Audio.output,
-    ),
-    (
+    );
+    final spell = (
       screen: () => SpellScreen(app: app),
       emojis: const ['✏️'],
       name: s.spellTitle,
       audio: Audio.output,
-    ),
-    (
+    );
+    final readPick = (
       screen: () => ListenScreen(app: app, reading: true),
       emojis: const ['📖', '🐮'],
       name: s.readPickTitle,
       audio: Audio.output,
-    ),
-    (
+    );
+    final readAloud = (
       screen: () => ReadAloudScreen(app: app),
       emojis: const ['📖', '🎤'],
       name: s.readAloudTitle,
       audio: Audio.both,
-    ),
-    (
+    );
+    final sounds = (
       screen: () => QuizScreen(app: app, sounds: true),
       emojis: const ['🔔'],
       name: s.soundsTitle,
       audio: Audio.output,
-    ),
-    (
+    );
+    final needs = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.needs),
       emojis: const ['🧤', '☂️'],
       name: s.needsTitle,
       audio: Audio.output,
-    ),
-    (
+    );
+    final riddle = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.riddle),
       emojis: const ['🐮', '🔊'],
       name: s.riddleTitle,
       audio: Audio.output,
-    ),
-    (
+    );
+    final hold = (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
       emojis: const ['🎈'],
       name: s.holdTitle,
       audio: Audio.both,
-    ),
-    (
+    );
+    final pitch = (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
       emojis: const ['🐻', '🐭'],
       name: s.pitchTitle,
       audio: Audio.both,
-    ),
-  ];
-
-  static List<List<T>> _rows<T>(List<T> all, int n) => [
-    for (var i = 0; i < all.length; i += n)
-      all.sublist(i, i + n > all.length ? all.length : i + n),
-  ];
-
-  /// A game besides the worlds: big pictures, the name for the grown-ups.
-  Widget _tile(
-    Widget Function() screen,
-    List<String> emojis,
-    String name,
-    Audio audio,
-  ) {
-    return Expanded(
-      child: Material(
-        color: const Color(0xFF3B2B7B),
-        borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: () => _push(screen),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-            child: Column(
-              children: [
-                // three tiles on a narrow phone: the pictures shrink
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [for (final e in emojis) EmojiImage(e, size: 48)],
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  name,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                const SizedBox(height: 6),
-                AudioBadge(audio),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
+    return [
+      (key: 'hear', emoji: '👂', name: s.hearGroup, games: [listen, sounds]),
+      (
+        key: 'read',
+        emoji: '📖',
+        name: s.readGroup,
+        games: [readPick, spell, readAloud],
+      ),
+      (
+        key: 'speak',
+        emoji: '🎤',
+        name: s.speakGroup,
+        games: [quiz, hold, pitch],
+      ),
+      (key: 'think', emoji: '🤔', name: s.thinkGroup, games: [needs, riddle]),
+    ];
   }
 
   @override
@@ -230,30 +193,24 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: CustomScrollView(
         slivers: [
-          // the games besides the worlds, three in a row
-          for (final (i, row) in _rows(_games(s), 3).indexed)
-            SliverPadding(
-              padding: EdgeInsets.fromLTRB(16, i == 0 ? 16 : 12, 16, 0),
-              sliver: SliverToBoxAdapter(
-                // tiles of a row as high as the highest (names may wrap)
-                child: IntrinsicHeight(
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (final (j, g) in row.indexed) ...[
-                        if (j > 0) const SizedBox(width: 12),
-                        _tile(g.screen, g.emojis, g.name, g.audio),
-                      ],
-                      // a short last row keeps the tile width
-                      for (var j = row.length; j < 3; j++) ...[
-                        const SizedBox(width: 12),
-                        const Expanded(child: SizedBox()),
-                      ],
-                    ],
-                  ),
-                ),
+          // the games besides the worlds, by kind, two in a row
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                children: tileRows([
+                  for (final g in _groups(s))
+                    GameTile(
+                      key: ValueKey('group-${g.key}'),
+                      emojis: [g.emoji],
+                      name: g.name,
+                      emojiSize: 56,
+                      onTap: () => _push(() => GroupScreen(group: g)),
+                    ),
+                ], 2),
               ),
             ),
+          ),
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid.builder(
@@ -298,20 +255,24 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                           const SizedBox(height: 6),
+                          // large text: the stars shrink, never overflow
                           if (open)
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                const EmojiImage('⭐', size: 18),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '$stars/$max',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w700,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const EmojiImage('⭐', size: 18),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '$stars/$max',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             )
                           else
                             const EmojiImage('🔒', size: 22),

@@ -42,6 +42,12 @@ built with Flutter. Native successor of the web app
 
 ## More games (above the worlds)
 
+Above the worlds, the games are sorted into four groups, two big tiles a
+row: 👂 listening (listen closely, sounds), 📖 reading (word to picture,
+letter puzzle, read aloud), 🎤 speaking (quiz, hold it long, low and
+high) and 🤔 thinking (what do I need, who am I). A group opens a screen
+with its games (`lib/ui/game_tile.dart`).
+
 Each game first says what to do, in the study language ("Hör gut zu und
 sag das richtige Wort!", "… tippe auf das richtige Bild!", …,
 `lib/ui/intros.dart`): a child who cannot read must know whether to tap
