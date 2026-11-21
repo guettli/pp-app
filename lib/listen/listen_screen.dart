@@ -250,7 +250,8 @@ class _ListenScreenState extends State<ListenScreen>
         _results[_index] = first;
       });
       unawaited(_sound(jingle(first ? 3 : 1, _rng)));
-      final praise = pickPraise(_lang, first ? 3 : 1, _rng, avoid: _lastPraise);
+      // right after a wrong tap: still right, a "well done" (not "almost")
+      final praise = pickPraise(_lang, first ? 3 : 2, _rng, avoid: _lastPraise);
       _lastPraise = praise;
       await Future<void>.delayed(const Duration(milliseconds: 500));
       if (!_current(id)) return;
@@ -312,7 +313,8 @@ class _ListenScreenState extends State<ListenScreen>
     }
     if (!mounted) return;
     unawaited(_sound(fanfare(_rng)));
-    var text = pickPraise(_lang, math.max(stars, 1), _rng, avoid: _lastPraise);
+    // the round is done: at least a "well done", never "almost"
+    var text = pickPraise(_lang, math.max(stars, 2), _rng, avoid: _lastPraise);
     if (record) text = '$text ${newRecordLine(_lang)}';
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
       if (mounted && !_paused) _say(text);

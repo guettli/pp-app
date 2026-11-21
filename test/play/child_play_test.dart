@@ -107,7 +107,11 @@ void main() {
     File('${out.path}/transcript.txt').writeAsStringSync('$transcript');
   });
 
-  Future<(FakeDevices, AppState)> start(WidgetTester t, int seed) async {
+  Future<(FakeDevices, AppState)> start(
+    WidgetTester t,
+    int seed, {
+    bool speaks = false,
+  }) async {
     await loadFonts();
     t.view.physicalSize = const Size(1080, 2280); // a phone like the A80
     t.view.devicePixelRatio = 2.6;
@@ -117,11 +121,28 @@ void main() {
     final t0 = t.binding.clock.now();
     final dev = FakeDevices(
       IoLog(() => t.binding.clock.now().difference(t0)),
-      child: () => Child.silent,
+      child: () => speaks ? Child.speaks : Child.silent,
     );
+    // a speaking child says the word the phone said last; every third
+    // time it mumbles something else
+    var tries = 0;
+    String answer() {
+      final words = {for (final p in book.phrases) p.text: p};
+      final last = dev.log
+          .started('tts')
+          .lastWhere(words.containsKey, orElse: () => '');
+      final p = words[last];
+      if (p == null) return '';
+      tries++;
+      transcript.writeln(
+        tries % 3 == 0 ? '  🗣️ (mumbles)' : '  🗣️ "${p.text}"',
+      );
+      return tries % 3 == 0 ? 'ma' : p.ipa;
+    }
+
     final d = dev.io;
     final app = AppState(
-      FakeRecognizer(() => ''),
+      FakeRecognizer(answer),
       comparer,
       progress,
       book,
@@ -285,6 +306,29 @@ void main() {
     if (find.byType(AlertDialog).evaluate().isNotEmpty) {
       await shot(t, 'spell-end');
     }
+    await t.pumpWidget(const SizedBox());
+    await settle(t, 3000);
+  });
+
+  testWidgets('world 1', (t) async {
+    final (dev, app) = await start(t, 6, speaks: true);
+    transcript.writeln('# World 1');
+    await show(t, HomeScreen(app: app));
+    await settle(t);
+    // the first world tile: the child taps it
+    await t.tap(find.text('0/24'));
+    await settle(t, 3000);
+    var n = said(dev, 0);
+    await shot(t, 'world-start');
+    for (var step = 0; step < 14; step++) {
+      await settle(t, 5000);
+      n = said(dev, n);
+      if (step < 6) await shot(t, 'world-step${step + 1}');
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+    }
+    await settle(t, 4000);
+    said(dev, n);
+    await shot(t, 'world-end');
     await t.pumpWidget(const SizedBox());
     await settle(t, 3000);
   });

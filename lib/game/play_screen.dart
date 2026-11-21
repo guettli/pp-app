@@ -17,6 +17,7 @@ import '../phonetics/endpointer.dart';
 import '../phonetics/phoneme_distance.dart';
 import '../phonetics/recognizer.dart';
 import '../ui/emoji_image.dart';
+import '../ui/intros.dart';
 import '../ui/round_button.dart';
 import '../ui/strings.dart';
 import 'rocket_launch.dart';
@@ -33,10 +34,18 @@ import 'world_scene.dart';
 enum _Phase { ready, starting, speaking, listening, thinking, result }
 
 class PlayScreen extends StatefulWidget {
-  const PlayScreen({super.key, required this.app, required this.world});
+  const PlayScreen({
+    super.key,
+    required this.app,
+    required this.world,
+    this.intro = true,
+  });
 
   final AppState app;
   final int world;
+
+  /// Say what to do before the first word (off in tests of the flow).
+  final bool intro;
 
   @override
   State<PlayScreen> createState() => _PlayScreenState();
@@ -56,6 +65,8 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// Tries of the current word (one retry after 0 stars).
   int _attempts = 0;
+
+  late bool _introDone = !widget.intro;
 
   /// Goes on to the next word (or the retry) after the feedback.
   Timer? _advance;
@@ -381,6 +392,13 @@ class _PlayScreenState extends State<PlayScreen>
         return;
       }
       if (!_current(round)) return;
+      // the first time: what to do (a child that has never played hears
+      // just "Ei" otherwise); the microphone is still closed
+      if (!_introDone) {
+        _introDone = true;
+        await _speakText(introLine(GameIntro.repeat, _lang));
+        if (!_current(round)) return;
+      }
       setState(() {
         _phase = _Phase.speaking;
         _result = null;
