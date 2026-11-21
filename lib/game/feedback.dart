@@ -74,7 +74,7 @@ const praise = <String, List<List<String>>>{
       '¡Escucha bien!',
       '¡Una vez más!',
     ],
-    ['¡Bien!', '¡Lo lograste!', '¡Sigue así!', '¡No está mal!'],
+    ['¡Bien!', '¡Lo has conseguido!', '¡Sigue así!', '¡No está mal!'],
     ['¡Muy bien!', '¡Bien hecho!', '¡Qué bien!', '¡Estupendo!', '¡Bravo!'],
     [
       '¡Súper!',
