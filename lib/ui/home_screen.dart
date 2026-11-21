@@ -10,6 +10,7 @@ import '../read/read_aloud_screen.dart';
 import '../spell/spell_screen.dart';
 import '../think/think_screen.dart';
 import '../voice/voice_screen.dart';
+import 'audio_badge.dart';
 import 'emoji_image.dart';
 import 'feedback_screen.dart';
 import 'strings.dart';
@@ -81,58 +82,69 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   /// The games besides the worlds, in the order shown.
-  List<({Widget Function() screen, List<String> emojis, String name})> _games(
-    S s,
-  ) => [
+  List<
+    ({Widget Function() screen, List<String> emojis, String name, Audio audio})
+  >
+  _games(S s) => [
     (
       screen: () => QuizScreen(app: app),
       emojis: const ['🦉'],
       name: s.quizTitle,
+      audio: Audio.both,
     ),
     (
       screen: () => ListenScreen(app: app),
       emojis: const ['👂'],
       name: s.listenTitle,
+      audio: Audio.output,
     ),
     (
       screen: () => SpellScreen(app: app),
       emojis: const ['✏️'],
       name: s.spellTitle,
+      audio: Audio.output,
     ),
     (
       screen: () => ListenScreen(app: app, reading: true),
       emojis: const ['📖', '🐮'],
       name: s.readPickTitle,
+      audio: Audio.none,
     ),
     (
       screen: () => ReadAloudScreen(app: app),
       emojis: const ['📖', '🎤'],
       name: s.readAloudTitle,
+      audio: Audio.input,
     ),
     (
       screen: () => QuizScreen(app: app, sounds: true),
       emojis: const ['🔔'],
       name: s.soundsTitle,
+      audio: Audio.output,
     ),
     (
       screen: () => ThinkScreen(app: app, game: ThinkGame.needs),
       emojis: const ['🧤', '☂️'],
       name: s.needsTitle,
+      audio: Audio.output,
     ),
     (
       screen: () => ThinkScreen(app: app, game: ThinkGame.riddle),
       emojis: const ['🐮', '🔊'],
       name: s.riddleTitle,
+      audio: Audio.output,
     ),
     (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
       emojis: const ['🎈'],
       name: s.holdTitle,
+      audio: Audio.input,
     ),
     (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
       emojis: const ['🐻', '🐭'],
       name: s.pitchTitle,
+      audio: Audio.both,
     ),
   ];
 
@@ -142,7 +154,12 @@ class _HomeScreenState extends State<HomeScreen> {
   ];
 
   /// A game besides the worlds: big pictures, the name for the grown-ups.
-  Widget _tile(Widget Function() screen, List<String> emojis, String name) {
+  Widget _tile(
+    Widget Function() screen,
+    List<String> emojis,
+    String name,
+    Audio audio,
+  ) {
     return Expanded(
       child: Material(
         color: const Color(0xFF3B2B7B),
@@ -171,6 +188,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+                const Spacer(),
+                const SizedBox(height: 6),
+                AudioBadge(audio),
               ],
             ),
           ),
@@ -222,7 +242,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       for (final (j, g) in row.indexed) ...[
                         if (j > 0) const SizedBox(width: 12),
-                        _tile(g.screen, g.emojis, g.name),
+                        _tile(g.screen, g.emojis, g.name, g.audio),
                       ],
                       // a short last row keeps the tile width
                       for (var j = row.length; j < 3; j++) ...[
@@ -295,6 +315,9 @@ class _HomeScreenState extends State<HomeScreen> {
                             )
                           else
                             const EmojiImage('🔒', size: 22),
+                          const SizedBox(height: 4),
+                          // the worlds: the phone says the word, the child says it
+                          const AudioBadge(Audio.both, size: 14),
                         ],
                       ),
                     ),

@@ -39,6 +39,10 @@ class S {
   String get needsTitle => _t['needsTitle']!;
   String get riddleTitle => _t['riddleTitle']!;
   String get hint => _t['hint']!;
+  String get phoneTalks => _t['phoneTalks']!;
+  String get phoneSilent => _t['phoneSilent']!;
+  String get phoneListens => _t['phoneListens']!;
+  String get phoneDeaf => _t['phoneDeaf']!;
   String get wordsTitle => _t['wordsTitle']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
@@ -92,6 +96,10 @@ class S {
       'needsTitle': 'Was brauche ich?',
       'riddleTitle': 'Wer bin ich?',
       'hint': 'Noch ein Tipp',
+      'phoneTalks': 'Das Handy spricht',
+      'phoneSilent': 'Das Handy spricht nicht',
+      'phoneListens': 'Das Handy hört dir zu',
+      'phoneDeaf': 'Das Mikrofon bleibt aus',
       'wordsTitle': 'Wörter',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
@@ -146,6 +154,10 @@ class S {
       'needsTitle': 'What do I need?',
       'riddleTitle': 'Who am I?',
       'hint': 'Another clue',
+      'phoneTalks': 'The phone talks',
+      'phoneSilent': 'The phone stays quiet',
+      'phoneListens': 'The phone listens to you',
+      'phoneDeaf': 'The microphone stays off',
       'wordsTitle': 'Words',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
@@ -200,6 +212,10 @@ class S {
       'needsTitle': 'De quoi ai-je besoin ?',
       'riddleTitle': 'Qui suis-je ?',
       'hint': 'Un autre indice',
+      'phoneTalks': 'Le téléphone parle',
+      'phoneSilent': 'Le téléphone ne parle pas',
+      'phoneListens': 'Le téléphone t’écoute',
+      'phoneDeaf': 'Le micro reste éteint',
       'wordsTitle': 'Mots',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
@@ -254,6 +270,10 @@ class S {
       'needsTitle': 'Cosa mi serve?',
       'riddleTitle': 'Chi sono?',
       'hint': 'Un altro indizio',
+      'phoneTalks': 'Il telefono parla',
+      'phoneSilent': 'Il telefono non parla',
+      'phoneListens': 'Il telefono ti ascolta',
+      'phoneDeaf': 'Il microfono resta spento',
       'wordsTitle': 'Parole',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
@@ -308,6 +328,10 @@ class S {
       'needsTitle': '¿Qué necesito?',
       'riddleTitle': '¿Quién soy?',
       'hint': 'Otra pista',
+      'phoneTalks': 'El teléfono habla',
+      'phoneSilent': 'El teléfono no habla',
+      'phoneListens': 'El teléfono te escucha',
+      'phoneDeaf': 'El micrófono está apagado',
       'wordsTitle': 'Palabras',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',

@@ -15,6 +15,7 @@ import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
+import 'package:phoneme_party/ui/audio_badge.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -85,6 +86,11 @@ void main() {
     testWidgets('home, $name', (t) async {
       await show(t, (app) => HomeScreen(app: app), size: size);
       expect(t.takeException(), isNull);
+      // every game tile shows what it does with sound
+      for (final a in Audio.values) {
+        expect(find.byKey(ValueKey('audio-${a.name}')), findsWidgets);
+      }
+      expect(find.byKey(const ValueKey('audio-none')), findsOneWidget);
       await close(t);
     });
 
