@@ -15,7 +15,6 @@ import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
-import 'package:phoneme_party/ui/audio_badge.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
