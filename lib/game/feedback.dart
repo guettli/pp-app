@@ -96,6 +96,20 @@ const movingOn = <String, List<String>>{
   'es': ['¡Sigamos!', '¡Vamos con el siguiente!', '¡Adelante!'],
 };
 
+/// Said after the praise when a round beat the best one. In the study
+/// language, like the praise (the screen shows it in the app's language).
+const newRecordSaid = <String, String>{
+  'de': 'Neuer Rekord!',
+  'en': 'New record!',
+  'fr': 'Nouveau record !',
+  'it': 'Nuovo record!',
+  'es': '¡Nuevo récord!',
+};
+
+/// [newRecordSaid] in [lang] (e.g. "de-DE"); English if unknown.
+String newRecordLine(String lang) =>
+    newRecordSaid[lang.split('-').first] ?? newRecordSaid['en']!;
+
 /// A random praise for [stars] in [lang] (e.g. "de-DE"), never [avoid].
 /// With [onward] (0 stars and no try left) a "let's go on" instead of
 /// "try again".

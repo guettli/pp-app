@@ -1008,6 +1008,67 @@ const oddKinds = <String, Map<String, String>>{
   },
 };
 
+/// The second clue, said after a wrong tap: a nudge to think about what
+/// the three have in common (🔊 then says the question and the nudge).
+const oddHints = <String, Map<String, String>>{
+  'animal': {
+    'de': 'Drei davon sind Tiere.',
+    'en': 'Three of them are animals.',
+    'fr': 'Il y a trois animaux.',
+    'it': 'Tre di questi sono animali.',
+    'es': 'Tres de ellos son animales.',
+  },
+  'eat': {
+    'de': 'Drei davon kann man essen.',
+    'en': 'You can eat three of them.',
+    'fr': 'On peut en manger trois.',
+    'it': 'Tre di questi si possono mangiare.',
+    'es': 'Tres de ellos se pueden comer.',
+  },
+  'wear': {
+    'de': 'Drei davon kann man anziehen.',
+    'en': 'You can wear three of them.',
+    'fr': 'On peut en porter trois.',
+    'it': 'Tre di questi si possono indossare.',
+    'es': 'Te puedes poner tres de ellos.',
+  },
+  'plant': {
+    'de': 'Drei davon sind Pflanzen.',
+    'en': 'Three of them are plants.',
+    'fr': 'Il y a trois plantes.',
+    'it': 'Tre di questi sono piante.',
+    'es': 'Tres de ellos son plantas.',
+  },
+  'wheels': {
+    'de': 'Drei davon haben Räder.',
+    'en': 'Three of them have wheels.',
+    'fr': 'Trois d’entre eux ont des roues.',
+    'it': 'Tre di questi hanno le ruote.',
+    'es': 'Tres de ellos tienen ruedas.',
+  },
+  'music': {
+    'de': 'Mit drei davon macht man Musik.',
+    'en': 'You make music with three of them.',
+    'fr': 'Avec trois d’entre eux, on fait de la musique.',
+    'it': 'Con tre di questi si fa musica.',
+    'es': 'Con tres de ellos se hace música.',
+  },
+  'body': {
+    'de': 'Drei davon sind Teile von deinem Körper.',
+    'en': 'Three of them are parts of your body.',
+    'fr': 'Il y a trois parties de ton corps.',
+    'it': 'Tre di questi sono parti del tuo corpo.',
+    'es': 'Tres de ellos son partes de tu cuerpo.',
+  },
+  'shines': {
+    'de': 'Drei davon leuchten.',
+    'en': 'Three of them give light.',
+    'fr': 'Trois d’entre eux font de la lumière.',
+    'it': 'Tre di questi fanno luce.',
+    'es': 'Tres de ellos dan luz.',
+  },
+};
+
 /// Kinds never mixed in one question: a carrot is food, but a plant too.
 const oddNotTogether = [
   {'plant', 'eat'},

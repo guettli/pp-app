@@ -88,6 +88,10 @@ void main() {
         for (final k in oddKinds.values) {
           expect(k[code], isNotEmpty, reason: code);
         }
+        expect(oddHints.keys.toSet(), oddKinds.keys.toSet());
+        for (final k in oddHints.values) {
+          expect(k[code], isNotEmpty, reason: code);
+        }
         for (final h in habitats) {
           expect(h.say[code], isNotEmpty, reason: '$code ${h.scene}');
         }
@@ -150,7 +154,8 @@ void main() {
           for (final q in round) {
             expect(q.options, hasLength(4), reason: '$q');
             expect(q.options.map((o) => o.emoji).toSet(), hasLength(4));
-            expect(q.clues, [oddQuestion[code]]);
+            expect(q.clues, hasLength(2));
+            expect(q.clues.first, oddQuestion[code]);
             final three = [
               for (final o in q.options)
                 if (o != q.answer) o,
@@ -168,6 +173,7 @@ void main() {
               kind.single.name,
             }, isNot({'plant', 'eat'}));
             expect(q.because, oddKinds[kind.single.name]![code]);
+            expect(q.clues.last, oddHints[kind.single.name]![code]);
             // exactly one answer: nothing unclear across the two kinds
             expect(facts.of(q.answer)!.truth(kind.single), Truth.no);
             for (final o in three) {
@@ -312,6 +318,8 @@ void main() {
       await wait(t, 6000);
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(progress.thinkBest('needs', 'de-DE'), 3);
+      // the record is said in the study language (the screen is English)
+      expect(dev.log.started('tts').last, endsWith('Neuer Rekord!'));
       await close(t, dev.log);
     });
 
@@ -460,6 +468,35 @@ void main() {
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
       expect(progress.thinkBest('home', 'de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('odd one out: a wrong tap brings the nudge', (t) async {
+      final q = ThinkQuestion(
+        ['Was passt nicht dazu?', 'Drei davon kann man essen.'],
+        [w('Apfel'), w('Banane'), w('Hut'), w('Birne')],
+        w('Hut'),
+        because: 'Die anderen kann man essen.',
+      );
+      final (dev, progress) = await play(t, ThinkGame.odd, [q]);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // Apfel
+      await wait(t, 6000);
+      expect(dev.log.started('tts'), [
+        'Was passt nicht dazu?',
+        'Apfel',
+        'Drei davon kann man essen.',
+      ]);
+      // 🔊: the question and the nudge, each once
+      await t.tap(find.byKey(const ValueKey('think-repeat')));
+      await wait(t, 4000);
+      expect(
+        dev.log.started('tts').last,
+        'Was passt nicht dazu? Drei davon kann man essen.',
+      );
+      await t.tap(find.byKey(const ValueKey('think-option-2')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('odd', 'de-DE'), 0);
       await close(t, dev.log);
     });
   });

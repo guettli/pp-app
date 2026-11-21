@@ -311,10 +311,9 @@ class _ListenScreenState extends State<ListenScreen>
       debugPrint('saving the listen record failed: $e\n$st');
     }
     if (!mounted) return;
-    final s = S.of(context);
     unawaited(_sound(fanfare(_rng)));
     var text = pickPraise(_lang, math.max(stars, 1), _rng, avoid: _lastPraise);
-    if (record) text = '$text ${s.newRecord}';
+    if (record) text = '$text ${newRecordLine(_lang)}';
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
       if (mounted && !_paused) _say(text);
     });

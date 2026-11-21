@@ -12,8 +12,8 @@
 // does.
 //
 // "Odd one out" (🧺, [ThinkGame.odd]): three pictures of one kind, one of
-// another; after the right tap the phone says why ("The others are all
-// animals.").
+// another; a wrong tap brings a nudge ("Three of them are animals."),
+// the right tap says why ("The others are all animals.").
 //
 // "Who lives here?" (🏞️, [ThinkGame.home]): a place (🌊) and three
 // animals; one lives there.
@@ -319,10 +319,9 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       debugPrint('saving the thinking record failed: $e\n$st');
     }
     if (!mounted) return;
-    final s = S.of(context);
     unawaited(_sound(fanfare(_rng)));
     var text = pickPraise(_lang, math.max(stars, 1), _rng, avoid: _lastPraise);
-    if (record) text = '$text ${s.newRecord}';
+    if (record) text = '$text ${newRecordLine(_lang)}';
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
       if (mounted && !_paused) _say(text);
     });
@@ -417,7 +416,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
           child: EmojiImage(
             scene,
             key: const ValueKey('think-scene'),
-            size: 96,
+            // a small phone: the pictures need the room
+            size: MediaQuery.sizeOf(context).height < 700 ? 96 : 120,
           ),
         ),
         clue,
@@ -430,7 +430,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     builder: (context, c) {
       final n = _q.options.length;
       final wide = c.maxWidth > c.maxHeight * 1.6;
-      final perRow = wide || n == 3 ? n : 2;
+      // three in portrait: two and one below, bigger than three in a row
+      final perRow = wide ? n : 2;
       final rows = (n / perRow).ceil();
       final cell = math.min(
         (c.maxWidth - 16 * (perRow + 1)) / perRow,
