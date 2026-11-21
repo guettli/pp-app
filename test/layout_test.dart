@@ -85,9 +85,9 @@ void main() {
     testWidgets('home, $name', (t) async {
       await show(t, (app) => HomeScreen(app: app), size: size);
       expect(t.takeException(), isNull);
-      // the game tiles show what they do with sound
-      expect(find.byKey(const ValueKey('audio-output')), findsWidgets);
-      expect(find.byKey(const ValueKey('audio-both')), findsWidgets);
+      for (final g in ['hear', 'read', 'speak', 'think']) {
+        expect(find.byKey(ValueKey('group-$g')), findsOneWidget);
+      }
       await close(t);
     });
 
@@ -113,6 +113,40 @@ void main() {
     ('large text', const Size(360, 640), 1.6),
     ('landscape, large text', const Size(640, 360), 1.6),
   ]) {
+    testWidgets('game groups, $name', (t) async {
+      await show(
+        t,
+        (app) => HomeScreen(app: app),
+        size: size,
+        text: text,
+      );
+      expect(t.takeException(), isNull);
+      var games = 0;
+      for (final g in ['hear', 'read', 'speak', 'think']) {
+        await t.tap(find.byKey(ValueKey('group-$g')));
+        await t.pumpAndSettle();
+        expect(t.takeException(), isNull, reason: g);
+        final tiles = find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('game-$g-'),
+        );
+        expect(tiles, findsWidgets, reason: g);
+        games += tiles.evaluate().length;
+        // every game shows what it does with sound
+        final badges = find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              (w.key! as ValueKey<String>).value.startsWith('audio-'),
+        );
+        expect(badges.evaluate().length, tiles.evaluate().length, reason: g);
+        await t.pageBack();
+        await t.pumpAndSettle();
+      }
+      expect(games, 10);
+      await close(t);
+    });
+
     testWidgets('listen, $name', (t) async {
       await show(
         t,

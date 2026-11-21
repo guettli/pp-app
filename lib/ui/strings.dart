@@ -39,6 +39,10 @@ class S {
   String get needsTitle => _t['needsTitle']!;
   String get riddleTitle => _t['riddleTitle']!;
   String get hint => _t['hint']!;
+  String get hearGroup => _t['hearGroup']!;
+  String get readGroup => _t['readGroup']!;
+  String get speakGroup => _t['speakGroup']!;
+  String get thinkGroup => _t['thinkGroup']!;
   String get phoneTalks => _t['phoneTalks']!;
   String get phoneSilent => _t['phoneSilent']!;
   String get phoneListens => _t['phoneListens']!;
@@ -96,6 +100,10 @@ class S {
       'needsTitle': 'Was brauche ich?',
       'riddleTitle': 'Wer bin ich?',
       'hint': 'Noch ein Tipp',
+      'hearGroup': 'Hören',
+      'readGroup': 'Lesen',
+      'speakGroup': 'Sprechen',
+      'thinkGroup': 'Denken',
       'phoneTalks': 'Das Handy spricht',
       'phoneSilent': 'Das Handy spricht nicht',
       'phoneListens': 'Das Handy hört zu',
@@ -154,6 +162,10 @@ class S {
       'needsTitle': 'What do I need?',
       'riddleTitle': 'Who am I?',
       'hint': 'Another clue',
+      'hearGroup': 'Listening',
+      'readGroup': 'Reading',
+      'speakGroup': 'Speaking',
+      'thinkGroup': 'Thinking',
       'phoneTalks': 'The phone talks',
       'phoneSilent': 'The phone stays quiet',
       'phoneListens': 'The phone listens',
@@ -212,6 +224,10 @@ class S {
       'needsTitle': 'De quoi ai-je besoin ?',
       'riddleTitle': 'Qui suis-je ?',
       'hint': 'Un autre indice',
+      'hearGroup': 'Écouter',
+      'readGroup': 'Lire',
+      'speakGroup': 'Parler',
+      'thinkGroup': 'Réfléchir',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',
@@ -270,6 +286,10 @@ class S {
       'needsTitle': 'Cosa mi serve?',
       'riddleTitle': 'Chi sono?',
       'hint': 'Un altro indizio',
+      'hearGroup': 'Ascoltare',
+      'readGroup': 'Leggere',
+      'speakGroup': 'Parlare',
+      'thinkGroup': 'Pensare',
       'phoneTalks': 'Il telefono parla',
       'phoneSilent': 'Il telefono non parla',
       'phoneListens': 'Il telefono ascolta',
@@ -328,6 +348,10 @@ class S {
       'needsTitle': '¿Qué necesito?',
       'riddleTitle': '¿Quién soy?',
       'hint': 'Otra pista',
+      'hearGroup': 'Escuchar',
+      'readGroup': 'Leer',
+      'speakGroup': 'Hablar',
+      'thinkGroup': 'Pensar',
       'phoneTalks': 'El teléfono habla',
       'phoneSilent': 'El teléfono no habla',
       'phoneListens': 'El teléfono escucha',
