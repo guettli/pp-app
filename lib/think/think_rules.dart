@@ -3,18 +3,33 @@
 import 'dart:math' as math;
 
 import '../data/phrases.dart';
+import '../quiz/facts.dart';
 import 'think_data.dart';
 
 /// One question: what the phone says (one clue, or several said one
 /// after the other) and the pictures to tap.
 class ThinkQuestion {
-  const ThinkQuestion(this.clues, this.options, this.answer);
+  const ThinkQuestion(
+    this.clues,
+    this.options,
+    this.answer, {
+    this.scene,
+    this.because,
+  });
 
   final List<String> clues;
 
   /// In the order shown; contains [answer].
   final List<Phrase> options;
   final Phrase answer;
+
+  /// A picture of where we are, shown above the options ("Who lives
+  /// here?": 🌊).
+  final String? scene;
+
+  /// Said after the right tap: why it is right ("The others are all
+  /// animals.").
+  final String? because;
 
   @override
   String toString() =>
@@ -109,6 +124,102 @@ List<ThinkQuestion> makeRiddleRound(
         clues,
         [answer, ...wrong.take(options - 1)]..shuffle(rng),
         answer,
+      ),
+    );
+  }
+  return out;
+}
+
+/// [count] questions of "Odd one out": three pictures of one kind
+/// ([oddKinds], from the facts) and one of another kind. Only pictures of
+/// exactly one kind take part (a fish is an animal and food).
+List<ThinkQuestion> makeOddRound(
+  PhraseBook book,
+  Facts facts,
+  math.Random rng, {
+  int count = 6,
+}) {
+  final code = _code(book.lang);
+  final kinds = {
+    for (final k in oddKinds.keys)
+      if (oddKinds[k]![code] != null) Prop.values.byName(k),
+  };
+  final byKind = <Prop, List<Phrase>>{for (final k in kinds) k: []};
+  for (final p in book.phrases) {
+    final f = facts.of(p);
+    if (f == null) continue;
+    final mine = f.yes.intersection(kinds);
+    if (mine.length != 1 || f.unclear.intersection(kinds).isNotEmpty) {
+      continue;
+    }
+    byKind[mine.single]!.add(p);
+  }
+  bool apart(Prop a, Prop b) =>
+      a != b && !oddNotTogether.any((s) => s.containsAll({a.name, b.name}));
+  final groups = [
+    for (final k in kinds)
+      if (byKind[k]!.length >= 3) k,
+  ];
+  final out = <ThinkQuestion>[];
+  final odds = <Phrase>{};
+  Prop? last;
+  for (var tries = 0; out.length < count && tries < 200; tries++) {
+    if (groups.isEmpty) break;
+    final kind = groups[rng.nextInt(groups.length)];
+    // not the same kind twice in a row while there are others
+    if (kind == last && groups.length > 1) continue;
+    final others = [
+      for (final k in kinds)
+        if (apart(kind, k))
+          for (final p in byKind[k]!)
+            if (!odds.contains(p)) p,
+    ];
+    if (others.isEmpty) continue;
+    final odd = others[rng.nextInt(others.length)];
+    final three = ([...byKind[kind]!]..shuffle(rng)).take(3).toList();
+    odds.add(odd);
+    last = kind;
+    out.add(
+      ThinkQuestion(
+        [oddQuestion[code]!],
+        [odd, ...three]..shuffle(rng),
+        odd,
+        because: oddKinds[kind.name]![code],
+      ),
+    );
+  }
+  return out;
+}
+
+/// [count] places of "Who lives here?", each with one animal that lives
+/// there and [options] - 1 that clearly do not.
+List<ThinkQuestion> makeHomeRound(
+  PhraseBook book,
+  math.Random rng, {
+  int count = 6,
+  int options = 3,
+}) {
+  final code = _code(book.lang);
+  final out = <ThinkQuestion>[];
+  for (final h in [...habitats]..shuffle(rng)) {
+    if (out.length == count) break;
+    final say = h.say[code];
+    if (say == null) continue;
+    final yes = [for (final e in h.yes) ?pictureOf(book, e)];
+    if (yes.isEmpty) continue;
+    final answer = yes[rng.nextInt(yes.length)];
+    final lives = {...h.yes, ...h.maybe}.map(bareEmoji).toSet();
+    final wrong = [
+      for (final e in habitatAnimals)
+        if (!lives.contains(bareEmoji(e))) ?pictureOf(book, e),
+    ]..shuffle(rng);
+    if (wrong.length < options - 1) continue;
+    out.add(
+      ThinkQuestion(
+        [say],
+        [answer, ...wrong.take(options - 1)]..shuffle(rng),
+        answer,
+        scene: h.scene,
       ),
     );
   }

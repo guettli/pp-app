@@ -39,6 +39,8 @@ class S {
   String get needsTitle => _t['needsTitle']!;
   String get riddleTitle => _t['riddleTitle']!;
   String get hint => _t['hint']!;
+  String get oddTitle => _t['oddTitle']!;
+  String get homeTitle => _t['homeTitle']!;
   String get hearGroup => _t['hearGroup']!;
   String get readGroup => _t['readGroup']!;
   String get speakGroup => _t['speakGroup']!;
@@ -100,6 +102,8 @@ class S {
       'needsTitle': 'Was brauche ich?',
       'riddleTitle': 'Wer bin ich?',
       'hint': 'Noch ein Tipp',
+      'oddTitle': 'Was passt nicht?',
+      'homeTitle': 'Wer wohnt hier?',
       'hearGroup': 'Hören',
       'readGroup': 'Lesen',
       'speakGroup': 'Sprechen',
@@ -162,6 +166,8 @@ class S {
       'needsTitle': 'What do I need?',
       'riddleTitle': 'Who am I?',
       'hint': 'Another clue',
+      'oddTitle': 'Odd one out',
+      'homeTitle': 'Who lives here?',
       'hearGroup': 'Listening',
       'readGroup': 'Reading',
       'speakGroup': 'Speaking',
@@ -224,6 +230,8 @@ class S {
       'needsTitle': 'De quoi ai-je besoin ?',
       'riddleTitle': 'Qui suis-je ?',
       'hint': 'Un autre indice',
+      'oddTitle': 'L’intrus',
+      'homeTitle': 'Qui habite ici ?',
       'hearGroup': 'Écouter',
       'readGroup': 'Lire',
       'speakGroup': 'Parler',
@@ -286,6 +294,8 @@ class S {
       'needsTitle': 'Cosa mi serve?',
       'riddleTitle': 'Chi sono?',
       'hint': 'Un altro indizio',
+      'oddTitle': 'L’intruso',
+      'homeTitle': 'Chi abita qui?',
       'hearGroup': 'Ascoltare',
       'readGroup': 'Leggere',
       'speakGroup': 'Parlare',
@@ -348,6 +358,8 @@ class S {
       'needsTitle': '¿Qué necesito?',
       'riddleTitle': '¿Quién soy?',
       'hint': 'Otra pista',
+      'oddTitle': '¿Cuál sobra?',
+      'homeTitle': '¿Quién vive aquí?',
       'hearGroup': 'Escuchar',
       'readGroup': 'Leer',
       'speakGroup': 'Hablar',

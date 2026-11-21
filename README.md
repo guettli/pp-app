@@ -46,7 +46,7 @@ Above the worlds, the games are sorted into four groups, two big tiles a
 row, by what the child practises: 👂 listening (listen closely, sound
 detective), 📖 reading (word to picture, letter puzzle, read aloud),
 🎤 speaking (hold it long, low and high) and 🤔 thinking (what do I
-need, who am I, quiz). A group opens a screen with its games
+need, who am I, odd one out, who lives here, quiz). A group opens a screen with its games
 (`lib/ui/game_tile.dart`).
 
 Each game first says what to do, in the study language ("Hör gut zu und
@@ -108,6 +108,17 @@ and high also listen (and so do the worlds).
   clue at any time, waiting costs nothing; a wrong tap brings the next
   clue and costs the star. The last clue fits only the answer among all
   riddles.
+- **🐶🐱🚗 Odd one out:** four pictures, three of one kind (animals,
+  food, clothes, plants, things with wheels, instruments, body parts,
+  things that shine; from `assets/facts/facts.tsv`) and one of another
+  kind. After the right tap the phone says why ("Katze! Die anderen kann
+  man essen."). Only pictures of exactly one kind take part (a fish is an
+  animal and food), and plants are never mixed with food (a carrot is
+  both).
+- **🌊🐟 Who lives here?** a place, shown big (🌊 sea, 🚜 farm, 🌳 forest,
+  🌴 jungle, ❄️ ice, 🏜️ desert, 🏠 at home), and three animals; one lives
+  there. Animals that might live there too (a penguin in the sea, a mouse
+  in a house) are never offered as wrong pictures.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
   (`lib/voice/`); the sound is only measured, never recorded.
 - **📖 Word list:** every word with picture, rough size and weight and its

@@ -934,3 +934,216 @@ const riddles = <Riddle>[
     ],
   }),
 ];
+
+// "Odd one out" (🧺): three pictures of one kind and one of another kind
+// (assets/facts/facts.tsv). After the right tap the phone says why.
+
+/// Said when the four pictures are shown.
+const oddQuestion = {
+  'de': 'Was passt nicht dazu?',
+  'en': 'Which one does not belong?',
+  'fr': 'Lequel n’est pas comme les autres ?',
+  'it': 'Quale non c’entra?',
+  'es': '¿Cuál no va con los otros?',
+};
+
+/// The kinds a group of three can be, by the name of their facts.tsv
+/// property, and why the odd one does not belong.
+const oddKinds = <String, Map<String, String>>{
+  'animal': {
+    'de': 'Die anderen sind alle Tiere.',
+    'en': 'The others are all animals.',
+    'fr': 'Les autres sont tous des animaux.',
+    'it': 'Gli altri sono tutti animali.',
+    'es': 'Los otros son todos animales.',
+  },
+  'eat': {
+    'de': 'Die anderen kann man essen.',
+    'en': 'You can eat the others.',
+    'fr': 'Les autres, on peut les manger.',
+    'it': 'Gli altri si possono mangiare.',
+    'es': 'Los otros se pueden comer.',
+  },
+  'wear': {
+    'de': 'Die anderen kann man anziehen.',
+    'en': 'You can wear the others.',
+    'fr': 'Les autres, on peut les porter.',
+    'it': 'Gli altri si possono indossare.',
+    'es': 'Los otros se pueden poner.',
+  },
+  'plant': {
+    'de': 'Die anderen sind alle Pflanzen.',
+    'en': 'The others are all plants.',
+    'fr': 'Les autres sont toutes des plantes.',
+    'it': 'Gli altri sono tutte piante.',
+    'es': 'Los otros son todos plantas.',
+  },
+  'wheels': {
+    'de': 'Die anderen haben alle Räder.',
+    'en': 'The others all have wheels.',
+    'fr': 'Les autres ont tous des roues.',
+    'it': 'Gli altri hanno tutti le ruote.',
+    'es': 'Los otros tienen todos ruedas.',
+  },
+  'music': {
+    'de': 'Mit den anderen macht man Musik.',
+    'en': 'You make music with the others.',
+    'fr': 'Avec les autres, on fait de la musique.',
+    'it': 'Con gli altri si fa musica.',
+    'es': 'Con los otros se hace música.',
+  },
+  'body': {
+    'de': 'Die anderen sind Teile von deinem Körper.',
+    'en': 'The others are parts of your body.',
+    'fr': 'Les autres sont des parties de ton corps.',
+    'it': 'Gli altri sono parti del tuo corpo.',
+    'es': 'Los otros son partes de tu cuerpo.',
+  },
+  'shines': {
+    'de': 'Die anderen leuchten alle.',
+    'en': 'The others all shine.',
+    'fr': 'Les autres brillent tous.',
+    'it': 'Gli altri brillano tutti.',
+    'es': 'Los otros brillan todos.',
+  },
+};
+
+/// Kinds never mixed in one question: a carrot is food, but a plant too.
+const oddNotTogether = [
+  {'plant', 'eat'},
+];
+
+// "Who lives here?" (🏞️): a place, and the animal that lives there among
+// animals that clearly do not.
+
+/// A place and its animals.
+class Habitat {
+  const Habitat(this.scene, this.say, this.yes, {this.maybe = const {}});
+
+  /// The picture of the place.
+  final String scene;
+
+  /// The question ("Who lives in the sea?").
+  final Map<String, String> say;
+
+  /// Who lives there; one of them is the right picture.
+  final Set<String> yes;
+
+  /// Who might live there too (a penguin in the sea, a mouse in a house):
+  /// never offered as a wrong picture.
+  final Set<String> maybe;
+}
+
+/// The animals offered as wrong pictures (each place leaves out its own
+/// [Habitat.yes] and [Habitat.maybe]).
+const habitatAnimals = {
+  '🐮', '🐻', '🐟', '🦈', '🐔', '🐑', '🐳', '🐭', '🐸', '🦊', '🐶', //
+  '🐺', '🐷', '🐴', '🐵', '🐝', '🐰', '🦔', '🦁', '🐯', '🦉', '🐫', //
+  '🐤', '🐦', '🦆', '🐱', '🐙', '🐼', '🐍', '🐌', '🕷️', '🐐', '🐬', //
+  '🐧', '🦓', '🦒', '🦜', '🐘', '🦘', '🐊', '🦩', '🦋', '🐿️', '🐞', //
+};
+
+const habitats = <Habitat>[
+  Habitat(
+    '🌊',
+    {
+      'de': 'Wer wohnt im Meer?',
+      'en': 'Who lives in the sea?',
+      'fr': 'Qui habite dans la mer ?',
+      'it': 'Chi abita nel mare?',
+      'es': '¿Quién vive en el mar?',
+    },
+    {'🐟', '🦈', '🐳', '🐙', '🐬'},
+    maybe: {'🐧', '🦆', '🐊', '🦩', '🐸'},
+  ),
+  Habitat(
+    '🚜',
+    {
+      'de': 'Wer wohnt auf dem Bauernhof?',
+      'en': 'Who lives on the farm?',
+      'fr': 'Qui habite à la ferme ?',
+      'it': 'Chi abita nella fattoria?',
+      'es': '¿Quién vive en la granja?',
+    },
+    {'🐮', '🐔', '🐑', '🐷', '🐴', '🐐', '🐤'},
+    maybe: {
+      '🐶', '🐱', '🐭', '🦆', '🐰', '🐦', '🐝', '🕷️', '🐌', '🐞', '🦋', //
+      '🐸', '🦉', '🦊', '🐍',
+    },
+  ),
+  Habitat(
+    '🌳',
+    {
+      'de': 'Wer wohnt im Wald?',
+      'en': 'Who lives in the forest?',
+      'fr': 'Qui habite dans la forêt ?',
+      'it': 'Chi abita nel bosco?',
+      'es': '¿Quién vive en el bosque?',
+    },
+    {'🦊', '🐺', '🦔', '🐿️', '🦉', '🐻'},
+    maybe: {
+      '🐦', '🐌', '🕷️', '🦋', '🐞', '🐝', '🐰', '🐭', '🐍', '🐸', '🐼', //
+      '🐵', '🐯', '🦜', '🐘',
+    },
+  ),
+  Habitat(
+    '🌴',
+    {
+      'de': 'Wer wohnt im Dschungel?',
+      'en': 'Who lives in the jungle?',
+      'fr': 'Qui habite dans la jungle ?',
+      'it': 'Chi abita nella giungla?',
+      'es': '¿Quién vive en la selva?',
+    },
+    {'🐵', '🦜', '🐯'},
+    maybe: {
+      '🐍', '🐊', '🐘', '🦋', '🐸', '🕷️', '🐦', '🐝', '🐞', '🐌', '🦁', //
+      '🦒', '🦓', '🐼', '🐻', '🦉', '🐭', '🦩',
+    },
+  ),
+  Habitat(
+    '❄️',
+    {
+      'de': 'Wer wohnt im Eis, wo es ganz kalt ist?',
+      'en': 'Who lives on the ice, where it is very cold?',
+      'fr': 'Qui habite sur la glace, là où il fait très froid ?',
+      'it': 'Chi abita sul ghiaccio, dove fa tanto freddo?',
+      'es': '¿Quién vive en el hielo, donde hace mucho frío?',
+    },
+    {'🐧'},
+    maybe: {
+      '🐳', '🐟', '🦈', '🐙', '🐬', '🦊', '🐻', '🐺', '🦉', '🐰', '🐭', //
+      '🦆', '🐦',
+    },
+  ),
+  Habitat(
+    '🏜️',
+    {
+      'de': 'Wer wohnt in der Wüste?',
+      'en': 'Who lives in the desert?',
+      'fr': 'Qui habite dans le désert ?',
+      'it': 'Chi abita nel deserto?',
+      'es': '¿Quién vive en el desierto?',
+    },
+    {'🐫'},
+    maybe: {
+      '🐍', '🕷️', '🐭', '🦊', '🐝', '🐞', '🦋', '🐦', '🦁', '🦒', '🦓', //
+      '🐘', '🐴', '🐐', '🦘', '🐌', '🦉', '🐰', '🐊', '🦩',
+    },
+  ),
+  Habitat(
+    '🏠',
+    {
+      'de': 'Wer wohnt bei uns im Haus?',
+      'en': 'Who lives with us at home?',
+      'fr': 'Qui habite avec nous à la maison ?',
+      'it': 'Chi abita con noi a casa?',
+      'es': '¿Quién vive con nosotros en casa?',
+    },
+    {'🐶', '🐱'},
+    maybe: {
+      '🐭', '🕷️', '🐰', '🦜', '🐦', '🐟', '🐍', '🐸', '🐝', '🐞', '🦋', //
+      '🐌', '🐤', '🐔', '🦔', '🐷', '🐐',
+    },
+  ),
+];

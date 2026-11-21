@@ -146,6 +146,18 @@ class _HomeScreenState extends State<HomeScreen> {
       name: s.pitchTitle,
       audio: Audio.both,
     );
+    final odd = (
+      screen: () => ThinkScreen(app: app, game: ThinkGame.odd),
+      emojis: const ['🐶', '🐱', '🚗'],
+      name: s.oddTitle,
+      audio: Audio.output,
+    );
+    final home = (
+      screen: () => ThinkScreen(app: app, game: ThinkGame.home),
+      emojis: const ['🌊', '🐟'],
+      name: s.homeTitle,
+      audio: Audio.output,
+    );
     return [
       (key: 'hear', emoji: '👂', name: s.hearGroup, games: [listen, sounds]),
       (
@@ -159,7 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
         key: 'think',
         emoji: '🤔',
         name: s.thinkGroup,
-        games: [needs, riddle, quiz],
+        games: [needs, riddle, odd, home, quiz],
       ),
     ];
   }
