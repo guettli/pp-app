@@ -129,21 +129,24 @@ class GroupScreen extends StatelessWidget {
           ],
         ),
       ),
-      body: ListView(
+      // a few games: all built at once (no lazy list)
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        children: tileRows([
-          for (final (i, g) in group.games.indexed)
-            GameTile(
-              key: ValueKey('game-${group.key}-$i'),
-              emojis: g.emojis,
-              name: g.name,
-              audio: g.audio,
-              emojiSize: 64,
-              onTap: () => Navigator.of(
-                context,
-              ).push(MaterialPageRoute<void>(builder: (_) => g.screen())),
-            ),
-        ], 2),
+        child: Column(
+          children: tileRows([
+            for (final (i, g) in group.games.indexed)
+              GameTile(
+                key: ValueKey('game-${group.key}-$i'),
+                emojis: g.emojis,
+                name: g.name,
+                audio: g.audio,
+                emojiSize: 64,
+                onTap: () => Navigator.of(
+                  context,
+                ).push(MaterialPageRoute<void>(builder: (_) => g.screen())),
+              ),
+          ], 2),
+        ),
       ),
     );
   }

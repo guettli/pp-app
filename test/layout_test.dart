@@ -143,7 +143,7 @@ void main() {
         await t.pageBack();
         await t.pumpAndSettle();
       }
-      expect(games, 10);
+      expect(games, 12);
       await close(t);
     });
 
@@ -181,7 +181,8 @@ void main() {
           await t.pump(const Duration(milliseconds: 50));
         }
         expect(t.takeException(), isNull);
-        for (var o = 0; o < (game == ThinkGame.needs ? 3 : 4); o++) {
+        final n = game == ThinkGame.needs || game == ThinkGame.home ? 3 : 4;
+        for (var o = 0; o < n; o++) {
           await t.tap(find.byKey(ValueKey('think-option-$o')));
           for (var i = 0; i < 20; i++) {
             await t.pump(const Duration(milliseconds: 50));

@@ -125,23 +125,14 @@ class Progress {
     return true;
   }
 
-  /// Most stars (0..3) for one round of "what do I need?".
-  int needsBest(String lang) => _prefs.getInt('needs|$lang') ?? 0;
+  /// Most stars (0..3) for one round of a thinking game ([game]: needs,
+  /// riddle, odd, home).
+  int thinkBest(String game, String lang) => _prefs.getInt('$game|$lang') ?? 0;
 
   /// Stores [stars] if it is a new best; returns whether it was.
-  Future<bool> recordNeeds(String lang, int stars) async {
-    if (stars <= needsBest(lang)) return false;
-    await _prefs.setInt('needs|$lang', stars);
-    return true;
-  }
-
-  /// Most stars (0..3) for one round of "who am I?".
-  int riddleBest(String lang) => _prefs.getInt('riddle|$lang') ?? 0;
-
-  /// Stores [stars] if it is a new best; returns whether it was.
-  Future<bool> recordRiddle(String lang, int stars) async {
-    if (stars <= riddleBest(lang)) return false;
-    await _prefs.setInt('riddle|$lang', stars);
+  Future<bool> recordThink(String game, String lang, int stars) async {
+    if (stars <= thinkBest(game, lang)) return false;
+    await _prefs.setInt('$game|$lang', stars);
     return true;
   }
 

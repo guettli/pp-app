@@ -11,6 +11,13 @@
 // at any time: waiting and listening costs nothing, only a wrong tap
 // does.
 //
+// "Odd one out" (🧺, [ThinkGame.odd]): three pictures of one kind, one of
+// another; after the right tap the phone says why ("The others are all
+// animals.").
+//
+// "Who lives here?" (🏞️, [ThinkGame.home]): a place (🌊) and three
+// animals; one lives there.
+//
 // A wrong tap says what the tapped picture is and goes on with the next
 // clue (or the problem once more). Only a right first tap counts for the
 // stars. No microphone.
@@ -34,7 +41,8 @@ import '../ui/round_parts.dart';
 import '../ui/strings.dart';
 import 'think_rules.dart';
 
-enum ThinkGame { needs, riddle }
+/// The name is the key of the best round in [Progress.thinkBest].
+enum ThinkGame { needs, riddle, odd, home }
 
 enum _Phase { speaking, choosing, result }
 
@@ -96,9 +104,15 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
   ThinkQuestion get _q => _round[_index];
   bool get _moreClues => _given < _q.clues.length;
 
-  List<ThinkQuestion> _makeRound() => _riddle
-      ? makeRiddleRound(widget.app.book, _rng)
-      : makeNeedsRound(widget.app.book, _rng);
+  List<ThinkQuestion> _makeRound() {
+    final book = widget.app.book;
+    return switch (widget.game) {
+      ThinkGame.needs => makeNeedsRound(book, _rng),
+      ThinkGame.riddle => makeRiddleRound(book, _rng),
+      ThinkGame.odd => makeOddRound(book, widget.app.facts, _rng),
+      ThinkGame.home => makeHomeRound(book, _rng),
+    };
+  }
 
   @override
   void initState() {
@@ -201,7 +215,12 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
         _introPlaying = true;
       });
       await _say(
-        introLine(_riddle ? GameIntro.riddle : GameIntro.needs, _lang),
+        introLine(switch (widget.game) {
+          ThinkGame.needs => GameIntro.needs,
+          ThinkGame.riddle => GameIntro.riddle,
+          ThinkGame.odd => GameIntro.odd,
+          ThinkGame.home => GameIntro.home,
+        }, _lang),
       );
       if (mounted) setState(() => _introPlaying = false);
       if (!_current(id) || _phase != _Phase.speaking) return;
@@ -244,7 +263,11 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       _lastPraise = praise;
       await Future<void>.delayed(const Duration(milliseconds: 500));
       if (!_current(id)) return;
-      await _say('${p.text}! $praise');
+      // why it is right, if there is more to say than the word
+      final because = _q.because;
+      await _say(
+        because == null ? '${p.text}! $praise' : '${p.text}! $because $praise',
+      );
       if (!_current(id)) return;
       _onward = Timer(const Duration(milliseconds: 600), _next);
       return;
@@ -291,9 +314,7 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     var record = false;
     try {
       final progress = widget.app.progress;
-      record = _riddle
-          ? await progress.recordRiddle(_lang, stars)
-          : await progress.recordNeeds(_lang, stars);
+      record = await progress.recordThink(widget.game.name, _lang, stars);
     } catch (e, st) {
       debugPrint('saving the thinking record failed: $e\n$st');
     }
@@ -322,7 +343,12 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: Text(_riddle ? s.riddleTitle : s.needsTitle),
+        title: Text(switch (widget.game) {
+          ThinkGame.needs => s.needsTitle,
+          ThinkGame.riddle => s.riddleTitle,
+          ThinkGame.odd => s.oddTitle,
+          ThinkGame.home => s.homeTitle,
+        }),
       ),
       body: SafeArea(
         child: Stack(
@@ -346,11 +372,13 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     );
   }
 
-  /// The latest clue, small: for those who can read along.
+  /// The latest clue, small: for those who can read along. With a place
+  /// ("Who lives here?"), its picture big before it.
   Widget _clue() {
     final text = _given == 0 ? '' : _q.clues[_given - 1];
     final landscape = MediaQuery.sizeOf(context).height < 500;
-    return Padding(
+    final scene = _q.scene;
+    final clue = Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       child: SizedBox(
         height: landscape ? 28 : 56,
@@ -369,6 +397,31 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
           ),
         ),
       ),
+    );
+    if (scene == null) return clue;
+    // landscape: no room above, the place beside the question
+    if (landscape) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(width: 16),
+          EmojiImage(scene, key: const ValueKey('think-scene'), size: 36),
+          Expanded(child: clue),
+        ],
+      );
+    }
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: EmojiImage(
+            scene,
+            key: const ValueKey('think-scene'),
+            size: 96,
+          ),
+        ),
+        clue,
+      ],
     );
   }
 

@@ -10,6 +10,8 @@ import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
+import 'package:phoneme_party/quiz/facts.dart';
+import 'package:phoneme_party/ui/emoji_image.dart';
 import 'package:phoneme_party/think/think_data.dart';
 import 'package:phoneme_party/think/think_rules.dart';
 import 'package:phoneme_party/think/think_screen.dart';
@@ -30,8 +32,10 @@ PhraseBook load(String lang) {
 
 void main() {
   late PhonemeComparer comparer;
+  late Facts facts;
   final books = <String, PhraseBook>{};
   setUpAll(() {
+    facts = Facts.parse(File(Facts.asset).readAsStringSync());
     comparer = PhonemeComparer.fromJson(
       File('assets/panphon/panphon_features.json').readAsStringSync(),
     );
@@ -69,6 +73,39 @@ void main() {
       }
       expect(riddles.map((r) => r.emoji).toSet(), hasLength(riddles.length));
     });
+
+    test('odd one out and who lives here: every language, every picture', () {
+      for (final k in oddKinds.keys) {
+        Prop.values.byName(k); // a facts.tsv property
+      }
+      final animals = {
+        for (final h in habitats) ...{...h.yes, ...h.maybe},
+        ...habitatAnimals,
+      };
+      for (final lang in langs) {
+        final code = lang.split('-').first;
+        expect(oddQuestion[code], isNotEmpty);
+        for (final k in oddKinds.values) {
+          expect(k[code], isNotEmpty, reason: code);
+        }
+        for (final h in habitats) {
+          expect(h.say[code], isNotEmpty, reason: '$code ${h.scene}');
+        }
+        for (final e in animals) {
+          expect(pictureOf(books[lang]!, e), isNotNull, reason: '$lang $e');
+        }
+      }
+      for (final h in habitats) {
+        expect(h.yes.intersection(h.maybe), isEmpty, reason: h.scene);
+        // whoever lives there is an animal of the wrong-picture pool too
+        expect(habitatAnimals.containsAll(h.yes), isTrue, reason: h.scene);
+        expect(
+          File('assets/emoji/${emojiKey(h.scene)}.webp').existsSync(),
+          isTrue,
+          reason: h.scene,
+        );
+      }
+    });
   });
 
   group('rounds', () {
@@ -92,6 +129,74 @@ void main() {
               if (o != q.answer) {
                 expect(
                   helps,
+                  isNot(contains(bareEmoji(o.emoji))),
+                  reason: '$q',
+                );
+              }
+            }
+          }
+        }
+      });
+
+      test('$lang: odd one out', () {
+        final code = lang.split('-').first;
+        final kinds = oddKinds.keys.map(Prop.values.byName).toSet();
+        Set<Prop> kindOf(Phrase p) => facts.of(p)!.yes.intersection(kinds);
+        final seen = <Prop>{};
+        for (var seed = 0; seed < 30; seed++) {
+          final round = makeOddRound(books[lang]!, facts, math.Random(seed));
+          expect(round, hasLength(6));
+          expect(round.map((q) => q.answer.emoji).toSet(), hasLength(6));
+          for (final q in round) {
+            expect(q.options, hasLength(4), reason: '$q');
+            expect(q.options.map((o) => o.emoji).toSet(), hasLength(4));
+            expect(q.clues, [oddQuestion[code]]);
+            final three = [
+              for (final o in q.options)
+                if (o != q.answer) o,
+            ];
+            final kind = kindOf(three.first);
+            expect(kind, hasLength(1), reason: '$q');
+            for (final o in three) {
+              expect(kindOf(o), kind, reason: '$q');
+            }
+            final odd = kindOf(q.answer);
+            expect(odd, hasLength(1), reason: '$q');
+            expect(odd, isNot(kind), reason: '$q');
+            expect({
+              odd.single.name,
+              kind.single.name,
+            }, isNot({'plant', 'eat'}));
+            expect(q.because, oddKinds[kind.single.name]![code]);
+            // exactly one answer: nothing unclear across the two kinds
+            expect(facts.of(q.answer)!.truth(kind.single), Truth.no);
+            for (final o in three) {
+              expect(facts.of(o)!.truth(odd.single), Truth.no, reason: '$q');
+            }
+            seen.add(kind.single);
+          }
+        }
+        // every kind is asked sometimes
+        expect(seen, kinds);
+      });
+
+      test('$lang: who lives here', () {
+        final code = lang.split('-').first;
+        for (var seed = 0; seed < 30; seed++) {
+          final round = makeHomeRound(books[lang]!, math.Random(seed));
+          expect(round, hasLength(6));
+          expect(round.map((q) => q.scene).toSet(), hasLength(6));
+          for (final q in round) {
+            expect(q.options, hasLength(3), reason: '$q');
+            expect(q.options.map((o) => o.emoji).toSet(), hasLength(3));
+            final h = habitats.firstWhere((h) => h.scene == q.scene);
+            expect(q.clues, [h.say[code]]);
+            expect(h.yes.map(bareEmoji), contains(bareEmoji(q.answer.emoji)));
+            final lives = {...h.yes, ...h.maybe}.map(bareEmoji).toSet();
+            for (final o in q.options) {
+              if (o != q.answer) {
+                expect(
+                  lives,
                   isNot(contains(bareEmoji(o.emoji))),
                   reason: '$q',
                 );
@@ -206,7 +311,7 @@ void main() {
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
       expect(find.byType(AlertDialog), findsOneWidget);
-      expect(progress.needsBest('de-DE'), 3);
+      expect(progress.thinkBest('needs', 'de-DE'), 3);
       await close(t, dev.log);
     });
 
@@ -221,7 +326,7 @@ void main() {
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
       expect(find.text('0 / 1'), findsOneWidget);
-      expect(progress.needsBest('de-DE'), 0);
+      expect(progress.thinkBest('needs', 'de-DE'), 0);
       await close(t, dev.log);
     });
 
@@ -245,7 +350,7 @@ void main() {
       expect(dev.log.started('tts').last, cow().clues.join(' '));
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
-      expect(progress.riddleBest('de-DE'), 3);
+      expect(progress.thinkBest('riddle', 'de-DE'), 3);
       await close(t, dev.log);
     });
 
@@ -261,7 +366,7 @@ void main() {
       ]);
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
-      expect(progress.riddleBest('de-DE'), 0);
+      expect(progress.thinkBest('riddle', 'de-DE'), 0);
       await close(t, dev.log);
     });
 
@@ -278,7 +383,7 @@ void main() {
       expect(dev.log.started('tts').last, 'Ich lebe auf dem Bauernhof.');
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
-      expect(progress.riddleBest('de-DE'), 3);
+      expect(progress.thinkBest('riddle', 'de-DE'), 3);
       await close(t, dev.log);
     });
 
@@ -311,7 +416,50 @@ void main() {
       ]);
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 6000);
-      expect(progress.riddleBest('de-DE'), 3);
+      expect(progress.thinkBest('riddle', 'de-DE'), 3);
+      await close(t, dev.log);
+    });
+
+    testWidgets('odd one out: the right tap says why', (t) async {
+      final q = ThinkQuestion(
+        ['Was passt nicht dazu?'],
+        [w('Apfel'), w('Banane'), w('Katze'), w('Birne')],
+        w('Katze'),
+        because: 'Die anderen kann man essen.',
+      );
+      final (dev, progress) = await play(t, ThinkGame.odd, [q]);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), ['Was passt nicht dazu?']);
+      await t.tap(find.byKey(const ValueKey('think-option-2')));
+      await wait(t, 6000);
+      expect(
+        dev.log.started('tts')[1],
+        startsWith('Katze! Die anderen kann man essen. '),
+      );
+      expect(progress.thinkBest('odd', 'de-DE'), 3);
+      await close(t, dev.log);
+    });
+
+    testWidgets('who lives here: the place is shown', (t) async {
+      final q = ThinkQuestion(
+        ['Wer wohnt im Meer?'],
+        [w('Kuh'), w('Fisch'), w('Löwe')],
+        w('Fisch'),
+        scene: '🌊',
+      );
+      final (dev, progress) = await play(t, ThinkGame.home, [q]);
+      await wait(t, 1500);
+      expect(find.byKey(const ValueKey('think-scene')), findsOneWidget);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // Kuh
+      await wait(t, 4000);
+      expect(dev.log.started('tts'), [
+        'Wer wohnt im Meer?',
+        'Kuh',
+        'Wer wohnt im Meer?',
+      ]);
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('home', 'de-DE'), 0);
       await close(t, dev.log);
     });
   });
