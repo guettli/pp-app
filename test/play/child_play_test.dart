@@ -23,6 +23,8 @@ import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/game/game_io.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
+import 'package:phoneme_party/listen/listen_screen.dart';
+import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -158,6 +160,57 @@ void main() {
     return all.length;
   }
 
+  /// A game with pictures to tap ([prefix]-0, [prefix]-1, ...): the child
+  /// taps one after the other until the phone says "Word! ..." (right).
+  Future<void> tapGame(
+    WidgetTester t,
+    FakeDevices dev,
+    String name,
+    String prefix, {
+    int questions = 8,
+  }) async {
+    var n = 0;
+    await settle(t, 9000);
+    n = said(dev, n);
+    await shot(t, '$name-q1');
+    for (var q = 0; q < questions; q++) {
+      final count = find
+          .byWidgetPredicate(
+            (w) =>
+                w.key is ValueKey<String> &&
+                RegExp(
+                  '^$prefix-\\d+\$',
+                ).hasMatch((w.key! as ValueKey<String>).value),
+          )
+          .evaluate()
+          .length;
+      if (count == 0) break;
+      var right = false;
+      for (var o = 0; o < count && !right; o++) {
+        transcript.writeln('  👆 $prefix-$o');
+        final before = dev.log.started('tts').length;
+        await t.tap(find.byKey(ValueKey('$prefix-$o')), warnIfMissed: false);
+        await settle(t, 900);
+        right = dev.log
+            .started('tts')
+            .skip(before)
+            .any((s) => s.contains('! '));
+        if (q == 0) await shot(t, '$name-q1-tap$o');
+        await settle(t, 6000);
+        n = said(dev, n);
+      }
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+      if (q < 3) await shot(t, '$name-q${q + 2}');
+    }
+    await settle(t, 3000);
+    n = said(dev, n);
+    if (find.byType(AlertDialog).evaluate().isNotEmpty) {
+      await shot(t, '$name-end');
+    }
+    await t.pumpWidget(const SizedBox());
+    await settle(t, 3000);
+  }
+
   testWidgets('home and the groups', (t) async {
     final (dev, app) = await start(t, 1);
     transcript.writeln('# Home');
@@ -172,6 +225,68 @@ void main() {
       await settle(t);
     }
     said(dev, 0);
+  });
+
+  testWidgets('listen closely', (t) async {
+    final (dev, app) = await start(t, 3);
+    transcript.writeln('# Listen closely');
+    await show(t, ListenScreen(app: app));
+    await tapGame(t, dev, 'listen', 'listen-option');
+  });
+
+  testWidgets('word to picture', (t) async {
+    final (dev, app) = await start(t, 4);
+    transcript.writeln('# Word to picture');
+    await show(t, ListenScreen(app: app, reading: true));
+    await tapGame(t, dev, 'readpick', 'listen-option');
+  });
+
+  testWidgets('letters', (t) async {
+    final (dev, app) = await start(t, 5);
+    transcript.writeln('# Letters');
+    await show(t, SpellScreen(app: app));
+    var n = 0;
+    await settle(t, 9000);
+    n = said(dev, n);
+    await shot(t, 'spell-w1');
+    // the child tries the tiles from left to right, again and again
+    for (var word = 0; word < 6; word++) {
+      final before = dev.log.started('tts').length;
+      for (var sweep = 0; sweep < 12; sweep++) {
+        final tiles = find.byWidgetPredicate(
+          (w) =>
+              w.key is ValueKey<String> &&
+              RegExp(
+                r'^spell-tile-\d+$',
+              ).hasMatch((w.key! as ValueKey<String>).value),
+        );
+        final count = tiles.evaluate().length;
+        if (count == 0) break;
+        for (var i = 0; i < count; i++) {
+          await t.tap(
+            find.byKey(ValueKey('spell-tile-$i')),
+            warnIfMissed: false,
+          );
+          await settle(t, 300);
+        }
+        if (word == 0 && sweep == 0) await shot(t, 'spell-w1-sweep');
+        if (dev.log.started('tts').skip(before).any((s) => s.contains('! '))) {
+          break;
+        }
+      }
+      transcript.writeln('  👆 tiles left to right');
+      await settle(t, 6000);
+      n = said(dev, n);
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+      if (word < 2) await shot(t, 'spell-w${word + 2}');
+    }
+    await settle(t, 3000);
+    said(dev, n);
+    if (find.byType(AlertDialog).evaluate().isNotEmpty) {
+      await shot(t, 'spell-end');
+    }
+    await t.pumpWidget(const SizedBox());
+    await settle(t, 3000);
   });
 
   for (final game in ThinkGame.values) {

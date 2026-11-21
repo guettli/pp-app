@@ -460,8 +460,9 @@ class _SpellScreenState extends State<SpellScreen> with WidgetsBindingObserver {
               child: Center(
                 child: FittedBox(
                   child: Text(
-                    // tiles in small letters; the word above as written
-                    letter.toLowerCase(),
+                    // as in the word: H for Hai, not h (a preschooler
+                    // knows capital letters, h and H are two letters)
+                    letter,
                     style: _text.copyWith(fontSize: size * 0.6),
                   ),
                 ),

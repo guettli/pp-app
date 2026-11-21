@@ -166,6 +166,17 @@ void main() {
       await wait(t);
     }
 
+    testWidgets('the tiles as written in the word: E, not e', (t) async {
+      final (dev, _) = await play(t);
+      await wait(t, 1500);
+      final e = find.descendant(
+        of: find.byKey(const ValueKey('spell-tile-1')),
+        matching: find.text('E'),
+      );
+      expect(e, findsOneWidget);
+      await close(t, dev.log);
+    });
+
     testWidgets('all right: on by itself, three stars', (t) async {
       final (dev, progress) = await play(t);
       await wait(t, 1000);
