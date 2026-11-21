@@ -163,6 +163,16 @@ func (m *Ci) Test(ctx context.Context) (string, error) {
 		Stdout(ctx)
 }
 
+// Play lets a simulated child play (test/play/child_play_test.dart) and
+// returns the screenshots and what the phone said, to look at the app as
+// a child would: `dagger call -m ci play export --path build/play`.
+func (m *Ci) Play() *dagger.Directory {
+	return m.base().
+		WithEnvVariable("PLAY", "1").
+		WithExec([]string{"flutter", "test", "test/play/child_play_test.dart"}).
+		Directory("/src/build/play")
+}
+
 // feedbackGo: Go toolchain with the feedback service (server/feedback, Go).
 func (m *Ci) feedbackGo() *dagger.Container {
 	return dag.Container().
