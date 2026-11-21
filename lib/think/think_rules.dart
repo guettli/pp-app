@@ -196,7 +196,7 @@ List<ThinkQuestion> makeOddRound(
         [
           oddQuestion[code]!,
           // after a wrong tap: what the three have in common
-          '${oddHints[kind.name]![code]} ${oddQuestion[code]}',
+          oddHints[kind.name]![code]!,
         ],
         [pick, ...three]..shuffle(rng),
         pick,

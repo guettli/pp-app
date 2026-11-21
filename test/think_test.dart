@@ -156,7 +156,6 @@ void main() {
             expect(q.options.map((o) => o.emoji).toSet(), hasLength(4));
             expect(q.clues, hasLength(2));
             expect(q.clues.first, oddQuestion[code]);
-            expect(q.clues.last, endsWith(oddQuestion[code]!));
             final three = [
               for (final o in q.options)
                 if (o != q.answer) o,
@@ -174,6 +173,7 @@ void main() {
               kind.single.name,
             }, isNot({'plant', 'eat'}));
             expect(q.because, oddKinds[kind.single.name]![code]);
+            expect(q.clues.last, oddHints[kind.single.name]![code]);
             // exactly one answer: nothing unclear across the two kinds
             expect(facts.of(q.answer)!.truth(kind.single), Truth.no);
             for (final o in three) {
@@ -473,10 +473,7 @@ void main() {
 
     testWidgets('odd one out: a wrong tap brings the nudge', (t) async {
       final q = ThinkQuestion(
-        [
-          'Was passt nicht dazu?',
-          'Drei davon kann man essen. Was passt nicht dazu?',
-        ],
+        ['Was passt nicht dazu?', 'Drei davon kann man essen.'],
         [w('Apfel'), w('Banane'), w('Hut'), w('Birne')],
         w('Hut'),
         because: 'Die anderen kann man essen.',
@@ -488,8 +485,15 @@ void main() {
       expect(dev.log.started('tts'), [
         'Was passt nicht dazu?',
         'Apfel',
-        'Drei davon kann man essen. Was passt nicht dazu?',
+        'Drei davon kann man essen.',
       ]);
+      // 🔊: the question and the nudge, each once
+      await t.tap(find.byKey(const ValueKey('think-repeat')));
+      await wait(t, 4000);
+      expect(
+        dev.log.started('tts').last,
+        'Was passt nicht dazu? Drei davon kann man essen.',
+      );
       await t.tap(find.byKey(const ValueKey('think-option-2')));
       await wait(t, 6000);
       expect(progress.thinkBest('odd', 'de-DE'), 0);

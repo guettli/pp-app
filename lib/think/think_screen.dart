@@ -416,7 +416,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
           child: EmojiImage(
             scene,
             key: const ValueKey('think-scene'),
-            size: 120,
+            // a small phone: the pictures need the room
+            size: MediaQuery.sizeOf(context).height < 700 ? 96 : 120,
           ),
         ),
         clue,

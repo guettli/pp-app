@@ -1008,64 +1008,64 @@ const oddKinds = <String, Map<String, String>>{
   },
 };
 
-/// Said after a wrong tap, before the question again: a nudge to think
-/// about what the three have in common.
+/// The second clue, said after a wrong tap: a nudge to think about what
+/// the three have in common (🔊 then says the question and the nudge).
 const oddHints = <String, Map<String, String>>{
   'animal': {
     'de': 'Drei davon sind Tiere.',
     'en': 'Three of them are animals.',
-    'fr': 'Trois sont des animaux.',
-    'it': 'Tre sono animali.',
-    'es': 'Tres son animales.',
+    'fr': 'Il y a trois animaux.',
+    'it': 'Tre di questi sono animali.',
+    'es': 'Tres de ellos son animales.',
   },
   'eat': {
     'de': 'Drei davon kann man essen.',
     'en': 'You can eat three of them.',
-    'fr': 'Trois se mangent.',
-    'it': 'Tre si possono mangiare.',
-    'es': 'Tres se pueden comer.',
+    'fr': 'On peut en manger trois.',
+    'it': 'Tre di questi si possono mangiare.',
+    'es': 'Tres de ellos se pueden comer.',
   },
   'wear': {
     'de': 'Drei davon kann man anziehen.',
     'en': 'You can wear three of them.',
-    'fr': 'Trois se portent.',
-    'it': 'Tre si possono indossare.',
-    'es': 'Tres te los puedes poner.',
+    'fr': 'On peut en porter trois.',
+    'it': 'Tre di questi si possono indossare.',
+    'es': 'Te puedes poner tres de ellos.',
   },
   'plant': {
     'de': 'Drei davon sind Pflanzen.',
     'en': 'Three of them are plants.',
-    'fr': 'Trois sont des plantes.',
-    'it': 'Tre sono piante.',
-    'es': 'Tres son plantas.',
+    'fr': 'Il y a trois plantes.',
+    'it': 'Tre di questi sono piante.',
+    'es': 'Tres de ellos son plantas.',
   },
   'wheels': {
     'de': 'Drei davon haben Räder.',
     'en': 'Three of them have wheels.',
-    'fr': 'Trois ont des roues.',
-    'it': 'Tre hanno le ruote.',
-    'es': 'Tres tienen ruedas.',
+    'fr': 'Trois d’entre eux ont des roues.',
+    'it': 'Tre di questi hanno le ruote.',
+    'es': 'Tres de ellos tienen ruedas.',
   },
   'music': {
     'de': 'Mit drei davon macht man Musik.',
     'en': 'You make music with three of them.',
-    'fr': 'Avec trois, on fait de la musique.',
-    'it': 'Con tre si fa musica.',
-    'es': 'Con tres se hace música.',
+    'fr': 'Avec trois d’entre eux, on fait de la musique.',
+    'it': 'Con tre di questi si fa musica.',
+    'es': 'Con tres de ellos se hace música.',
   },
   'body': {
     'de': 'Drei davon sind Teile von deinem Körper.',
     'en': 'Three of them are parts of your body.',
-    'fr': 'Trois sont des parties de ton corps.',
-    'it': 'Tre sono parti del tuo corpo.',
-    'es': 'Tres son partes de tu cuerpo.',
+    'fr': 'Il y a trois parties de ton corps.',
+    'it': 'Tre di questi sono parti del tuo corpo.',
+    'es': 'Tres de ellos son partes de tu cuerpo.',
   },
   'shines': {
     'de': 'Drei davon leuchten.',
     'en': 'Three of them give light.',
-    'fr': 'Trois font de la lumière.',
-    'it': 'Tre fanno luce.',
-    'es': 'Tres dan luz.',
+    'fr': 'Trois d’entre eux font de la lumière.',
+    'it': 'Tre di questi fanno luce.',
+    'es': 'Tres de ellos dan luz.',
   },
 };
 
