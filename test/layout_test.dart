@@ -85,6 +85,9 @@ void main() {
     testWidgets('home, $name', (t) async {
       await show(t, (app) => HomeScreen(app: app), size: size);
       expect(t.takeException(), isNull);
+      // the game tiles show what they do with sound
+      expect(find.byKey(const ValueKey('audio-output')), findsWidgets);
+      expect(find.byKey(const ValueKey('audio-both')), findsWidgets);
       await close(t);
     });
 
