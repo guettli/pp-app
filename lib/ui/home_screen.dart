@@ -82,7 +82,9 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {});
   }
 
-  /// The games besides the worlds, by kind, in the order shown.
+  /// The games besides the worlds, by what the child practises (not by
+  /// how it answers: the quiz is thinking, answered by speaking), in the
+  /// order shown.
   List<GameGroup> _groups(S s) {
     final quiz = (
       screen: () => QuizScreen(app: app),
@@ -118,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: () => QuizScreen(app: app, sounds: true),
       emojis: const ['🔔'],
       name: s.soundsTitle,
-      audio: Audio.output,
+      audio: Audio.both,
     );
     final needs = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.needs),
@@ -152,13 +154,13 @@ class _HomeScreenState extends State<HomeScreen> {
         name: s.readGroup,
         games: [readPick, spell, readAloud],
       ),
+      (key: 'speak', emoji: '🎤', name: s.speakGroup, games: [hold, pitch]),
       (
-        key: 'speak',
-        emoji: '🎤',
-        name: s.speakGroup,
-        games: [quiz, hold, pitch],
+        key: 'think',
+        emoji: '🤔',
+        name: s.thinkGroup,
+        games: [needs, riddle, quiz],
       ),
-      (key: 'think', emoji: '🤔', name: s.thinkGroup, games: [needs, riddle]),
     ];
   }
 

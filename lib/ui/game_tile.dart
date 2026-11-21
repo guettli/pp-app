@@ -119,7 +119,13 @@ class GroupScreen extends StatelessWidget {
           children: [
             EmojiImage(group.emoji, size: 32),
             const SizedBox(width: 12),
-            Flexible(child: Text(group.name)),
+            Flexible(
+              child: Text(
+                group.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
           ],
         ),
       ),
