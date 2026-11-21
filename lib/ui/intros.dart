@@ -62,7 +62,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.riddle:
         'Guess who I am! Listen to the clues and tap the right picture. The lamp gives you another clue.',
     GameIntro.odd:
-        'Three pictures belong together. Tap the one that does not belong!',
+        'Three pictures belong together. Tap the one that doesn’t belong!',
     GameIntro.home: 'Look where we are! Tap the animal that lives here!',
   },
   'fr': {
@@ -76,7 +76,7 @@ const _lines = <String, Map<GameIntro, String>>{
         'Devine qui je suis ! Écoute les indices et touche la bonne image. La lampe te donne un autre indice.',
     GameIntro.odd:
         'Trois images vont ensemble. Touche celle qui n’est pas comme les autres !',
-    GameIntro.home: 'Regarde où nous sommes ! Touche l’animal qui habite ici !',
+    GameIntro.home: 'Regarde où nous sommes ! Touche l’animal qui vit ici !',
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
@@ -88,7 +88,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.riddle:
         'Indovina chi sono! Ascolta gli indizi e tocca l’immagine giusta. La lampadina ti dà un altro indizio.',
     GameIntro.odd: 'Tre immagini vanno insieme. Tocca quella che non c’entra!',
-    GameIntro.home: 'Guarda dove siamo! Tocca l’animale che abita qui!',
+    GameIntro.home: 'Guarda dove siamo! Tocca l’animale che vive qui!',
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
@@ -99,7 +99,8 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.needs: '¡Escucha bien y ayúdame! ¡Toca lo que necesito!',
     GameIntro.riddle:
         '¡Adivina quién soy! Escucha las pistas y toca la imagen correcta. La bombilla te da otra pista.',
-    GameIntro.odd: 'Tres dibujos van juntos. ¡Toca el que no va con los otros!',
+    GameIntro.odd:
+        'Tres imágenes van juntas. ¡Toca la que no va con las demás!',
     GameIntro.home: '¡Mira dónde estamos! ¡Toca el animal que vive aquí!',
   },
 };

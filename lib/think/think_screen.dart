@@ -399,6 +399,17 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       ),
     );
     if (scene == null) return clue;
+    // landscape: no room above, the place beside the question
+    if (landscape) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const SizedBox(width: 16),
+          EmojiImage(scene, key: const ValueKey('think-scene'), size: 36),
+          Expanded(child: clue),
+        ],
+      );
+    }
     return Column(
       children: [
         Padding(
@@ -406,7 +417,7 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
           child: EmojiImage(
             scene,
             key: const ValueKey('think-scene'),
-            size: landscape ? 48 : 96,
+            size: 96,
           ),
         ),
         clue,

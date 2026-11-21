@@ -131,8 +131,11 @@ List<ThinkQuestion> makeRiddleRound(
 }
 
 /// [count] questions of "Odd one out": three pictures of one kind
-/// ([oddKinds], from the facts) and one of another kind. Only pictures of
-/// exactly one kind take part (a fish is an animal and food).
+/// ([oddKinds], from the facts) and one of another kind. A picture takes
+/// part only in its one kind (a fish is an animal and food: never). The
+/// odd one is clearly not of the three's kind, and the three clearly not
+/// of the odd one's (a cow might be food: never three animals and a
+/// pizza), so there is exactly one answer.
 List<ThinkQuestion> makeOddRound(
   PhraseBook book,
   Facts facts,
@@ -145,45 +148,54 @@ List<ThinkQuestion> makeOddRound(
       if (oddKinds[k]![code] != null) Prop.values.byName(k),
   };
   final byKind = <Prop, List<Phrase>>{for (final k in kinds) k: []};
+  final factOf = <Phrase, Fact>{};
   for (final p in book.phrases) {
     final f = facts.of(p);
     if (f == null) continue;
     final mine = f.yes.intersection(kinds);
-    if (mine.length != 1 || f.unclear.intersection(kinds).isNotEmpty) {
-      continue;
-    }
+    if (mine.length != 1) continue;
     byKind[mine.single]!.add(p);
+    factOf[p] = f;
   }
   bool apart(Prop a, Prop b) =>
       a != b && !oddNotTogether.any((s) => s.containsAll({a.name, b.name}));
-  final groups = [
-    for (final k in kinds)
-      if (byKind[k]!.length >= 3) k,
-  ];
   final out = <ThinkQuestion>[];
   final odds = <Phrase>{};
   Prop? last;
-  for (var tries = 0; out.length < count && tries < 200; tries++) {
-    if (groups.isEmpty) break;
-    final kind = groups[rng.nextInt(groups.length)];
-    // not the same kind twice in a row while there are others
-    if (kind == last && groups.length > 1) continue;
+  for (var tries = 0; out.length < count && tries < 300; tries++) {
+    final kind = kinds.elementAt(rng.nextInt(kinds.length));
+    // not the same kind twice in a row
+    if (kind == last) continue;
     final others = [
       for (final k in kinds)
-        if (apart(kind, k))
-          for (final p in byKind[k]!)
-            if (!odds.contains(p)) p,
-    ];
-    if (others.isEmpty) continue;
-    final odd = others[rng.nextInt(others.length)];
-    final three = ([...byKind[kind]!]..shuffle(rng)).take(3).toList();
-    odds.add(odd);
+        if (apart(kind, k)) k,
+    ]..shuffle(rng);
+    Phrase? pick;
+    List<Phrase>? three;
+    for (final ok in others) {
+      // the three: of [kind], clearly not of [ok]
+      final group = [
+        for (final p in byKind[kind]!)
+          if (factOf[p]!.truth(ok) == Truth.no) p,
+      ];
+      if (group.length < 3) continue;
+      final cands = [
+        for (final p in byKind[ok]!)
+          if (!odds.contains(p) && factOf[p]!.truth(kind) == Truth.no) p,
+      ];
+      if (cands.isEmpty) continue;
+      pick = cands[rng.nextInt(cands.length)];
+      three = (group..shuffle(rng)).take(3).toList();
+      break;
+    }
+    if (pick == null || three == null) continue;
+    odds.add(pick);
     last = kind;
     out.add(
       ThinkQuestion(
         [oddQuestion[code]!],
-        [odd, ...three]..shuffle(rng),
-        odd,
+        [pick, ...three]..shuffle(rng),
+        pick,
         because: oddKinds[kind.name]![code],
       ),
     );

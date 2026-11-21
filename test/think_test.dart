@@ -142,6 +142,7 @@ void main() {
         final code = lang.split('-').first;
         final kinds = oddKinds.keys.map(Prop.values.byName).toSet();
         Set<Prop> kindOf(Phrase p) => facts.of(p)!.yes.intersection(kinds);
+        final seen = <Prop>{};
         for (var seed = 0; seed < 30; seed++) {
           final round = makeOddRound(books[lang]!, facts, math.Random(seed));
           expect(round, hasLength(6));
@@ -167,8 +168,16 @@ void main() {
               kind.single.name,
             }, isNot({'plant', 'eat'}));
             expect(q.because, oddKinds[kind.single.name]![code]);
+            // exactly one answer: nothing unclear across the two kinds
+            expect(facts.of(q.answer)!.truth(kind.single), Truth.no);
+            for (final o in three) {
+              expect(facts.of(o)!.truth(odd.single), Truth.no, reason: '$q');
+            }
+            seen.add(kind.single);
           }
         }
+        // every kind is asked sometimes
+        expect(seen, kinds);
       });
 
       test('$lang: who lives here', () {

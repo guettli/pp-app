@@ -111,9 +111,11 @@ and high also listen (and so do the worlds).
 - **🐶🐱🚗 Odd one out:** four pictures, three of one kind (animals,
   food, clothes, plants, things with wheels, instruments, body parts,
   things that shine; from `assets/facts/facts.tsv`) and one of another
-  kind. After the right tap the phone says why ("Katze! Die anderen kann
-  man essen."). Only pictures of exactly one kind take part (a fish is an
-  animal and food), and plants are never mixed with food (a carrot is
+  kind. After the right tap the phone says why ("Nase! Die anderen kann
+  man anziehen."). Only pictures of exactly one kind take part (a fish is
+  an animal and food); the odd one is clearly not of the three's kind and
+  the three clearly not of its kind (a cow might be food: never three
+  animals and a pizza); plants are never mixed with food (a carrot is
   both).
 - **🌊🐟 Who lives here?** a place, shown big (🌊 sea, 🚜 farm, 🌳 forest,
   🌴 jungle, ❄️ ice, 🏜️ desert, 🏠 at home), and three animals; one lives
