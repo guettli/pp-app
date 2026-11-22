@@ -33,6 +33,15 @@ enum GameIntro {
 
   /// Who lives here: a place, tap the animal that lives there.
   home,
+
+  /// Remember the pictures: look, they hide, tap them again.
+  memoryLook,
+
+  /// Remember the words: listen, then tap their pictures.
+  memoryHear,
+
+  /// What's missing: look, one hides, tap the one that is gone.
+  memoryMissing,
 }
 
 /// The intro of [game] in [lang] (e.g. "de-DE"); English if unknown.
@@ -55,6 +64,12 @@ const _lines = <String, Map<GameIntro, String>>{
         'Drei Bilder gehören zusammen. Tippe auf das Bild, das nicht dazu passt!',
     GameIntro.home: 'Schau, wo wir sind! Tippe auf das Tier, das hier wohnt!',
     GameIntro.repeat: 'Hör gut zu und sprich mir nach!',
+    GameIntro.memoryLook:
+        'Schau dir die Bilder gut an und merk sie dir! Dann verstecke ich sie, und du findest sie wieder.',
+    GameIntro.memoryHear:
+        'Hör gut zu und merk dir die Wörter! Dann tippst du auf die passenden Bilder.',
+    GameIntro.memoryMissing:
+        'Schau dir die Bilder gut an! Dann verstecke ich eins. Tippe auf das Bild, das fehlt!',
   },
   'en': {
     GameIntro.sayWord: 'Listen, then say the right word!',
@@ -69,6 +84,12 @@ const _lines = <String, Map<GameIntro, String>>{
         'Three pictures belong together. Tap the one that doesn’t belong!',
     GameIntro.home: 'Look where we are! Tap the animal that lives here!',
     GameIntro.repeat: 'Listen and say it after me!',
+    GameIntro.memoryLook:
+        'Look closely and remember the pictures! Then I hide them, and you find them again.',
+    GameIntro.memoryHear:
+        'Listen closely and remember the words! Then tap the matching pictures.',
+    GameIntro.memoryMissing:
+        'Look closely at the pictures! Then I hide one. Tap the picture that is missing!',
   },
   'fr': {
     GameIntro.sayWord: 'Écoute bien, puis dis le bon mot !',
@@ -83,6 +104,12 @@ const _lines = <String, Map<GameIntro, String>>{
         'Trois images vont ensemble. Touche celle qui n’est pas comme les autres !',
     GameIntro.home: 'Regarde où nous sommes ! Touche l’animal qui vit ici !',
     GameIntro.repeat: 'Écoute bien et répète après moi !',
+    GameIntro.memoryLook:
+        'Regarde bien les images et retiens-les ! Ensuite je les cache, et tu les retrouves.',
+    GameIntro.memoryHear:
+        'Écoute bien et retiens les mots ! Ensuite, touche les bonnes images.',
+    GameIntro.memoryMissing:
+        'Regarde bien les images ! Ensuite j’en cache une. Touche l’image qui manque !',
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
@@ -96,6 +123,12 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.odd: 'Tre immagini vanno insieme. Tocca quella che non c’entra!',
     GameIntro.home: 'Guarda dove siamo! Tocca l’animale che vive qui!',
     GameIntro.repeat: 'Ascolta bene e ripeti dopo di me!',
+    GameIntro.memoryLook:
+        'Guarda bene le immagini e ricordale! Poi le nascondo e tu le ritrovi.',
+    GameIntro.memoryHear:
+        'Ascolta bene e ricorda le parole! Poi tocca le immagini giuste.',
+    GameIntro.memoryMissing:
+        'Guarda bene le immagini! Poi ne nascondo una. Tocca l’immagine che manca!',
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
@@ -110,5 +143,11 @@ const _lines = <String, Map<GameIntro, String>>{
         'Tres imágenes van juntas. ¡Toca la que no va con las demás!',
     GameIntro.home: '¡Mira dónde estamos! ¡Toca el animal que vive aquí!',
     GameIntro.repeat: '¡Escucha bien y repite después de mí!',
+    GameIntro.memoryLook:
+        '¡Mira bien las imágenes y recuérdalas! Luego las escondo y tú las encuentras.',
+    GameIntro.memoryHear:
+        '¡Escucha bien y recuerda las palabras! Luego toca las imágenes correctas.',
+    GameIntro.memoryMissing:
+        '¡Mira bien las imágenes! Luego escondo una. ¡Toca la imagen que falta!',
   },
 };

@@ -45,6 +45,10 @@ class S {
   String get readGroup => _t['readGroup']!;
   String get speakGroup => _t['speakGroup']!;
   String get thinkGroup => _t['thinkGroup']!;
+  String get memoryGroup => _t['memoryGroup']!;
+  String get lookTitle => _t['lookTitle']!;
+  String get hearWordsTitle => _t['hearWordsTitle']!;
+  String get missingTitle => _t['missingTitle']!;
   String get phoneTalks => _t['phoneTalks']!;
   String get phoneSilent => _t['phoneSilent']!;
   String get phoneListens => _t['phoneListens']!;
@@ -108,6 +112,10 @@ class S {
       'readGroup': 'Lesen',
       'speakGroup': 'Sprechen',
       'thinkGroup': 'Denken',
+      'memoryGroup': 'Merken',
+      'lookTitle': 'Bilder merken',
+      'hearWordsTitle': 'Wörter merken',
+      'missingTitle': 'Was fehlt?',
       'phoneTalks': 'Das Handy spricht',
       'phoneSilent': 'Das Handy spricht nicht',
       'phoneListens': 'Das Handy hört zu',
@@ -172,6 +180,10 @@ class S {
       'readGroup': 'Reading',
       'speakGroup': 'Speaking',
       'thinkGroup': 'Thinking',
+      'memoryGroup': 'Memory',
+      'lookTitle': 'Remember the pictures',
+      'hearWordsTitle': 'Remember the words',
+      'missingTitle': 'What’s missing?',
       'phoneTalks': 'The phone talks',
       'phoneSilent': 'The phone stays quiet',
       'phoneListens': 'The phone listens',
@@ -236,6 +248,10 @@ class S {
       'readGroup': 'Lire',
       'speakGroup': 'Parler',
       'thinkGroup': 'Réfléchir',
+      'memoryGroup': 'Mémoire',
+      'lookTitle': 'Retiens les images',
+      'hearWordsTitle': 'Retiens les mots',
+      'missingTitle': 'Qu’est-ce qui manque ?',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',
@@ -300,6 +316,10 @@ class S {
       'readGroup': 'Leggere',
       'speakGroup': 'Parlare',
       'thinkGroup': 'Pensare',
+      'memoryGroup': 'Memoria',
+      'lookTitle': 'Ricorda le immagini',
+      'hearWordsTitle': 'Ricorda le parole',
+      'missingTitle': 'Cosa manca?',
       'phoneTalks': 'Il telefono parla',
       'phoneSilent': 'Il telefono non parla',
       'phoneListens': 'Il telefono ascolta',
@@ -364,6 +384,10 @@ class S {
       'readGroup': 'Leer',
       'speakGroup': 'Hablar',
       'thinkGroup': 'Pensar',
+      'memoryGroup': 'Memoria',
+      'lookTitle': 'Recuerda las imágenes',
+      'hearWordsTitle': 'Recuerda las palabras',
+      'missingTitle': '¿Qué falta?',
       'phoneTalks': 'El teléfono habla',
       'phoneSilent': 'El teléfono no habla',
       'phoneListens': 'El teléfono escucha',
