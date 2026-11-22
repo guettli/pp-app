@@ -47,7 +47,10 @@ row, by what the child practises: 👂 listening (listen closely, sound
 detective), 📖 reading (word to picture, letter puzzle, read aloud),
 🎤 speaking (hold it long, low and high) and 🤔 thinking (what do I
 need, who am I, odd one out, who lives here, quiz). A group opens a screen with its games
-(`lib/ui/game_tile.dart`).
+(`lib/ui/game_tile.dart`). Each game tile shows the stars of its best
+round (⭐⭐⭐, the ones not yet earned faint), each group tile the stars of
+its games (⭐ 5/15), so a child sees what it has done and what is left.
+The voice games measure seconds and semitones, not stars: no stars there.
 
 Each game first says what to do, in the study language ("Hör gut zu und
 sag das richtige Wort!", "… tippe auf das richtige Bild!", …,
