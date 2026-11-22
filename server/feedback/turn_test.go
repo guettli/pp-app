@@ -48,8 +48,8 @@ func TestTURNCredentialIsCoturnsRESTCredential(t *testing.T) {
 		t.Errorf("stun %+v", a.ICEServers[0])
 	}
 	relay := a.ICEServers[1]
-	exp, ok := strings.CutSuffix(relay.Username, ":pp")
-	if !ok {
+	exp, name, ok := strings.Cut(relay.Username, ":")
+	if !ok || len(name) != 12 {
 		t.Fatal(relay.Username)
 	}
 	// valid for turnTTL from now
@@ -63,6 +63,22 @@ func TestTURNCredentialIsCoturnsRESTCredential(t *testing.T) {
 	}
 	if len(relay.URLs) != 2 {
 		t.Error(relay.URLs)
+	}
+}
+
+// coturn's user-quota counts per name: two phones must not share one.
+func TestTURNCredentialsHaveTheirOwnName(t *testing.T) {
+	s := turnServer()
+	names := map[string]bool{}
+	for i := 0; i < 5; i++ {
+		var a TURNAnswer
+		if err := json.Unmarshal(askTURN(s, http.MethodPost, "1.1.1.1").Body.Bytes(), &a); err != nil {
+			t.Fatal(err)
+		}
+		names[a.ICEServers[1].Username] = true
+	}
+	if len(names) != 5 {
+		t.Error(names)
 	}
 }
 

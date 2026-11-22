@@ -5,7 +5,10 @@ package main
 // moves through coturn on the vps. coturn runs with use-auth-secret (the
 // "TURN REST API"): the username is the expiry time, the password its
 // HMAC-SHA1 under a secret this service and coturn share. So a credential
-// stops working after turnTTL, and nothing is stored here.
+// opens no relay after turnTTL (coturn checks the time only when a relay is
+// opened; a running match keeps its relay), and nothing is stored here.
+// coturn counts its per-user quota by the part after the time, so every
+// credential gets its own random name.
 //
 // Anyone can ask for one, as anyone can send feedback: coturn's bandwidth
 // and quota limits are what make a relay worthless for anything but game
@@ -13,6 +16,7 @@ package main
 
 import (
 	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
@@ -27,7 +31,10 @@ const (
 	// enough for one match.
 	turnTTL       = time.Hour
 	turnPerClient = 20 // credentials per client and hour
-	turnPerHour   = 600
+	// Signing is cheap and stores nothing; coturn's quotas guard the
+	// relay. A high overall cap, so a few clients cannot use it up for
+	// everyone.
+	turnPerHour = 10000
 )
 
 // TURN signs credentials; nil Secret: the route answers 404.
@@ -51,9 +58,12 @@ type TURNAnswer struct {
 	TTL int `json:"ttl"`
 }
 
-// credential is coturn's REST API credential valid until expires.
+// credential is coturn's REST API credential valid until expires, with a
+// random name (no phone id).
 func (t *TURN) credential(expires time.Time) (user, pass string) {
-	user = strconv.FormatInt(expires.Unix(), 10) + ":pp"
+	name := make([]byte, 9)
+	_, _ = rand.Read(name) // never fails (crypto/rand)
+	user = strconv.FormatInt(expires.Unix(), 10) + ":" + base64.RawURLEncoding.EncodeToString(name)
 	m := hmac.New(sha1.New, t.Secret)
 	m.Write([]byte(user))
 	return user, base64.StdEncoding.EncodeToString(m.Sum(nil))
