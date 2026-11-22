@@ -12,10 +12,15 @@
 // hide, they come back with a gap; the child taps the one that is gone
 // among three.
 //
-// A right tap says the word; a wrong one too, with a low sound. After
-// two wrong taps the right pictures are shown and the round goes on.
-// Only a question solved without a wrong tap counts for the stars. No
-// microphone.
+// "What did you see?" (👀🎤, [MemoryGame.say]): a few pictures, they
+// hide, then the child names them, one after the other; each named one
+// comes back in its place. The microphone opens by itself after each
+// word; when nothing was heard, the child taps 🎤.
+//
+// A right tap (or word) says the word; a wrong one too, with a low sound.
+// After two wrong ones the right pictures are shown and the round goes
+// on. Only a question solved without a wrong one counts for the stars.
+// Only "What did you see?" uses the microphone.
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -28,7 +33,9 @@ import '../game/feedback.dart';
 import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
-import '../quiz/quiz_rules.dart' show quizStars, soundsSimilar;
+import '../quiz/quiz_lines.dart';
+import '../quiz/quiz_rules.dart' show heardOption, quizStars, soundsSimilar;
+import '../quiz/word_listener.dart';
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
 import '../ui/round_button.dart';
@@ -49,12 +56,15 @@ enum _Phase {
   /// Nothing to see: remember!
   hide,
 
-  /// Tap the pictures.
+  /// Tap the pictures (or, "What did you see?", name them: see [_Mic]).
   pick,
 
   /// The question is done.
   result,
 }
+
+/// "What did you see?" while naming: what the microphone does.
+enum _Mic { busy, ready, listening, thinking }
 
 class MemoryScreen extends StatefulWidget {
   const MemoryScreen({
@@ -80,8 +90,12 @@ class MemoryScreen extends StatefulWidget {
   /// How long [n] pictures are shown.
   static Duration showTime(int n) => Duration(milliseconds: 1500 + 1000 * n);
 
-  /// Wrong taps before the right pictures are shown.
+  /// Wrong taps (or words) before the right pictures are shown.
   static const maxWrong = 2;
+
+  /// "What did you see?": words not understood in a row before the
+  /// microphone waits for a tap.
+  static const maxUnclear = 2;
 
   /// The key of the best round in [Progress.thinkBest].
   static String progressKey(MemoryGame game) => 'memory-${game.name}';
@@ -114,6 +128,20 @@ class _MemoryScreenState extends State<MemoryScreen>
   /// Seconds left while the pictures hide.
   int _hideLeft = 0;
 
+  /// "What did you see?": the microphone, and the words not understood in
+  /// a row.
+  _Mic _mic = _Mic.busy;
+  int _unclear = 0;
+
+  /// Words heard for the current question (understood or not): enough,
+  /// and the pictures are shown (a child saying the same wrong word
+  /// again and again, or one the phone does not understand).
+  int _tries = 0;
+  int get _maxTries => _q.shown.length + 3;
+  WordListener? _listenerOrNull;
+  WordListener get _listener =>
+      _listenerOrNull ??= WordListener(widget.app.io.mic());
+
   late bool _introDone = !widget.intro;
   String? _lastPraise;
 
@@ -128,11 +156,13 @@ class _MemoryScreenState extends State<MemoryScreen>
   MemoryQuestion get _q => _round[_index];
   bool get _hear => widget.game == MemoryGame.hear;
   bool get _missing => widget.game == MemoryGame.missing;
+  bool get _naming => widget.game == MemoryGame.say;
 
   String get _which => switch (widget.game) {
     MemoryGame.look => _lines.whichSeen,
     MemoryGame.hear => _lines.whichHeard,
     MemoryGame.missing => _lines.whichMissing,
+    MemoryGame.say => _lines.whichSay,
   };
 
   List<MemoryQuestion> _makeRound() {
@@ -140,11 +170,18 @@ class _MemoryScreenState extends State<MemoryScreen>
     // "Remember the words": no wrong picture that sounds like a word said
     bool similar(Phrase a, Phrase b) =>
         soundsSimilar(app.comparer, app.book.lang, a, b);
+    // what did you see: each picture's word must be understood among the
+    // words listened for (the shown ones and some that were not there)
+    bool fair(List<Phrase> shown, List<Phrase> options) => shown.every(
+      (p) => heardOption(app.comparer, options, p.ipa, app.book.lang) == p,
+    );
     List<MemoryQuestion> make(List<Phrase> pool) => makeMemoryRound(
       widget.game,
       pool,
       _rng,
-      similar: _hear ? similar : null,
+      // what did you see: the recogniser must tell the words apart
+      similar: _hear || _naming ? similar : null,
+      fair: _naming ? fair : null,
     );
     final round = make(app.knownWords());
     if (round.length == memorySizes[widget.game]!.length) return round;
@@ -169,6 +206,7 @@ class _MemoryScreenState extends State<MemoryScreen>
     WidgetsBinding.instance.removeObserver(this);
     _onward?.cancel();
     _donePraise?.cancel();
+    _listenerOrNull?.dispose();
     _quietly(_tts.stop);
     _quietly(_sfx.dispose);
     super.dispose();
@@ -181,6 +219,7 @@ class _MemoryScreenState extends State<MemoryScreen>
       _flow++;
       _onward?.cancel();
       _donePraise?.cancel();
+      _listenerOrNull?.cancel(); // the mic first
       _quietly(_tts.stop);
       _quietly(_sfx.stop);
     } else if (state == AppLifecycleState.resumed) {
@@ -191,6 +230,9 @@ class _MemoryScreenState extends State<MemoryScreen>
         // cut off while looking or remembering: the question once more
         case _Phase.speaking || _Phase.show || _Phase.hearing || _Phase.hide:
           _ask();
+        // naming: the mic waits for a tap (it must not open by itself)
+        case _Phase.pick when _naming:
+          setState(() => _mic = _Mic.ready);
         case _Phase.pick:
           _repeat();
         case _Phase.result:
@@ -244,6 +286,9 @@ class _MemoryScreenState extends State<MemoryScreen>
       _found.clear();
       _wrong.clear();
       _heard = 0;
+      _mic = _Mic.busy;
+      _unclear = 0;
+      _tries = 0;
     });
     if (!_introDone) {
       _introDone = true;
@@ -252,6 +297,7 @@ class _MemoryScreenState extends State<MemoryScreen>
           MemoryGame.look => GameIntro.memoryLook,
           MemoryGame.hear => GameIntro.memoryHear,
           MemoryGame.missing => GameIntro.memoryMissing,
+          MemoryGame.say => GameIntro.memorySay,
         }, _lang),
       );
     } else {
@@ -278,13 +324,139 @@ class _MemoryScreenState extends State<MemoryScreen>
     }
     setState(() => _phase = _Phase.pick);
     await _say(_which);
+    if (_naming && _current(id)) await _listen(id);
   }
 
-  /// 🔊: the question once more (only while tapping).
+  /// 🔊: the question once more (only while tapping, or while the mic
+  /// waits for a tap).
   Future<void> _repeat() async {
     if (_phase != _Phase.pick || _over) return;
+    if (_naming && _mic != _Mic.ready) return;
     ++_flow;
     await _say(_which);
+  }
+
+  /// 🎤: listening -> done; waiting -> listen now.
+  void _onMic() {
+    if (_phase != _Phase.pick || _over) return;
+    switch (_mic) {
+      case _Mic.listening:
+        _listener.stopNow();
+      case _Mic.ready:
+        _listen(++_flow);
+      case _Mic.busy || _Mic.thinking:
+        break;
+    }
+  }
+
+  /// The mic could not listen, or heard nothing: wait for 🎤.
+  void _micWaits(int id, String Function(S) message) {
+    if (!mounted || id != _flow) return;
+    setState(() => _mic = _Mic.ready);
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message(S.of(context)))));
+  }
+
+  /// "What did you see?": one word from the child, then what it was.
+  Future<void> _listen(int id) async {
+    setState(() => _mic = _Mic.busy);
+    bool allowed;
+    try {
+      allowed = await _listener.mic.hasPermission();
+    } catch (e, st) {
+      debugPrint('permission check failed: $e\n$st');
+      allowed = false;
+    }
+    if (!_current(id)) return;
+    if (!allowed) {
+      _micWaits(id, (s) => s.needMic);
+      return;
+    }
+    // let the speaker's echo fade before the mic opens
+    if (!await _wait(id, const Duration(milliseconds: 250))) return;
+    await _quietly(_tts.stop);
+    await _quietly(_sfx.stop);
+    if (!_current(id)) return;
+    setState(() => _mic = _Mic.listening);
+    final heard = await _listener.listen(
+      onChunk: () {
+        if (mounted) setState(() {});
+      },
+    );
+    if (!_current(id)) return;
+    if (heard == null) {
+      _micWaits(id, (s) => s.tryAgain);
+      return;
+    }
+    if (!heard.speech) {
+      _micWaits(id, (s) => s.notHeardVoice);
+      return;
+    }
+    setState(() => _mic = _Mic.thinking);
+    Phrase? said;
+    try {
+      final rec = await widget.app.recognizer
+          .recognize(heard.audio)
+          .timeout(const Duration(seconds: 20));
+      said = heardOption(widget.app.comparer, _q.options, rec.ipa, _lang);
+      debugPrint('memory: heard "${rec.ipa}" -> ${said?.text}');
+    } catch (e, st) {
+      debugPrint('recognition failed: $e\n$st');
+      _micWaits(id, (s) => s.tryAgain);
+      return;
+    }
+    if (!_current(id)) return;
+    setState(() => _mic = _Mic.busy);
+    await _named(id, said);
+  }
+
+  /// [said]: the word the child said (one of the question's words), or
+  /// null when it was not understood.
+  Future<void> _named(int id, Phrase? said) async {
+    // every word counts: never stuck on a word the phone cannot understand
+    _tries++;
+    if (said == null) {
+      _unclear++;
+      if (_tries >= _maxTries) {
+        await _done(id, null);
+        return;
+      }
+      await _say(QuizLines.of(_lang).notUnderstood);
+      if (!_current(id)) return;
+      if (_unclear >= MemoryScreen.maxUnclear) {
+        setState(() => _mic = _Mic.ready);
+        return;
+      }
+      await _listen(id);
+      return;
+    }
+    _unclear = 0;
+    if (_q.shown.contains(said)) {
+      setState(() => _found.add(said));
+      if (_found.length == _q.shown.length) {
+        await _done(id, said);
+        return;
+      }
+      unawaited(_sound(jingle(2, _rng)));
+      await _say('${said.text}! ${_lines.more}');
+    } else {
+      setState(() => _wrong.add(said));
+      unawaited(_sound(jingle(0, _rng)));
+      if (_wrong.length >= MemoryScreen.maxWrong) {
+        await _done(id, null);
+        return;
+      }
+      if (!await _wait(id, const Duration(milliseconds: 400))) return;
+      await _say(_lines.notThere);
+    }
+    if (!_current(id)) return;
+    // the same words again and again: enough, show them
+    if (_tries >= _maxTries) {
+      await _done(id, null);
+      return;
+    }
+    await _listen(id);
   }
 
   Future<void> _tap(Phrase p) async {
@@ -398,6 +570,7 @@ class _MemoryScreenState extends State<MemoryScreen>
           MemoryGame.look => s.lookTitle,
           MemoryGame.hear => s.hearWordsTitle,
           MemoryGame.missing => s.missingTitle,
+          MemoryGame.say => s.sayWhatTitle,
         }),
       ),
       body: SafeArea(
@@ -430,6 +603,7 @@ class _MemoryScreenState extends State<MemoryScreen>
     _Phase.speaking => _big(_hear ? '👂' : '👀', key: 'memory-wait'),
     // "What's missing?": where the gap row will be, in its layout
     _Phase.show when _missing => _missingLayout(),
+    _Phase.show when _naming => _gapRow(),
     _Phase.show => _grid([
       for (final (i, p) in _q.shown.indexed)
         _picture(p.emoji, key: 'memory-shown-$i'),
@@ -446,7 +620,12 @@ class _MemoryScreenState extends State<MemoryScreen>
       dots: MemoryScreen.hideSeconds,
       lit: _hideLeft,
     ),
-    _Phase.pick || _Phase.result => _missing ? _missingLayout() : _options(),
+    _Phase.pick || _Phase.result =>
+      _missing
+          ? _missingLayout()
+          : _naming
+          ? _gapRow()
+          : _options(),
   };
 
   /// "What's missing?": the pictures in a panel (the same place and
@@ -522,6 +701,25 @@ class _MemoryScreenState extends State<MemoryScreen>
       for (final (i, p) in _q.shown.indexed)
         if (_phase == _Phase.show)
           _picture(p.emoji, key: 'memory-shown-$i')
+        // naming: each named picture comes back in its place
+        else if (_naming)
+          _found.contains(p)
+              ? _picture(
+                  p.emoji,
+                  key: 'memory-slot-$i',
+                  color: const Color(0xFF2E7D32),
+                )
+              : _phase == _Phase.result
+              ? _picture(
+                  p.emoji,
+                  key: 'memory-slot-$i',
+                  frame: const Color(0xFF4ADE80),
+                )
+              : _picture(
+                  '❓',
+                  key: 'memory-slot-$i',
+                  color: const Color(0xFFF59E0B),
+                )
         else if (p == _q.missing)
           _picture(
             _phase == _Phase.result ? p.emoji : '❓',
@@ -632,6 +830,11 @@ class _MemoryScreenState extends State<MemoryScreen>
 
   Widget _controls(S s) {
     final result = _phase == _Phase.result;
+    final canRepeat = _phase == _Phase.pick && (!_naming || _mic == _Mic.ready);
+    final naming = _naming && _phase == _Phase.pick;
+    final listening = naming && _mic == _Mic.listening;
+    final busy = naming && (_mic == _Mic.busy || _mic == _Mic.thinking);
+    final level = listening ? (_listener.level * 8).clamp(0.0, 0.3) : 0.0;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
@@ -639,10 +842,28 @@ class _MemoryScreenState extends State<MemoryScreen>
           key: const ValueKey('memory-repeat'),
           tooltip: s.listen,
           color: const Color(0xFF3B82F6),
-          onTap: _phase == _Phase.pick ? _repeat : null,
-          dimmed: _phase != _Phase.pick,
+          onTap: canRepeat ? _repeat : null,
+          dimmed: !canRepeat,
           child: const EmojiImage('🔊', size: 40),
         ),
+        if (_naming)
+          AnimatedScale(
+            scale: 1 + level,
+            duration: const Duration(milliseconds: 120),
+            child: RoundButton(
+              key: const ValueKey('memory-mic'),
+              tooltip: listening ? s.yourTurn : s.speak,
+              size: 96,
+              onTap: naming && !busy ? _onMic : null,
+              dimmed: naming ? (busy ? false : null) : true,
+              color: listening
+                  ? const Color(0xFFFF5252)
+                  : busy
+                  ? const Color(0xFF3D5AFE)
+                  : const Color(0xFFFF9100),
+              child: EmojiImage(busy ? '👂' : '🎤', size: 52),
+            ),
+          ),
         RoundButton(
           tooltip: s.next,
           color: const Color(0xFF00C853),

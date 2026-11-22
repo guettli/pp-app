@@ -52,6 +52,7 @@ class S {
   String get lookTitle => _t['lookTitle']!;
   String get hearWordsTitle => _t['hearWordsTitle']!;
   String get missingTitle => _t['missingTitle']!;
+  String get sayWhatTitle => _t['sayWhatTitle']!;
   String get phoneTalks => _t['phoneTalks']!;
   String get phoneSilent => _t['phoneSilent']!;
   String get phoneListens => _t['phoneListens']!;
@@ -122,6 +123,7 @@ class S {
       'lookTitle': 'Bilder merken',
       'hearWordsTitle': 'Wörter merken',
       'missingTitle': 'Was fehlt?',
+      'sayWhatTitle': 'Was hast du gesehen?',
       'phoneTalks': 'Das Handy spricht',
       'phoneSilent': 'Das Handy spricht nicht',
       'phoneListens': 'Das Handy hört zu',
@@ -193,6 +195,7 @@ class S {
       'lookTitle': 'Remember the pictures',
       'hearWordsTitle': 'Remember the words',
       'missingTitle': 'What’s missing?',
+      'sayWhatTitle': 'What did you see?',
       'phoneTalks': 'The phone talks',
       'phoneSilent': 'The phone stays quiet',
       'phoneListens': 'The phone listens',
@@ -264,6 +267,7 @@ class S {
       'lookTitle': 'Retiens les images',
       'hearWordsTitle': 'Retiens les mots',
       'missingTitle': 'Qu’est-ce qui manque ?',
+      'sayWhatTitle': 'Qu’as-tu vu ?',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',
@@ -335,6 +339,7 @@ class S {
       'lookTitle': 'Ricorda le immagini',
       'hearWordsTitle': 'Ricorda le parole',
       'missingTitle': 'Cosa manca?',
+      'sayWhatTitle': 'Cosa hai visto?',
       'phoneTalks': 'Il telefono parla',
       'phoneSilent': 'Il telefono non parla',
       'phoneListens': 'Il telefono ascolta',
@@ -406,6 +411,7 @@ class S {
       'lookTitle': 'Recuerda las imágenes',
       'hearWordsTitle': 'Recuerda las palabras',
       'missingTitle': '¿Qué falta?',
+      'sayWhatTitle': '¿Qué has visto?',
       'phoneTalks': 'El teléfono habla',
       'phoneSilent': 'El teléfono no habla',
       'phoneListens': 'El teléfono escucha',

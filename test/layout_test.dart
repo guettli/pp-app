@@ -333,7 +333,7 @@ void main() {
         await t.pageBack();
         await t.pumpAndSettle();
       }
-      expect(games, 17);
+      expect(games, 18);
       await close(t);
     });
 
@@ -398,6 +398,13 @@ void main() {
         for (var i = 0; i < 600; i++) {
           await t.pump(const Duration(milliseconds: 50));
           expect(t.takeException(), isNull, reason: 'at ${i * 50} ms');
+        }
+        if (game == MemoryGame.say) {
+          // naming: the places of the pictures and the mic
+          expect(find.byKey(const ValueKey('memory-slot-0')), findsOneWidget);
+          expect(find.byKey(const ValueKey('memory-mic')), findsOneWidget);
+          await close(t);
+          return;
         }
         expect(find.byKey(const ValueKey('memory-option-0')), findsOneWidget);
         for (var o = 0; o < memoryOptions(game); o++) {

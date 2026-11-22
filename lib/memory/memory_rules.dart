@@ -15,6 +15,9 @@ enum MemoryGame {
 
   /// Pictures are shown, hidden, shown again without one: which is gone?
   missing,
+
+  /// Pictures are shown, hidden, then the child names them (microphone).
+  say,
 }
 
 /// One question of a memory game.
@@ -45,10 +48,12 @@ const memorySizes = <MemoryGame, List<int>>{
   MemoryGame.look: [2, 3, 3, 3, 4],
   MemoryGame.hear: [2, 3, 3, 3, 4],
   MemoryGame.missing: [3, 3, 4, 4, 4],
+  MemoryGame.say: [2, 2, 3, 3, 3],
 };
 
 /// Pictures to choose from: six to find the remembered ones among, three
-/// for the missing one.
+/// for the missing one. "What did you see?": the words the recogniser
+/// tells apart (not shown: a word that was not there is one of these).
 int memoryOptions(MemoryGame game) => game == MemoryGame.missing ? 3 : 6;
 
 /// Pictures that are easy to mix up after a few seconds: at most one of
@@ -83,6 +88,7 @@ List<MemoryQuestion> makeMemoryRound(
   List<Phrase> pool,
   math.Random rng, {
   bool Function(Phrase a, Phrase b)? similar,
+  bool Function(List<Phrase> shown, List<Phrase> options)? fair,
 }) {
   // one phrase per picture: two with the same picture cannot be told apart
   final seen = <String>{};
@@ -116,9 +122,20 @@ List<MemoryQuestion> makeMemoryRound(
     if (pics.length < need) break;
     final fresh = [...pics.where((p) => !last.contains(p))]..shuffle(rng);
     final all = [...pics]..shuffle(rng);
+    // [fair]: a few more tries (the words must be told apart), then any
+    List<Phrase>? fairPick(List<Phrase> from) {
+      for (var tries = 0; tries < 20; tries++) {
+        final c = pick(from, need, strict: true);
+        if (c == null) return null;
+        if (fair == null || fair(c.sublist(0, n), c)) return c;
+        from.shuffle(rng);
+      }
+      return null;
+    }
+
     final chosen =
-        pick(fresh, need, strict: true) ??
-        pick(all, need, strict: true) ??
+        fairPick(fresh) ??
+        fairPick(all) ??
         pick(fresh, need, strict: false) ??
         pick(all, need, strict: false)!;
     final shown = chosen.sublist(0, n);
@@ -163,6 +180,15 @@ class MemoryLines {
 
   /// Which one is gone?
   String get whichMissing => _t[4];
+
+  /// What did you see? Say it!
+  String get whichSay => _t[5];
+
+  /// One named, more to name.
+  String get more => _t[6];
+
+  /// A word of a picture that was not there.
+  String get notThere => _t[7];
 }
 
 const _lines = <String, List<String>>{
@@ -172,6 +198,9 @@ const _lines = <String, List<String>>{
     'Welche Bilder waren es?',
     'Welche Wörter hast du gehört?',
     'Welches Bild fehlt?',
+    'Was hast du gesehen? Sag mir ein Bild!',
+    'Und was noch?',
+    'Das war nicht dabei.',
   ],
   'en': [
     'Look closely!',
@@ -179,6 +208,9 @@ const _lines = <String, List<String>>{
     'Which pictures were there?',
     'Which words did you hear?',
     'Which picture is missing?',
+    'What did you see? Tell me one picture!',
+    'And what else?',
+    'That wasn’t there.',
   ],
   'fr': [
     'Regarde bien !',
@@ -186,6 +218,9 @@ const _lines = <String, List<String>>{
     'Quelles images étaient là ?',
     'Quels mots as-tu entendus ?',
     'Quelle image manque ?',
+    'Qu’est-ce que tu as vu ? Dis-moi une image !',
+    'Et quoi d’autre ?',
+    'Ça, ce n’était pas là !',
   ],
   'it': [
     'Guarda bene!',
@@ -193,6 +228,9 @@ const _lines = <String, List<String>>{
     'Quali immagini c’erano?',
     'Quali parole hai sentito?',
     'Quale immagine manca?',
+    'Cosa hai visto? Dimmi un’immagine!',
+    'E cos’altro?',
+    'Non c’era.',
   ],
   'es': [
     '¡Mira bien!',
@@ -200,5 +238,8 @@ const _lines = <String, List<String>>{
     '¿Qué imágenes había?',
     '¿Qué palabras has oído?',
     '¿Qué imagen falta?',
+    '¿Qué has visto? ¡Dime una imagen!',
+    '¿Y qué más?',
+    'Eso no estaba ahí.',
   ],
 };
