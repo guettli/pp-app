@@ -158,6 +158,32 @@ void main() {
         for (final q in round) {
           final like = q.ask.like!;
           final onset = firstSound(comparer, like, lang)!;
+          // saying the like word back is no answer; the answer still is
+          String bare(String ipa) => ipa.replaceAll('/', '');
+          expect(
+            heardOption(comparer, q.options, bare(like.ipa), lang, echo: like),
+            isNull,
+            reason: '$q',
+          );
+          final plain = heardOption(
+            comparer,
+            q.options,
+            bare(q.answer.ipa),
+            lang,
+          );
+          if (plain == q.answer) {
+            expect(
+              heardOption(
+                comparer,
+                q.options,
+                bare(q.answer.ipa),
+                lang,
+                echo: like,
+              ),
+              q.answer,
+              reason: '$q',
+            );
+          }
           expect(q.options, hasLength(3), reason: '$q');
           expect(q.options, contains(q.answer));
           expect(q.options.map((o) => o.emoji).toSet(), hasLength(3));

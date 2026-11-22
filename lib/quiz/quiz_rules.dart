@@ -29,8 +29,9 @@ Phrase? heardOption(
   PhonemeComparer comparer,
   List<Phrase> options,
   String ipa,
-  String lang,
-) {
+  String lang, {
+  Phrase? echo,
+}) {
   if (ipa.isEmpty) return null;
   final scored = [
     for (final o in options)
@@ -44,6 +45,14 @@ Phrase? heardOption(
   if (cs.map(sameShare).reduce(math.max) < minAnswerSame) return null;
   if (scored.length > 1 && score - best(scored[1].$2) < minAnswerMargin) {
     return null;
+  }
+  // the child said the word of the question back ("What starts like
+  // Blatt?" "Blatt!"): no answer, even if it sounds like one (Blitz)
+  if (echo != null) {
+    final e = best([
+      for (final w in echo.accepted) comparer.compare(w.ipa, ipa, lang),
+    ]);
+    if (e >= score - minAnswerMargin) return null;
   }
   return option;
 }
