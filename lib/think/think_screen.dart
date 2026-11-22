@@ -103,7 +103,10 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
   /// Pictures of the current question tapped wrongly.
   final _wrong = <Phrase>{};
 
-  /// 🐞: the dialog is open, or the report is being sent.
+  /// 🐞: the report dialog is open (or about to): the game holds.
+  bool _asking = false;
+
+  /// 🐞: the report is being sent (the game goes on meanwhile).
   bool _reporting = false;
 
   /// Questions (by index) already reported.
@@ -178,6 +181,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       }
     } else if (state == AppLifecycleState.resumed) {
       _paused = false;
+      // the report dialog is open: it goes on when that closes
+      if (_asking) return;
       // back while choosing: what was said so far, once more
       // paused before the first clue (during the intro): ask it now
       if (_over) return;
@@ -258,7 +263,11 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
 
   /// 💡: the next clue.
   Future<void> _hint() async {
-    if (_phase == _Phase.result || _over || _introPlaying || !_moreClues) {
+    if (_asking ||
+        _phase == _Phase.result ||
+        _over ||
+        _introPlaying ||
+        !_moreClues) {
       return;
     }
     final id = ++_flow;
@@ -268,7 +277,11 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
 
   /// 🔊: every clue said so far, once more.
   Future<void> _repeat() async {
-    if (_phase == _Phase.result || _over || _introPlaying || _given == 0) {
+    if (_asking ||
+        _phase == _Phase.result ||
+        _over ||
+        _introPlaying ||
+        _given == 0) {
       return;
     }
     final id = ++_flow;
@@ -276,7 +289,9 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _tap(Phrase p) async {
-    if (_phase == _Phase.result || _over || _wrong.contains(p)) return;
+    if (_asking || _phase == _Phase.result || _over || _wrong.contains(p)) {
+      return;
+    }
     if (_introPlaying || _given == 0) return;
     final id = ++_flow;
     if (p == _q.answer) {
@@ -388,40 +403,49 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
   /// current question into the feedback outbox.
   Future<void> _report() async {
     final outbox = widget.app.feedback;
-    if (outbox == null || _reporting || _over || _reported.contains(_index)) {
+    if (outbox == null ||
+        _asking ||
+        _reporting ||
+        _over ||
+        _reported.contains(_index)) {
       return;
     }
     final index = _index;
     final about = _describe();
-    // hold: nothing said or going on while the grown-up reads
-    _flow++;
-    _onward?.cancel();
-    await _quietly(_tts.stop);
-    await _quietly(_sfx.stop);
-    if (!mounted) return;
+    // hold at once: no taps, nothing said while the grown-up reads
     setState(() {
-      _reporting = true;
+      _asking = true;
       if (_phase == _Phase.speaking) _phase = _Phase.choosing;
     });
+    _flow++;
+    _onward?.cancel();
     String? note;
+    var info = <String, String>{};
     try {
-      note = await _askReport(about);
+      await _quietly(_tts.stop);
+      await _quietly(_sfx.stop);
+      Map<String, String> device;
+      try {
+        device = await widget.info();
+      } catch (_) {
+        device = const {};
+      }
+      if (!mounted) return;
+      final uiLang = Localizations.maybeLocaleOf(context)?.languageCode ?? '';
+      info = {...device, 'studyLang': _lang, 'uiLang': uiLang};
+      note = await _askReport(about, info);
     } finally {
-      if (mounted && note == null) setState(() => _reporting = false);
+      _asking = false;
+      if (mounted) setState(() => _reporting = note != null);
     }
-    if (note == null || !mounted) return;
-    final uiLang = Localizations.maybeLocaleOf(context)?.languageCode ?? '';
-    Map<String, String> device;
-    try {
-      device = await widget.info();
-    } catch (_) {
-      device = const {};
-    }
+    if (!mounted) return;
+    _goOn();
+    if (note == null) return;
     final report = FeedbackReport(
       id: FeedbackReport.newId(math.Random.secure()),
       kind: FeedbackKind.bug,
       text: note.isEmpty ? about : '$note\n\n$about',
-      info: {...device, 'studyLang': _lang, 'uiLang': uiLang},
+      info: info,
       created: DateTime.now(),
     );
     ReportState state;
@@ -435,6 +459,7 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     final s = S.of(context);
     setState(() {
       _reporting = false;
+      // rejected: may be tried again
       if (state != ReportState.rejected) _reported.add(index);
     });
     ScaffoldMessenger.of(context).showSnackBar(
@@ -442,19 +467,31 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
         content: Text(switch (state) {
           ReportState.sent => s.quizReportSent,
           ReportState.waiting => s.feedbackQueued,
-          ReportState.rejected => s.quizReportFailed,
+          ReportState.rejected => s.tryAgain,
         }),
       ),
     );
   }
 
+  /// After the report dialog: the game goes on where it was held (the
+  /// clues so far once more, or on to the next question).
+  void _goOn() {
+    if (_over || _paused || !mounted) return;
+    if (_phase == _Phase.result) {
+      _onward = Timer(const Duration(milliseconds: 600), _next);
+    } else if (_given > 0) {
+      unawaited(_repeat());
+    }
+  }
+
   /// The dialog before a report: what is sent and a note. Null: not sent.
-  Future<String?> _askReport(String about) => showDialog<String>(
-    context: context,
-    // closes with the game page
-    useRootNavigator: false,
-    builder: (_) => _ReportDialog(about: about),
-  );
+  Future<String?> _askReport(String about, Map<String, String> info) =>
+      showDialog<String>(
+        context: context,
+        // closes with the game page
+        useRootNavigator: false,
+        builder: (_) => _ReportDialog(about: about, info: info),
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -661,7 +698,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
             tooltip: s.quizReportSend,
             color: const Color(0xFF6D4C41),
             onTap:
-                !_reporting &&
+                !_asking &&
+                    !_reporting &&
                     !_over &&
                     _given > 0 &&
                     !_reported.contains(_index)
@@ -690,9 +728,12 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
 /// note (maybe empty) on "Send", null on "Cancel". Owns the note's
 /// controller: it must live until the dialog has faded out.
 class _ReportDialog extends StatefulWidget {
-  const _ReportDialog({required this.about});
+  const _ReportDialog({required this.about, required this.info});
 
   final String about;
+
+  /// Sent too: app, phone, languages.
+  final Map<String, String> info;
 
   @override
   State<_ReportDialog> createState() => _ReportDialogState();
@@ -718,6 +759,13 @@ class _ReportDialogState extends State<_ReportDialog> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.about),
+            const SizedBox(height: 12),
+            Text(s.feedbackSends, style: Theme.of(context).textTheme.bodySmall),
+            for (final e in widget.info.entries)
+              Text(
+                '${e.key}: ${e.value}',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
             const SizedBox(height: 12),
             TextField(
               key: const ValueKey('think-report-note'),

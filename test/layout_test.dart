@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/net/feedback.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -48,6 +49,7 @@ void main() {
     Size size = const Size(360, 640),
     double text = 1,
     Map<String, Object> prefs = const {},
+    bool feedback = false,
   }) async {
     t.view.physicalSize = size;
     t.view.devicePixelRatio = 1;
@@ -66,6 +68,9 @@ void main() {
       book,
       io: dev.io,
       facts: facts,
+      feedback: feedback
+          ? FeedbackOutbox(await SharedPreferences.getInstance(), _NoSend())
+          : null,
     );
     await t.pumpWidget(
       MediaQuery(
@@ -359,6 +364,32 @@ void main() {
       await close(t);
     });
 
+    testWidgets('🐞 and its dialog, $name', (t) async {
+      await show(
+        t,
+        (app) => ThinkScreen(
+          app: app,
+          game: ThinkGame.riddle,
+          info: () async => {'app': '1.0', 'phone': 'Test Phone 12'},
+        ),
+        size: size,
+        text: text,
+        prefs: {'settings|quizReports': true},
+        feedback: true,
+      );
+      for (var i = 0; i < 300; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(t.takeException(), isNull);
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(t.takeException(), isNull);
+      await close(t);
+    });
+
     for (final game in ThinkGame.values) {
       testWidgets('${game.name}, $name', (t) async {
         await show(
@@ -525,4 +556,9 @@ void main() {
     expect(t.takeException(), isNull);
     await close(t);
   });
+}
+
+class _NoSend implements FeedbackTransport {
+  @override
+  Future<SendResult> send(Map<String, dynamic> json) async => SendResult.later;
 }

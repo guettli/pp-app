@@ -205,6 +205,12 @@ void main() {
     expect(progress.quizReports, isTrue);
     expect(t.widget<SwitchListTile>(sw).value, isTrue);
     expect((await Progress.load()).quizReports, isTrue);
+    // the longer switch text may push the id below the fold
+    await t.scrollUntilVisible(
+      find.textContaining('id: '),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     final shownId =
         find.textContaining('id: ').evaluate().single.widget as Text;
     await t.tap(find.text('Idea'));

@@ -631,6 +631,71 @@ void main() {
       await close(t, dev.log);
     });
 
+    testWidgets('🐞 while a clue is said: held, then said again', (t) async {
+      final sent = _Transport();
+      final (dev, _) = await play(t, ThinkGame.riddle, [
+        apple(),
+      ], reports: sent);
+      await t.pump(const Duration(milliseconds: 200));
+      // twice at once: one dialog
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      final said = dev.log.started('tts').length;
+      // the game holds while the grown-up reads
+      await wait(t, 4000);
+      expect(dev.log.started('tts'), hasLength(said));
+      await t.tap(find.text('Cancel'));
+      await wait(t, 3000);
+      expect(dev.log.started('tts').last, 'Man kann mich essen.');
+      expect(dev.log.started('tts'), hasLength(said + 1));
+      expect(sent.sent, isEmpty);
+      await close(t, dev.log);
+    });
+
+    testWidgets('🐞 after the right tap: on to the end afterwards', (t) async {
+      final sent = _Transport();
+      final (dev, progress) = await play(t, ThinkGame.riddle, [
+        apple(),
+      ], reports: sent);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await t.pump(const Duration(milliseconds: 200));
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      await t.tap(find.byKey(const ValueKey('think-report-send')));
+      await wait(t, 1000);
+      expect(sent.sent, hasLength(1));
+      expect(sent.sent.single['text'], contains('Solved'));
+      await wait(t, 6000);
+      // the round end came by itself
+      expect(find.text('1 / 1'), findsOneWidget);
+      expect(progress.thinkBest('riddle', 'de-DE'), 3);
+      await close(t, dev.log);
+    });
+
+    testWidgets('🐞 offline: queued, once; other games too', (t) async {
+      final sent = _Transport()..answer = SendResult.later;
+      final (dev, _) = await play(t, ThinkGame.needs, [
+        gloves(),
+      ], reports: sent);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      await t.tap(find.byKey(const ValueKey('think-report-send')));
+      await wait(t, 1000);
+      expect(sent.sent, isEmpty);
+      expect(
+        find.text('Thank you! It will be sent when there is internet.'),
+        findsOneWidget,
+      );
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      expect(find.byType(AlertDialog), findsNothing);
+      await close(t, dev.log);
+    });
+
     testWidgets('paused during the intro: the first clue on resume', (t) async {
       final (dev, progress) = await play(t, ThinkGame.riddle, [
         cow(),
@@ -757,10 +822,11 @@ void main() {
 
 class _Transport implements FeedbackTransport {
   final sent = <Map<String, dynamic>>[];
+  SendResult answer = SendResult.done;
 
   @override
   Future<SendResult> send(Map<String, dynamic> json) async {
-    sent.add(json);
-    return SendResult.done;
+    if (answer == SendResult.done) sent.add(json);
+    return answer;
   }
 }

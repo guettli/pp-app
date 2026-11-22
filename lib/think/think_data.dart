@@ -247,7 +247,7 @@ class Riddle {
 const riddles = <Riddle>[
   Riddle(
     '🐮',
-    alike: {'🐰', '🐔', '🐶', '🐱', '🦓', '🐘'},
+    alike: {'🐰', '🐔', '🐶', '🐱', '🦓', '🐘', '🦒'},
     {
       'de': [
         'Ich lebe auf dem Bauernhof.',
@@ -318,7 +318,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🐸',
-    alike: {'🦆', '🐟', '🐌', '🐍', '🍎'},
+    alike: {'🦆', '🐟', '🐌', '🐍', '🍎', '🌈'},
     {
       'de': [
         'Ich lebe am Teich.',
@@ -349,7 +349,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🐝',
-    alike: {'🐞'},
+    alike: {'🐞', '🦉', '🐔'},
 
     {
       'de': [
@@ -377,27 +377,27 @@ const riddles = <Riddle>[
     {
       'de': [
         'Ich lebe im Wasser.',
-        'Ich habe keine Beine.',
+        'Ich bin ein Tier ohne Beine.',
         'Ich habe Flossen und glänzende Schuppen.',
       ],
       'en': [
         'I live in the water.',
-        'I have no legs.',
+        'I am an animal with no legs.',
         'I have fins and shiny scales.',
       ],
       'fr': [
         'Je vis dans l’eau.',
-        'Je n’ai pas de pattes.',
+        'Je suis un animal sans pattes.',
         'J’ai des nageoires et des écailles brillantes.',
       ],
       'it': [
         'Vivo nell’acqua.',
-        'Non ho le zampe.',
+        'Sono un animale senza zampe.',
         'Ho le pinne e le squame lucenti.',
       ],
       'es': [
         'Vivo en el agua.',
-        'No tengo patas.',
+        'Soy un animal sin patas.',
         'Tengo aletas y escamas brillantes.',
       ],
     },
@@ -435,7 +435,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🦒',
-    alike: {'🦩', '🦁', '🐘', '🦓', '🐌'},
+    alike: {'🦩', '🦁', '🐘', '🦓', '🐌', '🐍'},
     {
       'de': [
         'Ich lebe in Afrika.',
@@ -466,7 +466,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🐰',
-    alike: {'🦘', '🐴'},
+    alike: {'🦘', '🐴', '⛄', '🦓'},
 
     {
       'de': [
@@ -496,60 +496,64 @@ const riddles = <Riddle>[
       ],
     },
   ),
-  Riddle('🐌', {
-    'de': [
-      'Ich bin sehr langsam.',
-      'Ich hinterlasse eine glitzernde Spur.',
-      'Ich trage mein Haus auf dem Rücken.',
-    ],
-    'en': [
-      'I am very slow.',
-      'I leave a shiny trail.',
-      'I carry my house on my back.',
-    ],
-    'fr': [
-      'Je suis très lent.',
-      'Je laisse une trace brillante.',
-      'Je porte ma maison sur mon dos.',
-    ],
-    'it': [
-      'Sono lentissima.',
-      'Lascio una scia luccicante.',
-      'Porto la mia casa sulla schiena.',
-    ],
-    'es': [
-      'Soy muy lento.',
-      'Dejo un rastro brillante.',
-      'Llevo mi casa a la espalda.',
-    ],
-  }),
+  Riddle(
+    '🐌',
+    alike: {'🐧'},
+    {
+      'de': [
+        'Ich bin sehr langsam.',
+        'Ich hinterlasse eine glitzernde Spur.',
+        'Ich trage mein Haus auf dem Rücken.',
+      ],
+      'en': [
+        'I am very slow.',
+        'I leave a shiny trail.',
+        'I carry my house on my back.',
+      ],
+      'fr': [
+        'Je suis très lent.',
+        'Je laisse une trace brillante.',
+        'Je porte ma maison sur mon dos.',
+      ],
+      'it': [
+        'Sono lentissima.',
+        'Lascio una scia luccicante.',
+        'Porto la mia casa sulla schiena.',
+      ],
+      'es': [
+        'Soy muy lento.',
+        'Dejo un rastro brillante.',
+        'Llevo mi casa a la espalda.',
+      ],
+    },
+  ),
   Riddle(
     '🐍',
-    alike: {'🐟', '🐌'},
+    alike: {'🐟', '🐌', '🔑', '✂️', '🦒', '🌙'},
 
     {
       'de': [
-        'Ich habe keine Beine.',
+        'Ich bin ein Tier ohne Beine.',
         'Ich bin lang und dünn.',
         'Ich krieche über den Boden und zische: Sss!',
       ],
       'en': [
-        'I have no legs.',
+        'I am an animal with no legs.',
         'I am long and thin.',
         'I slither along the ground and hiss: sss!',
       ],
       'fr': [
-        'Je n’ai pas de pattes.',
+        'Je suis un animal sans pattes.',
         'Je suis long et fin.',
         'Je rampe par terre et je siffle : sss !',
       ],
       'it': [
-        'Non ho le zampe.',
+        'Sono un animale senza zampe.',
         'Sono lungo e sottile.',
         'Striscio per terra e faccio sss!',
       ],
       'es': [
-        'No tengo patas.',
+        'Soy un animal sin patas.',
         'Soy larga y delgada.',
         '¡Me arrastro por el suelo y hago sss!',
       ],
@@ -589,7 +593,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '☀️',
-    alike: {'🌙', '🌈'},
+    alike: {'🌙', '🌈', '🦉', '🐝', '🐞'},
 
     {
       'de': [
@@ -683,7 +687,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🍎',
-    alike: {'🍅', '🍒', '🍌', '🐟', '🐔', '🐮'},
+    alike: {'🍅', '🍒', '🍌', '🐟', '🐔', '🐮', '🐞'},
     {
       'de': [
         'Man kann mich essen.',
@@ -746,7 +750,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🔑',
-    alike: {'✂️'},
+    alike: {'✂️', '🐌', '🐸', '🐝', '🍎'},
 
     {
       'de': [
@@ -803,36 +807,40 @@ const riddles = <Riddle>[
       'Llevo a los enfermos al hospital.',
     ],
   }),
-  Riddle('⛄', {
-    'de': [
-      'Ich bin kalt.',
-      'Wenn die Sonne scheint, schmelze ich.',
-      'Meine Nase ist eine Karotte.',
-    ],
-    'en': [
-      'I am cold.',
-      'When the sun shines, I melt.',
-      'My nose is a carrot.',
-    ],
-    'fr': [
-      'Je suis tout froid.',
-      'Quand le soleil brille, je fonds.',
-      'Mon nez est une carotte.',
-    ],
-    'it': [
-      'Sono freddo.',
-      'Quando c’è il sole, mi sciolgo.',
-      'Il mio naso è una carota.',
-    ],
-    'es': [
-      'Estoy muy frío.',
-      'Cuando sale el sol, me derrito.',
-      'Mi nariz es una zanahoria.',
-    ],
-  }),
+  Riddle(
+    '⛄',
+    alike: {'🐧'},
+    {
+      'de': [
+        'Ich bin kalt.',
+        'Wenn die Sonne scheint, schmelze ich.',
+        'Meine Nase ist eine Karotte.',
+      ],
+      'en': [
+        'I am cold.',
+        'When the sun shines, I melt.',
+        'My nose is a carrot.',
+      ],
+      'fr': [
+        'Je suis tout froid.',
+        'Quand le soleil brille, je fonds.',
+        'Mon nez est une carotte.',
+      ],
+      'it': [
+        'Sono freddo.',
+        'Quando c’è il sole, mi sciolgo.',
+        'Il mio naso è una carota.',
+      ],
+      'es': [
+        'Estoy muy frío.',
+        'Cuando sale el sol, me derrito.',
+        'Mi nariz es una zanahoria.',
+      ],
+    },
+  ),
   Riddle(
     '🦁',
-    alike: {'🐴', '🐱'},
+    alike: {'🐴', '🐱', '🐮', '🐘'},
     {
       'de': [
         'Ich bin eine große Katze.',
@@ -863,7 +871,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🌈',
-    alike: {'☀️', '🌙'},
+    alike: {'☀️', '🌙', '🦉', '🐝', '🐞', '🐌', '🐸'},
     {
       'de': [
         'Ich bin oben am Himmel.',
@@ -894,7 +902,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🐞',
-    alike: {'🐝', '🐌', '🔑'},
+    alike: {'🐝', '🐌', '🔑', '🐸', '🐟'},
     {
       'de': [
         'Ich bin ganz klein.',
@@ -925,7 +933,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🦓',
-    alike: {'🦁', '🐘', '🦒'},
+    alike: {'🦁', '🐘', '🦒', '🐧', '🐝'},
     {
       'de': [
         'Ich sehe fast aus wie ein Pferd.',
@@ -956,7 +964,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🐧',
-    alike: {'🦉', '🐔', '🐟', '🐸'},
+    alike: {'🦉', '🐔', '🐟', '🐸', '🐶'},
 
     {
       'de': [
