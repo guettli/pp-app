@@ -9,7 +9,8 @@
 // clue after the other ("I live on a farm." "I eat grass." "I say moo!");
 // the child taps one of four pictures when sure. 💡 gives the next clue
 // at any time: waiting and listening costs nothing, only a wrong tap
-// does.
+// does. Each clue alone fits only the answer among the pictures (no
+// banana with the apple: it can be eaten and grows on a tree too).
 //
 // "Odd one out" (🧺, [ThinkGame.odd]): three pictures of one kind, one of
 // another; a wrong tap brings a nudge ("Three of them are animals."),
@@ -25,6 +26,11 @@
 // A wrong tap says what the tapped picture is and goes on with the next
 // clue (or the problem once more). Only a right first tap counts for the
 // stars. No microphone.
+//
+// If a grown-up switched on quiz reports (feedback screen), a 🐞 button
+// sends the current question (what was said, the pictures, the answer,
+// the taps, an optional note) as a bug report through the feedback
+// outbox, after asking. No recording: there is none.
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -37,6 +43,8 @@ import '../game/feedback.dart';
 import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
+import '../net/device_info.dart';
+import '../net/feedback.dart';
 import '../quiz/quiz_rules.dart' show quizStars;
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
@@ -57,6 +65,7 @@ class ThinkScreen extends StatefulWidget {
     required this.game,
     this.round,
     this.intro = true,
+    this.info = deviceInfo,
   });
 
   final AppState app;
@@ -67,6 +76,10 @@ class ThinkScreen extends StatefulWidget {
 
   /// Say what to do before the first question (off in tests of the flow).
   final bool intro;
+
+  /// App version, phone and Android version for a 🐞 report (replaced in
+  /// tests).
+  final Future<Map<String, String>> Function() info;
 
   @override
   State<ThinkScreen> createState() => _ThinkScreenState();
@@ -89,6 +102,12 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
 
   /// Pictures of the current question tapped wrongly.
   final _wrong = <Phrase>{};
+
+  /// 🐞: the dialog is open, or the report is being sent.
+  bool _reporting = false;
+
+  /// Questions (by index) already reported.
+  final _reported = <int>{};
 
   late bool _introDone = !widget.intro;
 
@@ -344,6 +363,99 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     );
   }
 
+  bool get _reportsOn =>
+      widget.app.feedback != null && widget.app.progress.quizReports;
+
+  /// What a 🐞 report says about the current question.
+  String _describe() {
+    final q = _q;
+    final said = _given == 0 ? q.clues.take(1) : q.clues.take(_given);
+    return [
+      'Game: ${widget.game.name} ($_lang), '
+          'question ${_index + 1} of ${_round.length}',
+      'Said: ${said.join(' ')}',
+      if (q.clues.length > said.length)
+        'Not said yet: ${q.clues.skip(said.length).join(' ')}',
+      'Pictures: ${q.options.map((o) => '${o.emoji} ${o.text}').join(', ')}',
+      'Answer: ${q.answer.emoji} ${q.answer.text}',
+      if (_wrong.isNotEmpty)
+        'Tapped: ${_wrong.map((o) => '${o.emoji} ${o.text}').join(', ')}',
+      if (_phase == _Phase.result) 'Solved',
+    ].join('\n');
+  }
+
+  /// 🐞: holds the game, asks (with room for a note), then puts the
+  /// current question into the feedback outbox.
+  Future<void> _report() async {
+    final outbox = widget.app.feedback;
+    if (outbox == null || _reporting || _over || _reported.contains(_index)) {
+      return;
+    }
+    final index = _index;
+    final about = _describe();
+    // hold: nothing said or going on while the grown-up reads
+    _flow++;
+    _onward?.cancel();
+    await _quietly(_tts.stop);
+    await _quietly(_sfx.stop);
+    if (!mounted) return;
+    setState(() {
+      _reporting = true;
+      if (_phase == _Phase.speaking) _phase = _Phase.choosing;
+    });
+    String? note;
+    try {
+      note = await _askReport(about);
+    } finally {
+      if (mounted && note == null) setState(() => _reporting = false);
+    }
+    if (note == null || !mounted) return;
+    final uiLang = Localizations.maybeLocaleOf(context)?.languageCode ?? '';
+    Map<String, String> device;
+    try {
+      device = await widget.info();
+    } catch (_) {
+      device = const {};
+    }
+    final report = FeedbackReport(
+      id: FeedbackReport.newId(math.Random.secure()),
+      kind: FeedbackKind.bug,
+      text: note.isEmpty ? about : '$note\n\n$about',
+      info: {...device, 'studyLang': _lang, 'uiLang': uiLang},
+      created: DateTime.now(),
+    );
+    ReportState state;
+    try {
+      state = await outbox.add(report);
+    } catch (e, st) {
+      debugPrint('think report failed: $e\n$st');
+      state = ReportState.rejected;
+    }
+    if (!mounted) return;
+    final s = S.of(context);
+    setState(() {
+      _reporting = false;
+      if (state != ReportState.rejected) _reported.add(index);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(switch (state) {
+          ReportState.sent => s.quizReportSent,
+          ReportState.waiting => s.feedbackQueued,
+          ReportState.rejected => s.quizReportFailed,
+        }),
+      ),
+    );
+  }
+
+  /// The dialog before a report: what is sent and a note. Null: not sent.
+  Future<String?> _askReport(String about) => showDialog<String>(
+    context: context,
+    // closes with the game page
+    useRootNavigator: false,
+    builder: (_) => _ReportDialog(about: about),
+  );
+
   @override
   Widget build(BuildContext context) {
     final s = S.of(context);
@@ -543,6 +655,26 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
             size: 40,
           ),
         ),
+        if (_reportsOn)
+          RoundButton(
+            key: const ValueKey('think-report'),
+            tooltip: s.quizReportSend,
+            color: const Color(0xFF6D4C41),
+            onTap:
+                !_reporting &&
+                    !_over &&
+                    _given > 0 &&
+                    !_reported.contains(_index)
+                ? _report
+                : null,
+            child: _reporting
+                ? const SizedBox(
+                    width: 32,
+                    height: 32,
+                    child: CircularProgressIndicator(color: Colors.white),
+                  )
+                : const EmojiImage('🐞', size: 40),
+          ),
       ],
     );
   }
@@ -552,4 +684,66 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
     fontWeight: FontWeight.w800,
     shadows: [Shadow(blurRadius: 6, color: Colors.black45)],
   );
+}
+
+/// Asks before a 🐞 report: what is sent, and a note to type. Pops the
+/// note (maybe empty) on "Send", null on "Cancel". Owns the note's
+/// controller: it must live until the dialog has faded out.
+class _ReportDialog extends StatefulWidget {
+  const _ReportDialog({required this.about});
+
+  final String about;
+
+  @override
+  State<_ReportDialog> createState() => _ReportDialogState();
+}
+
+class _ReportDialogState extends State<_ReportDialog> {
+  final _note = TextEditingController();
+
+  @override
+  void dispose() {
+    _note.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = S.of(context);
+    return AlertDialog(
+      title: Text(s.thinkReportAsk),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.about),
+            const SizedBox(height: 12),
+            TextField(
+              key: const ValueKey('think-report-note'),
+              controller: _note,
+              maxLines: 3,
+              minLines: 1,
+              maxLength: 500,
+              decoration: InputDecoration(
+                hintText: s.thinkReportNote,
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(s.cancel),
+        ),
+        FilledButton(
+          key: const ValueKey('think-report-send'),
+          onPressed: () => Navigator.of(context).pop(_note.text.trim()),
+          child: Text(s.send),
+        ),
+      ],
+    );
+  }
 }

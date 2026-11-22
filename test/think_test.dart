@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
+import 'package:phoneme_party/net/feedback.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/ui/emoji_image.dart';
@@ -73,6 +74,9 @@ void main() {
         }
       }
       expect(riddles.map((r) => r.emoji).toSet(), hasLength(riddles.length));
+      for (final r in riddles) {
+        expect(r.alike.map(bareEmoji), isNot(contains(bareEmoji(r.emoji))));
+      }
     });
 
     test('every feeling, story and help in every language', () {
@@ -340,9 +344,11 @@ void main() {
       ThinkGame game,
       List<ThinkQuestion> round, {
       bool intro = false,
+      FeedbackTransport? reports,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
+      if (reports != null) await progress.setQuizReports(true);
       final t0 = t.binding.clock.now();
       final dev = FakeDevices(
         IoLog(() => t.binding.clock.now().difference(t0)),
@@ -353,6 +359,9 @@ void main() {
         progress,
         books['de-DE']!,
         io: dev.io,
+        feedback: reports == null
+            ? null
+            : FeedbackOutbox(await SharedPreferences.getInstance(), reports),
       );
       final nav = GlobalKey<NavigatorState>();
       await t.pumpWidget(
@@ -360,8 +369,13 @@ void main() {
       );
       nav.currentState!.push(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              ThinkScreen(app: app, game: game, round: round, intro: intro),
+          builder: (_) => ThinkScreen(
+            app: app,
+            game: game,
+            round: round,
+            intro: intro,
+            info: () async => {'phone': 'test'},
+          ),
         ),
       );
       await t.pump();
@@ -533,6 +547,90 @@ void main() {
       await close(t, dev.log);
     });
 
+    // the apple riddle (hand-made: the banana is never offered with it)
+    ThinkQuestion apple() => ThinkQuestion(
+      [
+        'Man kann mich essen.',
+        'Ich wachse an einem Baum.',
+        'Ich bin rund, rot oder grün und knackig.',
+      ],
+      [w('Banane'), w('Apfel'), w('Giraffe'), w('Frosch')],
+      w('Apfel'),
+    );
+
+    testWidgets('who am I: a wrong tap after the second clue costs the star', (
+      t,
+    ) async {
+      final (dev, progress) = await play(t, ThinkGame.riddle, [apple()]);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('think-hint')));
+      await wait(t, 2000);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // Banane
+      await wait(t, 4000);
+      expect(dev.log.started('tts').sublist(2), [
+        'Banane',
+        'Ich bin rund, rot oder grün und knackig.',
+      ]);
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('riddle', 'de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('reports off: no 🐞', (t) async {
+      final (dev, _) = await play(t, ThinkGame.riddle, [apple()]);
+      await wait(t, 1500);
+      expect(find.byKey(const ValueKey('think-report')), findsNothing);
+      await close(t, dev.log);
+    });
+
+    testWidgets('🐞: asks, then sends the question with a note', (t) async {
+      final sent = _Transport();
+      final (dev, progress) = await play(t, ThinkGame.riddle, [
+        apple(),
+      ], reports: sent);
+      await wait(t, 1500);
+      await t.tap(find.byKey(const ValueKey('think-hint')));
+      await wait(t, 2000);
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      expect(find.byType(AlertDialog), findsOneWidget);
+      // cancel: nothing sent
+      await t.tap(find.text('Cancel'));
+      await wait(t, 500);
+      expect(sent.sent, isEmpty);
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      await t.enterText(
+        find.byKey(const ValueKey('think-report-note')),
+        'Banane wächst auch am Baum',
+      );
+      await t.tap(find.byKey(const ValueKey('think-report-send')));
+      await wait(t, 1000);
+      expect(sent.sent, hasLength(1));
+      final r = sent.sent.single;
+      expect(r['kind'], 'bug');
+      final text = r['text'] as String;
+      expect(text, startsWith('Banane wächst auch am Baum\n\n'));
+      expect(text, contains('Game: riddle (de-DE)'));
+      expect(
+        text,
+        contains('Said: Man kann mich essen. Ich wachse an einem Baum.'),
+      );
+      expect(text, contains('Answer: '));
+      expect(text, contains('Apfel'));
+      expect((r['info'] as Map)['phone'], 'test');
+      // once per question
+      await t.tap(find.byKey(const ValueKey('think-report')));
+      await wait(t, 500);
+      expect(find.byType(AlertDialog), findsNothing);
+      // the game goes on
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('riddle', 'de-DE'), 3);
+      await close(t, dev.log);
+    });
+
     testWidgets('paused during the intro: the first clue on resume', (t) async {
       final (dev, progress) = await play(t, ThinkGame.riddle, [
         cow(),
@@ -655,4 +753,14 @@ void main() {
       await close(t, dev.log);
     });
   });
+}
+
+class _Transport implements FeedbackTransport {
+  final sent = <Map<String, dynamic>>[];
+
+  @override
+  Future<SendResult> send(Map<String, dynamic> json) async {
+    sent.add(json);
+    return SendResult.done;
+  }
 }

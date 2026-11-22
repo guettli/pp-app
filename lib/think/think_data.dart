@@ -233,68 +233,92 @@ class Riddle {
 
   final String emoji;
 
-  /// Per language three clues, from vague to clear; the last one fits
-  /// only [emoji] among all riddles but [alike].
+  /// Per language three clues, from vague to clear. Each one alone fits
+  /// only [emoji] among the pictures shown: none fits another riddle's
+  /// thing but [alike].
   final Map<String, List<String>> clues;
 
-  /// Things the last clue might fit too (a duck says "quak" like a frog
-  /// in German): never offered with this riddle.
+  /// Things any one clue might fit too (a banana can be eaten and grows
+  /// on a tree like an apple; a duck says "quak" like a frog in German):
+  /// never offered with this riddle.
   final Set<String> alike;
 }
 
 const riddles = <Riddle>[
-  Riddle('🐮', {
-    'de': ['Ich lebe auf dem Bauernhof.', 'Ich fresse Gras.', 'Ich sage Muh!'],
-    'en': ['I live on a farm.', 'I eat grass.', 'I say moo!'],
-    'fr': ['J’habite à la ferme.', 'Je mange de l’herbe.', 'Je fais meuh !'],
-    'it': ['Vivo in fattoria.', 'Mangio l’erba.', 'Faccio muu!'],
-    'es': ['Vivo en la granja.', 'Como hierba.', '¡Hago muu!'],
-  }),
-  Riddle('🐶', {
-    'de': [
-      'Ich habe vier Beine.',
-      'Ich wohne gern bei den Menschen.',
-      'Ich sage Wau wau!',
-    ],
-    'en': [
-      'I have four legs.',
-      'I like to live with people.',
-      'I say woof woof!',
-    ],
-    'fr': [
-      'J’ai quatre pattes.',
-      'J’aime vivre avec les gens.',
-      'Je fais ouaf ouaf !',
-    ],
-    'it': [
-      'Ho quattro zampe.',
-      'Mi piace vivere con le persone.',
-      'Faccio bau bau!',
-    ],
-    'es': [
-      'Tengo cuatro patas.',
-      'Me gusta vivir con la gente.',
-      '¡Hago guau guau!',
-    ],
-  }),
-  Riddle('🐱', {
-    'de': ['Ich habe weiches Fell.', 'Ich fange gern Mäuse.', 'Ich sage Miau!'],
-    'en': ['I have soft fur.', 'I like to catch mice.', 'I say meow!'],
-    'fr': [
-      'J’ai une fourrure toute douce.',
-      'J’aime attraper les souris.',
-      'Je fais miaou !',
-    ],
-    'it': [
-      'Ho il pelo morbido.',
-      'Mi piace acchiappare i topi.',
-      'Faccio miao!',
-    ],
-    'es': ['Tengo el pelo suave.', 'Me gusta cazar ratones.', '¡Hago miau!'],
-  }),
+  Riddle(
+    '🐮',
+    alike: {'🐰', '🐔', '🐶', '🐱', '🦓', '🐘'},
+    {
+      'de': [
+        'Ich lebe auf dem Bauernhof.',
+        'Ich fresse Gras.',
+        'Ich sage Muh!',
+      ],
+      'en': ['I live on a farm.', 'I eat grass.', 'I say moo!'],
+      'fr': ['J’habite à la ferme.', 'Je mange de l’herbe.', 'Je fais meuh !'],
+      'it': ['Vivo in fattoria.', 'Mangio l’erba.', 'Faccio muu!'],
+      'es': ['Vivo en la granja.', 'Como hierba.', '¡Hago muu!'],
+    },
+  ),
+  Riddle(
+    '🐶',
+    alike: {'🐮', '🐱', '🐘', '🦒', '🐰', '🦁', '🦓', '🐸', '🐔', '🐟'},
+
+    {
+      'de': [
+        'Ich habe vier Beine.',
+        'Ich wohne gern bei den Menschen.',
+        'Ich sage Wau wau!',
+      ],
+      'en': [
+        'I have four legs.',
+        'I like to live with people.',
+        'I say woof woof!',
+      ],
+      'fr': [
+        'J’ai quatre pattes.',
+        'J’aime vivre avec les gens.',
+        'Je fais ouaf ouaf !',
+      ],
+      'it': [
+        'Ho quattro zampe.',
+        'Mi piace vivere con le persone.',
+        'Faccio bau bau!',
+      ],
+      'es': [
+        'Tengo cuatro patas.',
+        'Me gusta vivir con la gente.',
+        '¡Hago guau guau!',
+      ],
+    },
+  ),
+  Riddle(
+    '🐱',
+    alike: {'🐶', '🐰', '🦁', '🐮', '🦒', '🦓', '🦉', '🐍'},
+
+    {
+      'de': [
+        'Ich habe weiches Fell.',
+        'Ich fange gern Mäuse.',
+        'Ich sage Miau!',
+      ],
+      'en': ['I have soft fur.', 'I like to catch mice.', 'I say meow!'],
+      'fr': [
+        'J’ai une fourrure toute douce.',
+        'J’aime attraper les souris.',
+        'Je fais miaou !',
+      ],
+      'it': [
+        'Ho il pelo morbido.',
+        'Mi piace acchiappare i topi.',
+        'Faccio miao!',
+      ],
+      'es': ['Tengo el pelo suave.', 'Me gusta cazar ratones.', '¡Hago miau!'],
+    },
+  ),
   Riddle(
     '🐸',
-    alike: {'🦆'},
+    alike: {'🦆', '🐟', '🐌', '🐍', '🍎'},
     {
       'de': [
         'Ich lebe am Teich.',
@@ -323,24 +347,33 @@ const riddles = <Riddle>[
       ],
     },
   ),
-  Riddle('🐝', {
-    'de': [
-      'Ich bin klein und kann fliegen.',
-      'Ich summe: Summ, summ!',
-      'Ich mache Honig.',
-    ],
-    'en': ['I am small and I can fly.', 'I buzz: bzz, bzz!', 'I make honey.'],
-    'fr': [
-      'Je suis petite et je vole.',
-      'Je fais bzz, bzz !',
-      'Je fabrique du miel.',
-    ],
-    'it': ['Sono piccola e so volare.', 'Faccio bzz, bzz!', 'Faccio il miele.'],
-    'es': ['Soy pequeña y sé volar.', '¡Hago bzz, bzz!', 'Hago miel.'],
-  }),
+  Riddle(
+    '🐝',
+    alike: {'🐞'},
+
+    {
+      'de': [
+        'Ich bin klein und kann fliegen.',
+        'Ich summe: Summ, summ!',
+        'Ich mache Honig.',
+      ],
+      'en': ['I am small and I can fly.', 'I buzz: bzz, bzz!', 'I make honey.'],
+      'fr': [
+        'Je suis petite et je vole.',
+        'Je fais bzz, bzz !',
+        'Je fabrique du miel.',
+      ],
+      'it': [
+        'Sono piccola e so volare.',
+        'Faccio bzz, bzz!',
+        'Faccio il miele.',
+      ],
+      'es': ['Soy pequeña y sé volar.', '¡Hago bzz, bzz!', 'Hago miel.'],
+    },
+  ),
   Riddle(
     '🐟',
-    alike: {'🦈', '🐬', '🐳', '🐙'},
+    alike: {'🦈', '🐬', '🐳', '🐙', '🐸', '🐧', '🐍', '🐌'},
     {
       'de': [
         'Ich lebe im Wasser.',
@@ -369,36 +402,40 @@ const riddles = <Riddle>[
       ],
     },
   ),
-  Riddle('🐘', {
-    'de': [
-      'Ich bin sehr groß und grau.',
-      'Ich habe große Ohren.',
-      'Ich habe einen langen Rüssel.',
-    ],
-    'en': [
-      'I am very big and grey.',
-      'I have big ears.',
-      'I have a long trunk.',
-    ],
-    'fr': [
-      'Je suis très grand et gris.',
-      'J’ai de grandes oreilles.',
-      'J’ai une longue trompe.',
-    ],
-    'it': [
-      'Sono molto grande e grigio.',
-      'Ho le orecchie grandi.',
-      'Ho una lunga proboscide.',
-    ],
-    'es': [
-      'Soy muy grande y gris.',
-      'Tengo las orejas grandes.',
-      'Tengo una trompa larga.',
-    ],
-  }),
+  Riddle(
+    '🐘',
+    alike: {'🐰'},
+    {
+      'de': [
+        'Ich bin sehr groß und grau.',
+        'Ich habe große Ohren.',
+        'Ich habe einen langen Rüssel.',
+      ],
+      'en': [
+        'I am very big and grey.',
+        'I have big ears.',
+        'I have a long trunk.',
+      ],
+      'fr': [
+        'Je suis très grand et gris.',
+        'J’ai de grandes oreilles.',
+        'J’ai une longue trompe.',
+      ],
+      'it': [
+        'Sono molto grande e grigio.',
+        'Ho le orecchie grandi.',
+        'Ho una lunga proboscide.',
+      ],
+      'es': [
+        'Soy muy grande y gris.',
+        'Tengo las orejas grandes.',
+        'Tengo una trompa larga.',
+      ],
+    },
+  ),
   Riddle(
     '🦒',
-    alike: {'🦩'},
+    alike: {'🦩', '🦁', '🐘', '🦓', '🐌'},
     {
       'de': [
         'Ich lebe in Afrika.',
@@ -430,6 +467,7 @@ const riddles = <Riddle>[
   Riddle(
     '🐰',
     alike: {'🦘', '🐴'},
+
     {
       'de': [
         'Ich esse gern Karotten.',
@@ -485,90 +523,105 @@ const riddles = <Riddle>[
       'Llevo mi casa a la espalda.',
     ],
   }),
-  Riddle('🐍', {
-    'de': [
-      'Ich habe keine Beine.',
-      'Ich bin lang und dünn.',
-      'Ich krieche über den Boden und zische: Sss!',
-    ],
-    'en': [
-      'I have no legs.',
-      'I am long and thin.',
-      'I slither along the ground and hiss: sss!',
-    ],
-    'fr': [
-      'Je n’ai pas de pattes.',
-      'Je suis long et fin.',
-      'Je rampe par terre et je siffle : sss !',
-    ],
-    'it': [
-      'Non ho le zampe.',
-      'Sono lungo e sottile.',
-      'Striscio per terra e faccio sss!',
-    ],
-    'es': [
-      'No tengo patas.',
-      'Soy larga y delgada.',
-      '¡Me arrastro por el suelo y hago sss!',
-    ],
-  }),
-  Riddle('🦉', {
-    'de': [
-      'Ich habe Federn und kann fliegen.',
-      'Ich bin in der Nacht wach.',
-      'Ich habe große, runde Augen und rufe: Schuhu!',
-    ],
-    'en': [
-      'I have feathers and I can fly.',
-      'I am awake at night.',
-      'I have big round eyes and I call: twit-twoo!',
-    ],
-    'fr': [
-      'J’ai des plumes et je vole.',
-      'Je suis réveillé la nuit.',
-      'J’ai de grands yeux ronds et je fais hou hou !',
-    ],
-    'it': [
-      'Ho le piume e so volare.',
-      'Sto sveglio di notte.',
-      'Ho grandi occhi tondi e faccio uh uh!',
-    ],
-    'es': [
-      'Tengo plumas y sé volar.',
-      'Estoy despierto por la noche.',
-      '¡Tengo grandes ojos redondos y hago uh uh!',
-    ],
-  }),
-  Riddle('☀️', {
-    'de': [
-      'Ich bin oben am Himmel.',
-      'Ich bin sehr heiß.',
-      'Ich scheine am Tag ganz hell.',
-    ],
-    'en': [
-      'I am up in the sky.',
-      'I am very hot.',
-      'I shine brightly in the daytime.',
-    ],
-    'fr': [
-      'Je suis dans le ciel.',
-      'Je suis très chaud.',
-      'Je brille très fort pendant la journée.',
-    ],
-    'it': [
-      'Sto lassù nel cielo.',
-      'Sono caldissimo.',
-      'Splendo forte di giorno.',
-    ],
-    'es': [
-      'Estoy arriba en el cielo.',
-      'Doy mucho calor.',
-      'Brillo mucho durante el día.',
-    ],
-  }),
+  Riddle(
+    '🐍',
+    alike: {'🐟', '🐌'},
+
+    {
+      'de': [
+        'Ich habe keine Beine.',
+        'Ich bin lang und dünn.',
+        'Ich krieche über den Boden und zische: Sss!',
+      ],
+      'en': [
+        'I have no legs.',
+        'I am long and thin.',
+        'I slither along the ground and hiss: sss!',
+      ],
+      'fr': [
+        'Je n’ai pas de pattes.',
+        'Je suis long et fin.',
+        'Je rampe par terre et je siffle : sss !',
+      ],
+      'it': [
+        'Non ho le zampe.',
+        'Sono lungo e sottile.',
+        'Striscio per terra e faccio sss!',
+      ],
+      'es': [
+        'No tengo patas.',
+        'Soy larga y delgada.',
+        '¡Me arrastro por el suelo y hago sss!',
+      ],
+    },
+  ),
+  Riddle(
+    '🦉',
+    alike: {'🐔', '🌙'},
+
+    {
+      'de': [
+        'Ich habe Federn und kann fliegen.',
+        'Ich bin in der Nacht wach.',
+        'Ich habe große, runde Augen und rufe: Schuhu!',
+      ],
+      'en': [
+        'I have feathers and I can fly.',
+        'I am awake at night.',
+        'I have big round eyes and I call: twit-twoo!',
+      ],
+      'fr': [
+        'J’ai des plumes et je vole.',
+        'Je suis réveillé la nuit.',
+        'J’ai de grands yeux ronds et je fais hou hou !',
+      ],
+      'it': [
+        'Ho le piume e so volare.',
+        'Sto sveglio di notte.',
+        'Ho grandi occhi tondi e faccio uh uh!',
+      ],
+      'es': [
+        'Tengo plumas y sé volar.',
+        'Estoy despierto por la noche.',
+        '¡Tengo grandes ojos redondos y hago uh uh!',
+      ],
+    },
+  ),
+  Riddle(
+    '☀️',
+    alike: {'🌙', '🌈'},
+
+    {
+      'de': [
+        'Ich bin oben am Himmel.',
+        'Ich bin sehr heiß.',
+        'Ich scheine am Tag ganz hell.',
+      ],
+      'en': [
+        'I am up in the sky.',
+        'I am very hot.',
+        'I shine brightly in the daytime.',
+      ],
+      'fr': [
+        'Je suis dans le ciel.',
+        'Je suis très chaud.',
+        'Je brille très fort pendant la journée.',
+      ],
+      'it': [
+        'Sto lassù nel cielo.',
+        'Sono caldissimo.',
+        'Splendo forte di giorno.',
+      ],
+      'es': [
+        'Estoy arriba en el cielo.',
+        'Doy mucho calor.',
+        'Brillo mucho durante el día.',
+      ],
+    },
+  ),
   Riddle(
     '🌙',
-    alike: {'🍌'},
+    alike: {'🍌', '☀️', '🌈', '🦉', '🍎'},
     {
       'de': [
         'Ich bin oben am Himmel.',
@@ -599,7 +652,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🍌',
-    alike: {'🌙'},
+    alike: {'🌙', '🍎', '🐟', '🐔', '🐮'},
     {
       'de': [
         'Man kann mich essen.',
@@ -630,7 +683,7 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🍎',
-    alike: {'🍅', '🍒'},
+    alike: {'🍅', '🍒', '🍌', '🐟', '🐔', '🐮'},
     {
       'de': [
         'Man kann mich essen.',
@@ -659,60 +712,70 @@ const riddles = <Riddle>[
       ],
     },
   ),
-  Riddle('✂️', {
-    'de': [
-      'Ich bin aus Metall.',
-      'Ich habe zwei Löcher für deine Finger.',
-      'Mit mir kannst du Papier schneiden.',
-    ],
-    'en': [
-      'I am made of metal.',
-      'I have two holes for your fingers.',
-      'You can cut paper with me.',
-    ],
-    'fr': [
-      'Je suis en métal.',
-      'J’ai deux trous pour tes doigts.',
-      'Avec moi, tu peux couper du papier.',
-    ],
-    'it': [
-      'Sono di metallo.',
-      'Ho due buchi per le dita.',
-      'Con me puoi tagliare la carta.',
-    ],
-    'es': [
-      'Soy de metal.',
-      'Tengo dos agujeros para tus dedos.',
-      'Conmigo puedes cortar papel.',
-    ],
-  }),
-  Riddle('🔑', {
-    'de': [
-      'Ich bin klein und aus Metall.',
-      'Ich passe in deine Hosentasche.',
-      'Mit mir schließt du die Tür auf.',
-    ],
-    'en': [
-      'I am small and made of metal.',
-      'I fit in your pocket.',
-      'You unlock the door with me.',
-    ],
-    'fr': [
-      'Je suis petite et en métal.',
-      'Je tiens dans ta poche.',
-      'Avec moi, tu ouvres la porte fermée à clé.',
-    ],
-    'it': [
-      'Sono piccola e di metallo.',
-      'Entro nella tua tasca.',
-      'Con me apri la porta chiusa.',
-    ],
-    'es': [
-      'Soy pequeña y de metal.',
-      'Quepo en tu bolsillo.',
-      'Conmigo abres la puerta cerrada.',
-    ],
-  }),
+  Riddle(
+    '✂️',
+    alike: {'🔑', '🚑'},
+
+    {
+      'de': [
+        'Ich bin aus Metall.',
+        'Ich habe zwei Löcher für deine Finger.',
+        'Mit mir kannst du Papier schneiden.',
+      ],
+      'en': [
+        'I am made of metal.',
+        'I have two holes for your fingers.',
+        'You can cut paper with me.',
+      ],
+      'fr': [
+        'Je suis en métal.',
+        'J’ai deux trous pour tes doigts.',
+        'Avec moi, tu peux couper du papier.',
+      ],
+      'it': [
+        'Sono di metallo.',
+        'Ho due buchi per le dita.',
+        'Con me puoi tagliare la carta.',
+      ],
+      'es': [
+        'Soy de metal.',
+        'Tengo dos agujeros para tus dedos.',
+        'Conmigo puedes cortar papel.',
+      ],
+    },
+  ),
+  Riddle(
+    '🔑',
+    alike: {'✂️'},
+
+    {
+      'de': [
+        'Ich bin klein und aus Metall.',
+        'Ich passe in deine Hosentasche.',
+        'Mit mir schließt du die Tür auf.',
+      ],
+      'en': [
+        'I am small and made of metal.',
+        'I fit in your pocket.',
+        'You unlock the door with me.',
+      ],
+      'fr': [
+        'Je suis petite et en métal.',
+        'Je tiens dans ta poche.',
+        'Avec moi, tu ouvres la porte fermée à clé.',
+      ],
+      'it': [
+        'Sono piccola e di metallo.',
+        'Entro nella tua tasca.',
+        'Con me apri la porta chiusa.',
+      ],
+      'es': [
+        'Soy pequeña y de metal.',
+        'Quepo en tu bolsillo.',
+        'Conmigo abres la puerta cerrada.',
+      ],
+    },
+  ),
   Riddle('🚑', {
     'de': [
       'Ich habe Räder.',
@@ -769,7 +832,7 @@ const riddles = <Riddle>[
   }),
   Riddle(
     '🦁',
-    alike: {'🐴'},
+    alike: {'🐴', '🐱'},
     {
       'de': [
         'Ich bin eine große Katze.',
@@ -798,141 +861,163 @@ const riddles = <Riddle>[
       ],
     },
   ),
-  Riddle('🌈', {
-    'de': [
-      'Ich bin oben am Himmel.',
-      'Man sieht mich, wenn nach dem Regen die Sonne scheint.',
-      'Ich bin ein Bogen aus vielen Farben.',
-    ],
-    'en': [
-      'I am up in the sky.',
-      'You see me when the sun comes out after the rain.',
-      'I am an arch of many colours.',
-    ],
-    'fr': [
-      'Je suis dans le ciel.',
-      'On me voit quand le soleil revient après la pluie.',
-      'Je suis un arc de toutes les couleurs.',
-    ],
-    'it': [
-      'Sto lassù nel cielo.',
-      'Mi vedi quando torna il sole dopo la pioggia.',
-      'Sono un arco di tanti colori.',
-    ],
-    'es': [
-      'Estoy arriba en el cielo.',
-      'Me ves cuando sale el sol después de la lluvia.',
-      'Soy un arco de muchos colores.',
-    ],
-  }),
-  Riddle('🐞', {
-    'de': [
-      'Ich bin ganz klein.',
-      'Ich habe sechs Beine und kann fliegen.',
-      'Ich bin rot und habe schwarze Punkte.',
-    ],
-    'en': [
-      'I am very small.',
-      'I have six legs and I can fly.',
-      'I am red with black spots.',
-    ],
-    'fr': [
-      'Je suis toute petite.',
-      'J’ai six pattes et je vole.',
-      'Je suis rouge avec des points noirs.',
-    ],
-    'it': [
-      'Sono piccolissima.',
-      'Ho sei zampe e so volare.',
-      'Sono rossa con i puntini neri.',
-    ],
-    'es': [
-      'Soy muy pequeña.',
-      'Tengo seis patas y sé volar.',
-      'Soy roja con puntos negros.',
-    ],
-  }),
-  Riddle('🦓', {
-    'de': [
-      'Ich sehe fast aus wie ein Pferd.',
-      'Ich lebe in Afrika.',
-      'Ich habe schwarze und weiße Streifen.',
-    ],
-    'en': [
-      'I look almost like a horse.',
-      'I live in Africa.',
-      'I have black and white stripes.',
-    ],
-    'fr': [
-      'Je ressemble presque à un cheval.',
-      'Je vis en Afrique.',
-      'J’ai des rayures noires et blanches.',
-    ],
-    'it': [
-      'Sembro quasi un cavallo.',
-      'Vivo in Africa.',
-      'Ho le strisce bianche e nere.',
-    ],
-    'es': [
-      'Parezco casi un caballo.',
-      'Vivo en África.',
-      'Tengo rayas blancas y negras.',
-    ],
-  }),
-  Riddle('🐧', {
-    'de': [
-      'Ich bin ein Vogel.',
-      'Ich kann nicht fliegen, aber gut schwimmen.',
-      'Ich lebe auf dem Eis und watschle hin und her.',
-    ],
-    'en': [
-      'I am a bird.',
-      'I cannot fly, but I swim well.',
-      'I live on the ice and waddle around.',
-    ],
-    'fr': [
-      'Je suis un oiseau.',
-      'Je ne vole pas, mais je nage bien.',
-      'Je vis sur la glace et je me dandine.',
-    ],
-    'it': [
-      'Sono un uccello.',
-      'Non so volare, ma nuoto bene.',
-      'Vivo sul ghiaccio e cammino dondolando.',
-    ],
-    'es': [
-      'Soy un pájaro.',
-      'No sé volar, pero nado muy bien.',
-      'Vivo en el hielo y camino balanceándome.',
-    ],
-  }),
-  Riddle('🐔', {
-    'de': [
-      'Ich lebe auf dem Bauernhof.',
-      'Ich habe Federn.',
-      'Ich lege Eier und sage Gack, gack!',
-    ],
-    'en': [
-      'I live on a farm.',
-      'I have feathers.',
-      'I lay eggs and say cluck, cluck!',
-    ],
-    'fr': [
-      'J’habite à la ferme.',
-      'J’ai des plumes.',
-      'Je ponds des œufs et je fais cot, cot !',
-    ],
-    'it': [
-      'Vivo in fattoria.',
-      'Ho le piume.',
-      'Faccio le uova e dico coccodè!',
-    ],
-    'es': [
-      'Vivo en la granja.',
-      'Tengo plumas.',
-      '¡Pongo huevos y hago clo, clo!',
-    ],
-  }),
+  Riddle(
+    '🌈',
+    alike: {'☀️', '🌙'},
+    {
+      'de': [
+        'Ich bin oben am Himmel.',
+        'Man sieht mich, wenn nach dem Regen die Sonne scheint.',
+        'Ich bin ein Bogen aus vielen Farben.',
+      ],
+      'en': [
+        'I am up in the sky.',
+        'You see me when the sun comes out after the rain.',
+        'I am an arch of many colours.',
+      ],
+      'fr': [
+        'Je suis dans le ciel.',
+        'On me voit quand le soleil revient après la pluie.',
+        'Je suis un arc de toutes les couleurs.',
+      ],
+      'it': [
+        'Sto lassù nel cielo.',
+        'Mi vedi quando torna il sole dopo la pioggia.',
+        'Sono un arco di tanti colori.',
+      ],
+      'es': [
+        'Estoy arriba en el cielo.',
+        'Me ves cuando sale el sol después de la lluvia.',
+        'Soy un arco de muchos colores.',
+      ],
+    },
+  ),
+  Riddle(
+    '🐞',
+    alike: {'🐝', '🐌', '🔑'},
+    {
+      'de': [
+        'Ich bin ganz klein.',
+        'Ich habe sechs Beine und kann fliegen.',
+        'Ich bin rot und habe schwarze Punkte.',
+      ],
+      'en': [
+        'I am very small.',
+        'I have six legs and I can fly.',
+        'I am red with black spots.',
+      ],
+      'fr': [
+        'Je suis toute petite.',
+        'J’ai six pattes et je vole.',
+        'Je suis rouge avec des points noirs.',
+      ],
+      'it': [
+        'Sono piccolissima.',
+        'Ho sei zampe e so volare.',
+        'Sono rossa con i puntini neri.',
+      ],
+      'es': [
+        'Soy muy pequeña.',
+        'Tengo seis patas y sé volar.',
+        'Soy roja con puntos negros.',
+      ],
+    },
+  ),
+  Riddle(
+    '🦓',
+    alike: {'🦁', '🐘', '🦒'},
+    {
+      'de': [
+        'Ich sehe fast aus wie ein Pferd.',
+        'Ich lebe in Afrika.',
+        'Ich habe schwarze und weiße Streifen.',
+      ],
+      'en': [
+        'I look almost like a horse.',
+        'I live in Africa.',
+        'I have black and white stripes.',
+      ],
+      'fr': [
+        'Je ressemble presque à un cheval.',
+        'Je vis en Afrique.',
+        'J’ai des rayures noires et blanches.',
+      ],
+      'it': [
+        'Sembro quasi un cavallo.',
+        'Vivo in Africa.',
+        'Ho le strisce bianche e nere.',
+      ],
+      'es': [
+        'Parezco casi un caballo.',
+        'Vivo en África.',
+        'Tengo rayas blancas y negras.',
+      ],
+    },
+  ),
+  Riddle(
+    '🐧',
+    alike: {'🦉', '🐔', '🐟', '🐸'},
+
+    {
+      'de': [
+        'Ich bin ein Vogel.',
+        'Ich kann nicht fliegen, aber gut schwimmen.',
+        'Ich lebe auf dem Eis und watschle hin und her.',
+      ],
+      'en': [
+        'I am a bird.',
+        'I cannot fly, but I swim well.',
+        'I live on the ice and waddle around.',
+      ],
+      'fr': [
+        'Je suis un oiseau.',
+        'Je ne vole pas, mais je nage bien.',
+        'Je vis sur la glace et je me dandine.',
+      ],
+      'it': [
+        'Sono un uccello.',
+        'Non so volare, ma nuoto bene.',
+        'Vivo sul ghiaccio e cammino dondolando.',
+      ],
+      'es': [
+        'Soy un pájaro.',
+        'No sé volar, pero nado muy bien.',
+        'Vivo en el hielo y camino balanceándome.',
+      ],
+    },
+  ),
+  Riddle(
+    '🐔',
+    alike: {'🐮', '🐶', '🐱', '🐰', '🦉', '🐧'},
+
+    {
+      'de': [
+        'Ich lebe auf dem Bauernhof.',
+        'Ich habe Federn.',
+        'Ich lege Eier und sage Gack, gack!',
+      ],
+      'en': [
+        'I live on a farm.',
+        'I have feathers.',
+        'I lay eggs and say cluck, cluck!',
+      ],
+      'fr': [
+        'J’habite à la ferme.',
+        'J’ai des plumes.',
+        'Je ponds des œufs et je fais cot, cot !',
+      ],
+      'it': [
+        'Vivo in fattoria.',
+        'Ho le piume.',
+        'Faccio le uova e dico coccodè!',
+      ],
+      'es': [
+        'Vivo en la granja.',
+        'Tengo plumas.',
+        '¡Pongo huevos y hago clo, clo!',
+      ],
+    },
+  ),
 ];
 
 // "Odd one out" (🧺): three pictures of one kind and one of another kind
