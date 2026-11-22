@@ -13,7 +13,22 @@ typedef Game = ({
   List<String> emojis,
   String name,
   Audio audio,
+
+  /// Stars (0..3) of the best round, null for games without stars.
+  int Function()? best,
 });
+
+/// Stars of the best rounds of [games] and the most there are.
+(int, int)? groupStars(List<Game> games) {
+  var got = 0, max = 0;
+  for (final g in games) {
+    final best = g.best;
+    if (best == null) continue;
+    got += best();
+    max += 3;
+  }
+  return max == 0 ? null : (got, max);
+}
 
 /// Games of one kind on the home screen.
 typedef GameGroup = ({String key, String emoji, String name, List<Game> games});
@@ -29,6 +44,8 @@ class GameTile extends StatelessWidget {
     required this.name,
     required this.onTap,
     this.audio,
+    this.stars,
+    this.total,
     this.emojiSize = 48,
   });
 
@@ -36,6 +53,12 @@ class GameTile extends StatelessWidget {
   final String name;
   final VoidCallback onTap;
   final Audio? audio;
+
+  /// The best round of the game: three stars, the earned ones bright.
+  final int? stars;
+
+  /// A group: stars earned of all there are.
+  final (int, int)? total;
   final double emojiSize;
 
   @override
@@ -69,6 +92,37 @@ class GameTile extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
+              if (stars case final n?) ...[
+                const SizedBox(height: 4),
+                Row(
+                  key: ValueKey('stars-$n'),
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    for (var i = 0; i < 3; i++)
+                      Opacity(
+                        opacity: i < n ? 1 : 0.25,
+                        child: const EmojiImage('⭐', size: 20),
+                      ),
+                  ],
+                ),
+              ],
+              if (total case (final got, final max)) ...[
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const EmojiImage('⭐', size: 18),
+                    const SizedBox(width: 4),
+                    Text(
+                      '$got/$max',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
               if (audio != null) ...[
                 const Spacer(),
                 const SizedBox(height: 6),
@@ -102,11 +156,26 @@ List<Widget> tileRows(List<Widget> tiles, int perRow, {double gap = 12}) => [
     ),
 ];
 
-/// The games of one group, two in a row.
-class GroupScreen extends StatelessWidget {
+/// The games of one group, two in a row, each with the stars of its best
+/// round.
+class GroupScreen extends StatefulWidget {
   const GroupScreen({super.key, required this.group});
 
   final GameGroup group;
+
+  @override
+  State<GroupScreen> createState() => _GroupScreenState();
+}
+
+class _GroupScreenState extends State<GroupScreen> {
+  GameGroup get group => widget.group;
+
+  Future<void> _open(Game g) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => g.screen()));
+    if (mounted) setState(() {}); // new stars
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -140,10 +209,9 @@ class GroupScreen extends StatelessWidget {
                 emojis: g.emojis,
                 name: g.name,
                 audio: g.audio,
+                stars: g.best?.call(),
                 emojiSize: 64,
-                onTap: () => Navigator.of(
-                  context,
-                ).push(MaterialPageRoute<void>(builder: (_) => g.screen())),
+                onTap: () => _open(g),
               ),
           ], 2),
         ),

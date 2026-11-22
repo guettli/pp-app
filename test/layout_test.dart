@@ -42,11 +42,12 @@ void main() {
     Widget Function(AppState app) screen, {
     Size size = const Size(360, 640),
     double text = 1,
+    Map<String, Object> prefs = const {},
   }) async {
     t.view.physicalSize = size;
     t.view.devicePixelRatio = 1;
     addTearDown(t.view.reset);
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(prefs);
     final progress = await Progress.load();
     final t0 = t.binding.clock.now();
     final dev = FakeDevices(
@@ -77,6 +78,40 @@ void main() {
       await t.pump(const Duration(milliseconds: 50));
     }
   }
+
+  testWidgets('the tiles show the stars of the best rounds', (t) async {
+    await show(
+      t,
+      (app) => HomeScreen(app: app),
+      prefs: {'needs|de-DE': 2, 'listen|de-DE': 3},
+    );
+    // thinking: five games with stars, 2 of 15
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('group-think')),
+        matching: find.text('2/15'),
+      ),
+      findsOneWidget,
+    );
+    // speaking: the voice games have no stars
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('group-speak')),
+        matching: find.textContaining('/'),
+      ),
+      findsNothing,
+    );
+    await t.tap(find.byKey(const ValueKey('group-think')));
+    await t.pumpAndSettle();
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('game-think-0')),
+        matching: find.byKey(const ValueKey('stars-2')),
+      ),
+      findsOneWidget,
+    );
+    await close(t);
+  });
 
   for (final (name, size) in [
     ('portrait', const Size(360, 640)),

@@ -111,12 +111,13 @@ void main() {
     WidgetTester t,
     int seed, {
     bool speaks = false,
+    Map<String, Object> prefs = const {},
   }) async {
     await loadFonts();
     t.view.physicalSize = const Size(1080, 2280); // a phone like the A80
     t.view.devicePixelRatio = 2.6;
     addTearDown(t.view.reset);
-    SharedPreferences.setMockInitialValues({});
+    SharedPreferences.setMockInitialValues(prefs);
     final progress = await Progress.load();
     final t0 = t.binding.clock.now();
     final dev = FakeDevices(
@@ -246,6 +247,20 @@ void main() {
       await settle(t);
     }
     said(dev, 0);
+  });
+
+  testWidgets('home after some rounds', (t) async {
+    final (_, app) = await start(
+      t,
+      2,
+      prefs: {'needs|de-DE': 3, 'riddle|de-DE': 2, 'listen|de-DE': 1},
+    );
+    transcript.writeln('# Home after some rounds');
+    await show(t, HomeScreen(app: app));
+    await shot(t, 'home-stars');
+    await t.tap(find.byKey(const ValueKey('group-think')));
+    await settle(t);
+    await shot(t, 'group-think-stars');
   });
 
   testWidgets('listen closely', (t) async {

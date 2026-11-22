@@ -86,77 +86,91 @@ class _HomeScreenState extends State<HomeScreen> {
   /// how it answers: the quiz is thinking, answered by speaking), in the
   /// order shown.
   List<GameGroup> _groups(S s) {
+    final p = app.progress;
+    final lang = app.book.lang;
     final quiz = (
       screen: () => QuizScreen(app: app),
       emojis: const ['🦉'],
       name: s.quizTitle,
       audio: Audio.both,
+      best: () => p.quizBest(lang),
     );
     final listen = (
       screen: () => ListenScreen(app: app),
       emojis: const ['👂'],
       name: s.listenTitle,
       audio: Audio.output,
+      best: () => p.listenBest(lang),
     );
     final spell = (
       screen: () => SpellScreen(app: app),
       emojis: const ['✏️'],
       name: s.spellTitle,
       audio: Audio.output,
+      best: () => p.spellBest(lang),
     );
     final readPick = (
       screen: () => ListenScreen(app: app, reading: true),
       emojis: const ['📖', '🐮'],
       name: s.readPickTitle,
       audio: Audio.output,
+      best: () => p.readPickBest(lang),
     );
     final readAloud = (
       screen: () => ReadAloudScreen(app: app),
       emojis: const ['📖', '🎤'],
       name: s.readAloudTitle,
       audio: Audio.both,
+      best: () => p.readAloudBest(lang),
     );
     final sounds = (
       screen: () => QuizScreen(app: app, sounds: true),
       emojis: const ['🔔'],
       name: s.soundsTitle,
       audio: Audio.both,
+      best: () => p.soundsBest(lang),
     );
     final needs = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.needs),
       emojis: const ['🧤', '☂️'],
       name: s.needsTitle,
       audio: Audio.output,
+      best: () => p.thinkBest('needs', lang),
     );
     final riddle = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.riddle),
       emojis: const ['🐮', '🔊'],
       name: s.riddleTitle,
       audio: Audio.output,
+      best: () => p.thinkBest('riddle', lang),
     );
     final hold = (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.hold),
       emojis: const ['🎈'],
       name: s.holdTitle,
       audio: Audio.both,
+      best: null,
     );
     final pitch = (
       screen: () => VoiceGameScreen(app: app, game: VoiceGame.pitch),
       emojis: const ['🐻', '🐭'],
       name: s.pitchTitle,
       audio: Audio.both,
+      best: null,
     );
     final odd = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.odd),
       emojis: const ['🐶', '🐱', '🚗'],
       name: s.oddTitle,
       audio: Audio.output,
+      best: () => p.thinkBest('odd', lang),
     );
     final home = (
       screen: () => ThinkScreen(app: app, game: ThinkGame.home),
       emojis: const ['🌊', '🐟'],
       name: s.homeTitle,
       audio: Audio.output,
+      best: () => p.thinkBest('home', lang),
     );
     return [
       (key: 'hear', emoji: '👂', name: s.hearGroup, games: [listen, sounds]),
@@ -218,6 +232,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       key: ValueKey('group-${g.key}'),
                       emojis: [g.emoji],
                       name: g.name,
+                      total: groupStars(g.games),
                       emojiSize: 56,
                       onTap: () => _push(() => GroupScreen(group: g)),
                     ),
