@@ -78,9 +78,11 @@ Future<VoiceRun> open(
   Tries tries, {
   void Function(FakeDevices dev)? prepare,
   String Function()? recognized,
+  FakeQuizReports? reports,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final progress = await Progress.load();
+  if (reports != null) await progress.setQuizReports(true);
   final t0 = t.binding.clock.now();
   final log = IoLog(() => t.binding.clock.now().difference(t0));
   final dev = FakeDevices(log);
@@ -89,7 +91,14 @@ Future<VoiceRun> open(
   prepare?.call(dev);
   // what the recognizer hears in a held sound ('': nothing clear)
   final rec = FakeRecognizer(recognized ?? () => '');
-  final app = AppState(rec, comparer, progress, book, io: dev.io);
+  final app = AppState(
+    rec,
+    comparer,
+    progress,
+    book,
+    io: dev.io,
+    quizReports: reports,
+  );
   final nav = GlobalKey<NavigatorState>();
   await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const Scaffold()));
   nav.currentState!.push(
@@ -161,6 +170,50 @@ void main() {
     expect(
       r.progress.holdBest('de-DE', o.shown).inMilliseconds,
       closeTo(5500, 150),
+    );
+    r.expectClean();
+  });
+
+  testWidgets('hold it long: 🐞 sends the sound with what was heard', (
+    t,
+  ) async {
+    final reports = FakeQuizReports();
+    final r = await open(
+      t,
+      VoiceGame.hold,
+      [aaa(250, 5.5)],
+      recognized: () => 'oː',
+      reports: reports,
+    );
+    final a = lines.sounds[0];
+    final bug = find.byTooltip('Send to the developer');
+    expect(bug, findsOneWidget);
+    await r.until(() => r.said.contains(lines.holdWrong(a, 'o')));
+    await t.tap(bug);
+    await t.pump();
+    await t.tap(find.text('Send'));
+    await r.wait(const Duration(seconds: 1));
+    final sent = reports.sent.single;
+    expect(sent.question, 'hold: A');
+    expect(sent.answer, 'A');
+    final tr = sent.tries.single;
+    expect(tr.heard, 'oː');
+    expect(tr.said, 'o'); // heard instead of the A
+    expect(tr.scores.single.score, 0);
+    // the held sound, with a little before and after
+    expect(tr.pcm.length, greaterThan(5 * 32000));
+    expect(tr.pcm.length, lessThan(7 * 32000));
+    // the game waits: no new try while the dialog was open, nor after
+    expect(r.running.where((i) => i.device == 'mic'), isEmpty);
+    r.expectClean();
+  });
+
+  testWidgets('hold it long: reports off, no 🐞', (t) async {
+    final r = await open(t, VoiceGame.hold, [aaa(250, 3.5)]);
+    await r.until(() => r.tries == 1);
+    expect(
+      find.byTooltip('Send to the developer'),
+      findsNothing,
     );
     r.expectClean();
   });

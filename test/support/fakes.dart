@@ -5,6 +5,8 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
+import 'package:phoneme_party/net/feedback.dart' show SendResult;
+import 'package:phoneme_party/net/quiz_report.dart';
 import 'package:phoneme_party/game/game_io.dart';
 import 'package:phoneme_party/phonetics/ctc_decoder.dart';
 import 'package:phoneme_party/phonetics/recognizer.dart';
@@ -501,5 +503,18 @@ class FakeDevices {
     soundPlayer: () => sfx,
     random: () => math.Random(1),
     listensWhileSpeaking: listensWhileSpeaking,
+    info: () async => {'phone': 'test'},
   );
+}
+
+/// Takes 🐞 recording reports.
+class FakeQuizReports implements QuizReportSender {
+  final sent = <QuizReport>[];
+  SendResult result = SendResult.done;
+
+  @override
+  Future<SendResult> send(QuizReport report) async {
+    sent.add(report);
+    return result;
+  }
 }

@@ -76,9 +76,11 @@ void main() {
       List<Child>? child,
       void Function(FakeDevices)? prepare,
       bool failRecognizer = false,
+      FakeQuizReports? reports,
     }) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
+      if (reports != null) await progress.setQuizReports(true);
       final t0 = t.binding.clock.now();
       final log = IoLog(() => t.binding.clock.now().difference(t0));
       var c = 0;
@@ -99,6 +101,7 @@ void main() {
         progress,
         books['de-DE']!,
         io: dev.io,
+        quizReports: reports,
       );
       final nav = GlobalKey<NavigatorState>();
       await t.pumpWidget(
@@ -150,6 +153,30 @@ void main() {
     }
 
     final dialog = find.byType(AlertDialog);
+
+    testWidgets('🐞 sends the word with the recording and what was heard', (
+      t,
+    ) async {
+      final reports = FakeQuizReports();
+      final (dev, _) = await play(t, ['bɛk'], reports: reports);
+      final bug = find.byTooltip('Send to the developer');
+      expect(bug, findsOneWidget);
+      await until(t, () => dev.log.started('tts').isNotEmpty, dev.log);
+      await t.tap(bug);
+      await t.pump();
+      await t.tap(find.text('Send'));
+      for (var i = 0; i < 20; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      final r = reports.sent.single;
+      expect(r.question, 'read aloud: Ei');
+      expect(r.options.single.ipa, isNotEmpty);
+      final tr = r.tries.single;
+      expect(tr.heard, 'bɛk');
+      expect(tr.said, '0');
+      expect(tr.pcm.length, greaterThan(16000));
+      expect(find.text('Sent. Thank you!'), findsOneWidget);
+    });
 
     testWidgets('read well: the word after each try, three stars', (t) async {
       final (dev, progress) = await play(t, [ipa('Ei'), ipa('Bett')]);

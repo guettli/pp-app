@@ -13,9 +13,14 @@ built with Flutter. Native successor of the web app
 [guettli/pp](https://github.com/guettli/pp).
 
 - **Offline, no AI token.** Speech recognition runs on the phone. The
-  recording stays on the device, unless a grown-up switches on quiz reports
-  (then 🐞 in the quiz sends that question with its recording, after
-  asking; the dialog can play the recording first; see PRIVACY.md). Feedback and quiz reports go to `server/feedback`.
+  recording stays on the device, unless a grown-up switches on recording
+  reports (then 🐞 in every game that listens — worlds, quiz, sound
+  detective, read aloud, long sounds — sends the last tries with their
+  recordings and what the recognizer heard, after asking; the dialog can
+  play the recording first; `lib/ui/recording_report.dart`, see
+  PRIVACY.md). Feedback and recording reports go to `server/feedback`
+  (stored as quiz reports; the question says which game, e.g. "world 2:
+  Hase", "hold: O").
 - Five study languages: German (de-DE), British English (en-GB), French
   (fr-FR), Italian (it-IT), Spanish (es-ES), about 170 words each.
 - Only concrete things kids know (animals, food, body, toys, vehicles,
@@ -230,7 +235,7 @@ Answers for the Play Console:
     not shared, encrypted in transit, deletion on request (the screen
     shows the report id; `kubectl -n pp-app exec deploy/feedback --
     /feedback delete <id>`), deleted automatically after 12 months.
-  - *Audio → Voice or sound recordings*: only quiz reports (off until a
+  - *Audio → Voice or sound recordings*: only recording reports (off until a
     grown-up switches them on behind the parent gate; each one sent by a
     tap on 🐞). Optional, purpose *App functionality* (improving the
     speech recognition), not shared, encrypted in transit, deleted after

@@ -16,8 +16,11 @@ import '../phonetics/echo_gate.dart';
 import '../phonetics/endpointer.dart';
 import '../phonetics/phoneme_distance.dart';
 import '../phonetics/recognizer.dart';
+import '../net/quiz_report.dart';
+import '../quiz/quiz_rules.dart' show optionScores;
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
+import '../ui/recording_report.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
@@ -102,6 +105,24 @@ class _PlayScreenState extends State<PlayScreen>
 
   /// The last recording (trimmed), kept in memory only for the funny replay.
   Float32List? _lastAudio;
+
+  /// 🐞: the last tries of the word, as recorded, with what was heard.
+  late final RecordingReports _reports = RecordingReports(widget.app);
+
+  void _keepTry(Phrase p, Uint8List pcm, bool speech, String ipa, int? stars) {
+    if (!_reports.on) return;
+    _reports.keep(
+      p,
+      QuizTry(
+        pcm: pcm,
+        speech: speech,
+        heard: ipa,
+        said: stars == null ? '' : '$stars',
+        scores: optionScores(widget.app.comparer, [p], ipa, _lang),
+      ),
+    );
+  }
+
   VoiceEffect _effect = VoiceEffect.robot; // the first replay is the mouse
   bool _replaying = false;
 
@@ -161,6 +182,7 @@ class _PlayScreenState extends State<PlayScreen>
     _donePraise?.cancel();
     _player.dispose();
     _sfx.dispose();
+    _reports.dispose();
     _bob.dispose();
     _fly.dispose();
     super.dispose();
@@ -572,13 +594,16 @@ class _PlayScreenState extends State<PlayScreen>
       await _mic(_recorder.stop);
       await sub?.cancel();
       if (!_current(round)) return; // aborted (background) meanwhile
+      final pcm = _buffer.takeBytes();
       if (!heard) {
+        _keepTry(phrase, pcm, false, '', null);
         _fail(_Phase.ready, (s) => s.notHeard);
         return;
       }
-      final audio = prepareForRecognition(pcm16ToFloat(_buffer.takeBytes()));
+      final audio = prepareForRecognition(pcm16ToFloat(pcm));
       final rec = await widget.app.recognizer.recognize(audio);
       final cmp = scorePhrase(widget.app.comparer, phrase, rec.ipa, _lang);
+      _keepTry(phrase, pcm, true, rec.ipa, cmp.stars);
       final prev = await widget.app.progress.record(
         _lang,
         phrase.text,
@@ -616,6 +641,7 @@ class _PlayScreenState extends State<PlayScreen>
     await _quietly(_tts.stop);
     await _quietly(_sfx.stop);
     await _quietly(_stopReplay);
+    await _reports.stopReplay();
   }
 
   /// Runs [f]; a failing device must not stop the rest of a clean-up.
@@ -908,6 +934,7 @@ class _PlayScreenState extends State<PlayScreen>
             child: micChild,
           ),
         ),
+        if (_reports.on) _reports.button(s, _sendReport),
         RoundButton(
           tooltip: s.next,
           onTap: _phase == _Phase.result ? _next : null,
@@ -921,6 +948,25 @@ class _PlayScreenState extends State<PlayScreen>
       ],
     );
   }
+
+  /// 🐞: stops what runs (the mic first), asks, sends the last tries.
+  Future<void> _sendReport() => _reports.send(
+    this,
+    hold: _abort,
+    paused: () => _paused,
+    update: () => setState(() {}),
+    topic: (of) {
+      final p = of as Phrase;
+      return (
+        question: 'world ${widget.world + 1}: ${p.text}',
+        asked: p.text,
+        options: [
+          (text: p.text, ipa: [for (final w in p.accepted) w.ipa]),
+        ],
+        answer: p.text,
+      );
+    },
+  );
 }
 
 /// A picture on its way from [path].$1 to [path].$2, along an arc.

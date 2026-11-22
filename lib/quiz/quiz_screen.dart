@@ -22,8 +22,8 @@ import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
 import '../net/device_info.dart';
-import '../net/feedback.dart' show FeedbackReport, SendResult;
 import '../net/quiz_report.dart';
+import '../ui/recording_report.dart';
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
 import '../ui/round_button.dart';
@@ -75,9 +75,6 @@ class _QuizScreenState extends State<QuizScreen>
   late final WordListener _listener;
   late final Speaker _tts;
   late final SoundOut _sfx;
-
-  /// Plays a recording in the report dialog; created when first needed.
-  SoundOut? _replay;
   late final math.Random _rng;
   late final QuizLines _lines = QuizLines.of(_lang);
   late final List<QuizQuestion> _round = widget.round ?? _makeRound();
@@ -91,19 +88,14 @@ class _QuizScreenState extends State<QuizScreen>
   /// Per question: right (true), wrong (false), not yet (null).
   late final List<bool?> _results = List.filled(_round.length, null);
 
-  /// The tries of the question played last, for a quiz report (only kept
-  /// when reports are on; memory only).
-  List<QuizTry> _tries = [];
-  int _triesOf = -1;
-  bool _reportSending = false;
+  /// 🐞: the tries of the question played last (memory only).
+  late final RecordingReports _reports = RecordingReports(
+    widget.app,
+    info: widget.info,
+  );
 
   /// The intro (what to do) was said: once, before the first word.
   late bool _introDone = !widget.intro;
-
-  /// The report dialog is open (or about to): one at a time, and the
-  /// replay may only play while it is open.
-  bool _reportAsking = false;
-  bool _reportSent = false;
 
   /// What the child said for the current question (shown in the result).
   Phrase? _chosen;
@@ -185,8 +177,7 @@ class _QuizScreenState extends State<QuizScreen>
     _listener.dispose();
     _quietly(_tts.stop);
     _quietly(_sfx.dispose);
-    final replay = _replay;
-    if (replay != null) _quietly(replay.dispose);
+    _reports.dispose();
     _bounce.dispose();
     super.dispose();
   }
@@ -202,8 +193,7 @@ class _QuizScreenState extends State<QuizScreen>
       _listener.cancel(); // the mic first
       _quietly(_tts.stop);
       _quietly(_sfx.stop);
-      final replay = _replay;
-      if (replay != null) _quietly(replay.stop);
+      _reports.stopReplay();
       if (!_idle && mounted) setState(() => _phase = _Phase.ready);
     } else if (state == AppLifecycleState.resumed) {
       _paused = false; // goes on with a tap
@@ -272,7 +262,7 @@ class _QuizScreenState extends State<QuizScreen>
     if (!_current(id)) return;
     await _quietly(_tts.stop);
     await _quietly(_sfx.stop);
-    await _stopReplay();
+    await _reports.stopReplay();
     // paused or closed meanwhile: the mic must not open
     if (!_current(id)) return;
     setState(() => _phase = _Phase.listening);
@@ -332,17 +322,11 @@ class _QuizScreenState extends State<QuizScreen>
     await _answered(id, said);
   }
 
-  /// Keeps a try of the current question for a quiz report: the last two
-  /// (the server takes two; a question is asked twice at most).
+  /// Keeps a try of the current question for a report (the last two).
   void _keepTry(Heard heard, String ipa, Phrase? said) {
-    if (!_reportsOn) return;
-    if (_triesOf != _index) {
-      _tries = [];
-      _triesOf = _index;
-    }
-    _reportSent = false;
-    _tries = [
-      ..._tries.skip(_tries.length >= 2 ? 1 : 0),
+    if (!_reports.on) return;
+    _reports.keep(
+      _index,
       QuizTry(
         pcm: heard.pcm,
         speech: heard.speech,
@@ -350,11 +334,11 @@ class _QuizScreenState extends State<QuizScreen>
         said: said?.text,
         scores: optionScores(widget.app.comparer, _q.options, ipa, _lang),
       ),
-    ];
+    );
+    setState(() {});
   }
 
-  bool get _reportsOn =>
-      widget.app.quizReports != null && widget.app.progress.quizReports;
+  bool get _reportsOn => _reports.on;
 
   /// Stops what runs (a question being asked or listened to) and waits
   /// for a tap: the report dialog must not record or be recorded.
@@ -365,7 +349,7 @@ class _QuizScreenState extends State<QuizScreen>
     await _listener.cancel(); // the mic first
     await _quietly(_tts.stop);
     await _quietly(_sfx.stop);
-    await _stopReplay();
+    await _reports.stopReplay();
     if (mounted && _phase != _Phase.result) {
       setState(() => _phase = _Phase.ready);
     }
@@ -373,134 +357,24 @@ class _QuizScreenState extends State<QuizScreen>
 
   /// 🐞: asks, then sends the question played last with its recordings.
   /// The game holds (the result stays, or the question waits for 🎤).
-  Future<void> _sendReport() async {
-    final sender = widget.app.quizReports;
-    if (sender == null || _tries.isEmpty || _reportSending || _reportAsking) {
-      return;
-    }
-    final tries = _tries;
-    final q = _round[_triesOf];
-    setState(() => _reportAsking = true);
-    bool ok;
-    try {
-      await _hold();
-      if (!mounted) return;
-      ok = await _confirmReport(q, tries);
-    } finally {
-      _reportAsking = false;
-      await _stopReplay();
-      if (mounted) setState(() {});
-    }
-    // sent meanwhile, or new tries: not this one
-    if (!ok || !mounted || _reportSent || !identical(tries, _tries)) return;
-    final uiLang = Localizations.maybeLocaleOf(context)?.languageCode ?? '';
-    setState(() => _reportSending = true);
-    Map<String, String> device;
-    try {
-      device = await widget.info();
-    } catch (_) {
-      device = const {};
-    }
-    final report = QuizReport(
-      id: FeedbackReport.newId(math.Random.secure()),
-      created: DateTime.now(),
-      info: {...device, 'studyLang': _lang, 'uiLang': uiLang},
-      lang: _lang,
-      question: _lines.question(q.ask),
-      asked: _lines.ask(q),
-      options: [
-        for (final o in q.options)
-          (text: o.text, ipa: [for (final w in o.accepted) w.ipa]),
-      ],
-      answer: q.answer.text,
-      tries: tries,
-    );
-    SendResult result;
-    try {
-      result = await sender.send(report);
-    } catch (e, st) {
-      debugPrint('quiz report failed: $e\n$st');
-      result = SendResult.later;
-    }
-    if (!mounted) return;
-    final s = S.of(context);
-    setState(() {
-      _reportSending = false;
-      // not if new tries came meanwhile
-      if (result == SendResult.done && identical(tries, _tries)) {
-        _reportSent = true;
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          result == SendResult.done ? s.quizReportSent : s.quizReportFailed,
-        ),
-      ),
-    );
-  }
-
-  /// The dialog before a report: what is sent, the recordings to listen
-  /// to (only if the player keeps them in memory), send or not.
-  Future<bool> _confirmReport(QuizQuestion q, List<QuizTry> tries) async {
-    final s = S.of(context);
-    final replay = _replay ??= widget.app.io.replayPlayer();
-    final canPlay = replay.playsFromMemory;
-    final ok = await showDialog<bool>(
-      context: context,
-      // closes with the quiz page
-      useRootNavigator: false,
-      builder: (ctx) => AlertDialog(
-        title: Text(s.quizReportAsk),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(_lines.ask(q)),
-              if (canPlay)
-                for (final (i, t) in tries.indexed)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: OutlinedButton.icon(
-                      key: ValueKey('report-play-$i'),
-                      onPressed: () => _quietly(() async {
-                        await replay.stop();
-                        // closed meanwhile: must not play (the mic may
-                        // open next)
-                        if (!_reportAsking || _paused || !mounted) return;
-                        await replay.play(pcmWav(t.pcm));
-                      }),
-                      icon: const Icon(Icons.play_arrow_rounded),
-                      label: Text(
-                        tries.length > 1
-                            ? '${s.listenRecording} ${i + 1}'
-                            : s.listenRecording,
-                      ),
-                    ),
-                  ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(s.cancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(s.send),
-          ),
+  Future<void> _sendReport() => _reports.send(
+    this,
+    hold: _hold,
+    paused: () => _paused,
+    update: () => setState(() {}),
+    topic: (of) {
+      final q = _round[of as int];
+      return (
+        question: _lines.question(q.ask),
+        asked: _lines.ask(q),
+        options: [
+          for (final o in q.options)
+            (text: o.text, ipa: [for (final w in o.accepted) w.ipa]),
         ],
-      ),
-    );
-    return ok ?? false;
-  }
-
-  Future<void> _stopReplay() async {
-    final replay = _replay;
-    if (replay != null) await _quietly(replay.stop);
-  }
+        answer: q.answer.text,
+      );
+    },
+  );
 
   void _fail(int id, String Function(S) message) {
     if (!mounted || id != _flow) return;
@@ -863,24 +737,7 @@ class _QuizScreenState extends State<QuizScreen>
         ),
         // also keeps the mic button centred
         if (_reportsOn)
-          RoundButton(
-            tooltip: s.quizReportSend,
-            onTap:
-                _tries.isNotEmpty &&
-                    !_reportSending &&
-                    !_reportSent &&
-                    !_reportAsking
-                ? _sendReport
-                : null,
-            color: const Color(0xFF6D4C41),
-            child: _reportSending
-                ? const SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(color: Colors.white),
-                  )
-                : const EmojiImage('🐞', size: 40),
-          )
+          _reports.button(s, _sendReport)
         else
           const SizedBox(width: 76),
       ],

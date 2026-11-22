@@ -10,6 +10,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:record/record.dart';
 
+import '../net/device_info.dart';
 import 'screen_awake.dart';
 
 /// The microphone: 16 kHz mono little-endian 16-bit PCM.
@@ -59,6 +60,7 @@ class GameIo {
     required this.soundPlayer,
     required this.random,
     this.listensWhileSpeaking = false,
+    this.info = deviceInfo,
   });
 
   /// The real devices.
@@ -87,6 +89,9 @@ class GameIo {
   /// Melodies: may overlap the replay and must not pause the praise.
   final SoundOut Function() soundPlayer;
   final math.Random Function() random;
+
+  /// App version, phone model and system version, for a report.
+  final Future<Map<String, String>> Function() info;
 }
 
 class RecordMic implements MicSource {

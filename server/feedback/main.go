@@ -8,8 +8,10 @@
 // limit (Traefik in front of it sees them, as for every request).
 //
 // Quiz reports (quiz.go) also carry the child's recording of one quiz
-// question; a grown-up has switched them on in the app. They are kept in
-// their own directory, 90 days.
+// question, or of one word or sound in the other games that listen (the
+// question then names the game: "world 2: Hase", "read aloud: Ei",
+// "hold: O"); a grown-up has switched them on in the app. They are kept
+// in their own directory, 90 days.
 //
 //	feedback               serve (LISTEN, default :8080; DIR, default
 //	                       /data/feedback; QUIZ_DIR, default /data/quiz)

@@ -23,7 +23,10 @@ import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/rules.dart';
 import '../game/voice_effects.dart';
+import '../net/quiz_report.dart';
+import '../quiz/quiz_rules.dart' show optionScores;
 import '../quiz/word_listener.dart';
+import '../ui/recording_report.dart';
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
 import '../ui/round_button.dart';
@@ -111,6 +114,25 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
 
   String get _lang => widget.app.book.lang;
   Phrase get _p => _round[_index];
+
+  /// 🐞: the last tries of the word, with what was heard.
+  late final RecordingReports _reports = RecordingReports(widget.app);
+
+  void _keepTry(Heard heard, String ipa, int? stars) {
+    if (!_reports.on) return;
+    _reports.keep(
+      _p,
+      QuizTry(
+        pcm: heard.pcm,
+        speech: heard.speech,
+        heard: ipa,
+        said: stars == null ? '' : '$stars',
+        scores: optionScores(widget.app.comparer, [_p], ipa, _lang),
+      ),
+    );
+    setState(() {});
+  }
+
   bool get _idle => _phase == _Phase.ready || _phase == _Phase.result;
   bool _current(int id) => mounted && id == _flow && !_paused;
 
@@ -153,6 +175,7 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
     _listener.dispose();
     _quietly(_tts.stop);
     _quietly(_sfx.dispose);
+    _reports.dispose();
     super.dispose();
   }
 
@@ -167,6 +190,7 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
       _listener.cancel(); // the mic first
       _quietly(_tts.stop);
       _quietly(_sfx.stop);
+      _reports.stopReplay();
       if (!_idle && mounted) setState(() => _phase = _Phase.ready);
     } else if (state == AppLifecycleState.resumed) {
       _paused = false; // goes on with a tap on 🎤 (or ➡)
@@ -248,23 +272,27 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
       return;
     }
     if (!heard.speech) {
+      _keepTry(heard, '', null);
       _fail(id, (s) => s.notHeardVoice);
       return;
     }
     setState(() => _phase = _Phase.thinking);
     int stars;
+    var ipa = '';
     try {
       final rec = await widget.app.recognizer
           .recognize(heard.audio)
           .timeout(const Duration(seconds: 20));
-      stars = scorePhrase(widget.app.comparer, _p, rec.ipa, _lang).stars;
-      debugPrint('read aloud: heard "${rec.ipa}" -> $stars');
+      ipa = rec.ipa;
+      stars = scorePhrase(widget.app.comparer, _p, ipa, _lang).stars;
+      debugPrint('read aloud: heard "$ipa" -> $stars');
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
       _fail(id, (s) => s.tryAgain);
       return;
     }
     if (!_current(id)) return;
+    _keepTry(heard, ipa, stars);
     await _scored(id, stars);
   }
 
@@ -472,8 +500,11 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        // keeps the mic button centred
-        const SizedBox(width: 76),
+        if (_reports.on)
+          _reports.button(s, _sendReport)
+        else
+          // keeps the mic button centred
+          const SizedBox(width: 76),
         AnimatedScale(
           scale: 1 + level,
           duration: const Duration(milliseconds: 120),
@@ -503,6 +534,33 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
       ],
     );
   }
+
+  /// 🐞: stops what runs (the mic first), asks, sends the last tries.
+  Future<void> _sendReport() => _reports.send(
+    this,
+    hold: () async {
+      _flow++;
+      _onward?.cancel();
+      _donePraise?.cancel();
+      await _listener.cancel();
+      await _quietly(_tts.stop);
+      await _quietly(_sfx.stop);
+      if (mounted && !_idle) setState(() => _phase = _Phase.ready);
+    },
+    paused: () => _paused,
+    update: () => setState(() {}),
+    topic: (of) {
+      final p = of as Phrase;
+      return (
+        question: 'read aloud: ${p.text}',
+        asked: p.text,
+        options: [
+          (text: p.text, ipa: [for (final w in p.accepted) w.ipa]),
+        ],
+        answer: p.text,
+      );
+    },
+  );
 
   static const _text = TextStyle(
     color: Colors.white,
