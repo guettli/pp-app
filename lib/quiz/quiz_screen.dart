@@ -300,7 +300,13 @@ class _QuizScreenState extends State<QuizScreen>
       final rec = await widget.app.recognizer
           .recognize(heard.audio)
           .timeout(const Duration(seconds: 20));
-      said = heardOption(widget.app.comparer, _q.options, rec.ipa, _lang);
+      said = heardOption(
+        widget.app.comparer,
+        _q.options,
+        rec.ipa,
+        _lang,
+        echo: _q.ask.like,
+      );
       debugPrint('quiz: heard "${rec.ipa}" -> ${said?.text}');
       ipa = rec.ipa;
     } catch (e, st) {

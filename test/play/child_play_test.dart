@@ -24,6 +24,7 @@ import 'package:phoneme_party/game/game_io.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/listen/listen_screen.dart';
+import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
@@ -129,16 +130,34 @@ void main() {
     var tries = 0;
     String answer() {
       final words = {for (final p in book.phrases) p.text: p};
-      final last = dev.log
-          .started('tts')
-          .lastWhere(words.containsKey, orElse: () => '');
-      final p = words[last];
-      if (p == null) return '';
+      final said = dev.log.started('tts');
       tries++;
-      transcript.writeln(
-        tries % 3 == 0 ? '  🗣️ (mumbles)' : '  🗣️ "${p.text}"',
-      );
-      return tries % 3 == 0 ? 'ma' : p.ipa;
+      // a word alone (the worlds): say it after the phone, every third
+      // time mumbled
+      final last = said.isEmpty ? '' : said.last;
+      if (words[last] case final p?) {
+        transcript.writeln(
+          tries % 3 == 0 ? '  🗣️ (mumbles)' : '  🗣️ "${p.text}"',
+        );
+        return tries % 3 == 0 ? 'ma' : p.ipa;
+      }
+      // a question with the answers in it (the quiz): guess one of them
+      final named = [
+        // the last question only (it ends with the answers and a ?)
+        for (final s in said.reversed.where((s) => s.contains('?')).take(1))
+          for (final p in book.phrases)
+            if (RegExp(
+              '(^|[ ,?!.])${RegExp.escape(p.text)}([ ,?!.]|\$)',
+            ).hasMatch(s))
+              p,
+      ];
+      if (named.isEmpty) {
+        transcript.writeln('  🗣️ (says nothing)');
+        return '';
+      }
+      final p = named[math.Random(tries).nextInt(named.length)];
+      transcript.writeln('  🗣️ "${p.text}" (guessing)');
+      return p.ipa;
     }
 
     final d = dev.io;
@@ -347,6 +366,27 @@ void main() {
     await t.pumpWidget(const SizedBox());
     await settle(t, 3000);
   });
+
+  for (final sounds in [false, true]) {
+    testWidgets(sounds ? 'sound detective' : 'quiz', (t) async {
+      final name = sounds ? 'sounds' : 'quiz';
+      final (dev, app) = await start(t, sounds ? 9 : 8, speaks: true);
+      transcript.writeln('# ${sounds ? 'Sound detective' : 'Quiz'}');
+      await show(t, QuizScreen(app: app, sounds: sounds));
+      var n = 0;
+      for (var step = 0; step < 16; step++) {
+        await settle(t, 5000);
+        n = said(dev, n);
+        if (step < 4) await shot(t, '$name-step${step + 1}');
+        if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+      }
+      await settle(t, 3000);
+      said(dev, n);
+      await shot(t, '$name-end');
+      await t.pumpWidget(const SizedBox());
+      await settle(t, 3000);
+    });
+  }
 
   for (final game in ThinkGame.values) {
     testWidgets('think: ${game.name}', (t) async {
