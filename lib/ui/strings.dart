@@ -218,8 +218,7 @@ class S {
       'send': 'Send',
       'feedbackSent': 'Thank you! Sent.',
       'feedbackQueued': 'Thank you! It will be sent when there is internet.',
-      'quizReports':
-          'Allow sending recordings and thinking-game questions',
+      'quizReports': 'Allow sending recordings and thinking-game questions',
       'quizReportsInfo':
           'A 🐞 button appears in the games that listen (worlds, quiz, sound detective, read aloud, long sounds). Tapping it asks first (the recording can be heard before) and then sends the last try with the child’s recording to the developer, to improve the speech recognition. Kept 90 days, not published. In the thinking games, 🐞 sends the question without a recording, as feedback (deleted after 12 months).',
       'quizReportSend': 'Send to the developer',

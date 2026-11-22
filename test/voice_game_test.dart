@@ -211,10 +211,7 @@ void main() {
   testWidgets('hold it long: reports off, no 🐞', (t) async {
     final r = await open(t, VoiceGame.hold, [aaa(250, 3.5)]);
     await r.until(() => r.tries == 1);
-    expect(
-      find.byTooltip('Send to the developer'),
-      findsNothing,
-    );
+    expect(find.byTooltip('Send to the developer'), findsNothing);
     r.expectClean();
   });
 

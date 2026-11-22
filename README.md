@@ -146,7 +146,7 @@ and high also listen (and so do the worlds).
   joie"): adjectives there would depend on whether the child is a boy or
   a girl. Texts: `lib/think/feelings_data.dart`; the screen is the one of
   the thinking games.
-- With quiz reports switched on, every thinking game shows 🐞 too: after
+- With recording reports switched on, every thinking game shows 🐞 too: after
   asking (with room for a note) it sends the current question (what was
   said, the pictures, the answer, the taps) as a bug report through the
   feedback outbox. No recording.
