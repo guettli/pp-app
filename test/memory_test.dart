@@ -513,7 +513,7 @@ void main() {
           final harder = dev.log
               .started('tts')
               .contains(
-                'Das machst du schon richtig gut! Jetzt werden es mehr.',
+                'Das machst du schon richtig gut! Jetzt kommen noch mehr dazu.',
               );
           expect(harder, best == 3);
           await close(t, dev.log);

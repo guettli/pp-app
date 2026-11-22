@@ -319,8 +319,9 @@ class _MemoryScreenState extends State<MemoryScreen>
     }
     // once: the child did well, now there are more
     if (_harder && !_harderSaid && _current(id)) {
-      _harderSaid = true;
       await _say(_lines.harder);
+      // cut off (paused): said again when the question starts again
+      _harderSaid = _current(id);
     }
     if (!await _wait(id, const Duration(milliseconds: 300))) return;
     if (_hear) {

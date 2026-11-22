@@ -217,7 +217,7 @@ const _lines = <String, List<String>>{
     'Was hast du gesehen? Sag mir ein Bild!',
     'Und was noch?',
     'Das war nicht dabei.',
-    'Das machst du schon richtig gut! Jetzt werden es mehr.',
+    'Das machst du schon richtig gut! Jetzt kommen noch mehr dazu.',
   ],
   'en': [
     'Look closely!',
@@ -239,7 +239,7 @@ const _lines = <String, List<String>>{
     'Qu’est-ce que tu as vu ? Dis-moi une image !',
     'Et quoi d’autre ?',
     'Ça, ce n’était pas là !',
-    'Tu y arrives très bien ! Maintenant, il y en a plus.',
+    'Tu y arrives très bien ! Maintenant, il y a encore plus d’images.',
   ],
   'it': [
     'Guarda bene!',
