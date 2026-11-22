@@ -14,7 +14,8 @@
 // in their own directory, 90 days.
 //
 // It also signs short-lived TURN credentials for the two-player games
-// (turn.go, POST /pp-app/api/turn); coturn on the vps checks them.
+// (turn.go, POST /pp-app/api/turn); coturn on the vps checks them, and is
+// the meeting point where two phones swap their WebRTC offers (match.go).
 //
 //	feedback               serve (LISTEN, default :8080; DIR, default
 //	                       /data/feedback; QUIZ_DIR, default /data/quiz)
@@ -108,7 +109,9 @@ type Server struct {
 	Quiz QuizStore
 	// TURN signs relay credentials; nil: the route answers 404.
 	TURN *TURN
-	Now  func() time.Time
+	// Matches is the two-player meeting point; nil: 404.
+	Matches *Matches
+	Now     func() time.Time
 
 	limit, quizLimit, turnLimit *limiter
 	quizSlots                   chan struct{}
@@ -136,6 +139,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case "/pp-app/api/turn":
 		s.serveTURN(w, r)
+		return
+	case "/pp-app/api/match/new", "/pp-app/api/match/join", "/pp-app/api/match/reject",
+		"/pp-app/api/match/send", "/pp-app/api/match/recv", "/pp-app/api/match/leave":
+		s.serveMatch(w, r, strings.TrimPrefix(r.URL.Path, "/pp-app/api/match/"))
 		return
 	default:
 		http.NotFound(w, r)
@@ -415,6 +422,7 @@ func main() {
 	handler := NewServer(dir)
 	handler.Quiz = quiz
 	handler.TURN = turnFromEnv()
+	handler.Matches = NewMatches(time.Now)
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           handler,
