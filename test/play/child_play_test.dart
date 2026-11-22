@@ -24,6 +24,8 @@ import 'package:phoneme_party/game/game_io.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/listen/listen_screen.dart';
+import 'package:phoneme_party/memory/memory_rules.dart';
+import 'package:phoneme_party/memory/memory_screen.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/voice/voice_screen.dart';
@@ -277,8 +279,10 @@ void main() {
     transcript.writeln('# Home');
     await show(t, HomeScreen(app: app));
     await shot(t, 'home');
-    for (final g in ['hear', 'read', 'speak', 'think']) {
+    for (final g in ['hear', 'read', 'speak', 'think', 'memory']) {
       transcript.writeln('# Group $g');
+      await t.ensureVisible(find.byKey(ValueKey('group-$g')));
+      await settle(t);
       await t.tap(find.byKey(ValueKey('group-$g')));
       await settle(t);
       await shot(t, 'group-$g');
@@ -482,6 +486,59 @@ void main() {
       }
       await t.pumpWidget(const SizedBox());
       await settle(t, 3000);
+    });
+  }
+
+  for (final game in MemoryGame.values) {
+    testWidgets('memory: ${game.name}', (t) async {
+      final (dev, app) = await start(t, game.index + 11);
+      transcript.writeln('# Memory game: ${game.name}');
+      await show(t, MemoryScreen(app: app, game: game));
+      bool seen(String k) => find.byKey(ValueKey(k)).evaluate().isNotEmpty;
+      var n = 0;
+      for (var q = 0; q < 5; q++) {
+        final shots = <String>{};
+        // look (or listen), wait while hidden, then the pictures
+        for (var e = 0; e < 40000 && !seen('memory-option-0'); e += 100) {
+          await t.pump(const Duration(milliseconds: 100));
+          for (final k in ['memory-shown-0', 'memory-hearing', 'memory-hide']) {
+            if (q < 2 && seen(k) && shots.add(k)) {
+              await shot(t, '${game.name}-q${q + 1}-$k');
+            }
+          }
+        }
+        await settle(t, 2500);
+        n = said(dev, n);
+        if (q < 2) await shot(t, '${game.name}-q${q + 1}-pick');
+        // a child who remembers some: taps from the first picture on
+        final before = dev.log.started('tts').length;
+        for (var o = 0; o < memoryOptions(game); o++) {
+          if (!seen('memory-option-$o')) break;
+          transcript.writeln('  👆 memory-option-$o');
+          await t.tap(
+            find.byKey(ValueKey('memory-option-$o')),
+            warnIfMissed: false,
+          );
+          await settle(t, 800);
+          if (dev.log
+              .started('tts')
+              .skip(before)
+              .any((s) => s.contains('!') || s.endsWith('.'))) {
+            break;
+          }
+        }
+        if (q < 2) await shot(t, '${game.name}-q${q + 1}-result');
+        await settle(t, 4000);
+        n = said(dev, n);
+        if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+      }
+      await settle(t, 3000);
+      n = said(dev, n);
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) {
+        await shot(t, '${game.name}-end');
+      }
+      await t.pumpWidget(const SizedBox());
+      await settle(t, 6000);
     });
   }
 }

@@ -9,6 +9,8 @@ import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/listen/listen_screen.dart';
+import 'package:phoneme_party/memory/memory_rules.dart';
+import 'package:phoneme_party/memory/memory_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
@@ -171,7 +173,7 @@ void main() {
     testWidgets('home, $name', (t) async {
       await show(t, (app) => HomeScreen(app: app), size: size);
       expect(t.takeException(), isNull);
-      for (final g in ['hear', 'read', 'speak', 'think']) {
+      for (final g in ['hear', 'read', 'speak', 'think', 'memory']) {
         expect(find.byKey(ValueKey('group-$g')), findsOneWidget);
       }
       await close(t);
@@ -264,7 +266,10 @@ void main() {
       );
       expect(t.takeException(), isNull);
       var games = 0;
-      for (final g in ['hear', 'read', 'speak', 'think']) {
+      for (final g in ['hear', 'read', 'speak', 'think', 'memory']) {
+        // landscape: the lower groups are below the fold
+        await t.ensureVisible(find.byKey(ValueKey('group-$g')));
+        await t.pumpAndSettle();
         await t.tap(find.byKey(ValueKey('group-$g')));
         await t.pumpAndSettle();
         expect(t.takeException(), isNull, reason: g);
@@ -285,7 +290,7 @@ void main() {
         await t.pageBack();
         await t.pumpAndSettle();
       }
-      expect(games, 12);
+      expect(games, 15);
       await close(t);
     });
 
@@ -334,6 +339,48 @@ void main() {
         await close(t);
       });
     }
+
+    for (final game in MemoryGame.values) {
+      testWidgets('memory ${game.name}, $name', (t) async {
+        await show(
+          t,
+          (app) => MemoryScreen(app: app, game: game),
+          size: size,
+          text: text,
+        );
+        // intro, show (or say), hide: every phase must fit
+        for (var i = 0; i < 600; i++) {
+          await t.pump(const Duration(milliseconds: 50));
+          expect(t.takeException(), isNull, reason: 'at ${i * 50} ms');
+        }
+        expect(find.byKey(const ValueKey('memory-option-0')), findsOneWidget);
+        for (var o = 0; o < memoryOptions(game); o++) {
+          final f = find.byKey(ValueKey('memory-option-$o'));
+          if (f.evaluate().isEmpty) break;
+          await t.tap(f);
+          for (var i = 0; i < 20; i++) {
+            await t.pump(const Duration(milliseconds: 50));
+          }
+          expect(t.takeException(), isNull);
+        }
+        await close(t);
+      });
+    }
+
+    testWidgets('what is missing on a tiny landscape phone, $name', (t) async {
+      await show(
+        t,
+        (app) => MemoryScreen(app: app, game: MemoryGame.missing),
+        size: const Size(568, 320),
+        text: text,
+      );
+      for (var i = 0; i < 600; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+        expect(t.takeException(), isNull, reason: 'at ${i * 50} ms');
+      }
+      expect(find.byKey(const ValueKey('memory-gap')), findsOneWidget);
+      await close(t);
+    });
 
     testWidgets('word to picture, $name', (t) async {
       await show(

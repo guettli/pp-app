@@ -5,6 +5,8 @@ import '../data/phrases.dart';
 import '../game/play_screen.dart';
 import '../game/world_scene.dart';
 import '../listen/listen_screen.dart';
+import '../memory/memory_rules.dart';
+import '../memory/memory_screen.dart';
 import '../quiz/quiz_screen.dart';
 import '../read/read_aloud_screen.dart';
 import '../spell/spell_screen.dart';
@@ -172,6 +174,13 @@ class _HomeScreenState extends State<HomeScreen> {
       audio: Audio.output,
       best: () => p.thinkBest('home', lang),
     );
+    Game memory(MemoryGame g, List<String> emojis, String name) => (
+      screen: () => MemoryScreen(app: app, game: g),
+      emojis: emojis,
+      name: name,
+      audio: Audio.output,
+      best: () => p.thinkBest(MemoryScreen.progressKey(g), lang),
+    );
     return [
       (key: 'hear', emoji: '👂', name: s.hearGroup, games: [listen, sounds]),
       (
@@ -186,6 +195,16 @@ class _HomeScreenState extends State<HomeScreen> {
         emoji: '🤔',
         name: s.thinkGroup,
         games: [needs, riddle, odd, home, quiz],
+      ),
+      (
+        key: 'memory',
+        emoji: '🧠',
+        name: s.memoryGroup,
+        games: [
+          memory(MemoryGame.look, const ['👀'], s.lookTitle),
+          memory(MemoryGame.hear, const ['👂', '💬'], s.hearWordsTitle),
+          memory(MemoryGame.missing, const ['❓'], s.missingTitle),
+        ],
       ),
     ];
   }
