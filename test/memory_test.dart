@@ -148,6 +148,34 @@ void main() {
       });
     }
 
+    test('harder rounds: a picture more, the same fairness', () {
+      final book = books['de-DE']!;
+      final pool = [for (var w = 0; w < 3; w++) ...book.world(w)];
+      for (final game in MemoryGame.values) {
+        final sizes = memoryRoundSizes(game, harder: true);
+        final base = memoryRoundSizes(game);
+        expect(
+          sizes.reduce((a, b) => a + b),
+          greaterThan(base.reduce((a, b) => a + b)),
+        );
+        for (var seed = 0; seed < 20; seed++) {
+          final round = makeMemoryRound(
+            game,
+            pool,
+            math.Random(seed),
+            harder: true,
+          );
+          expect([for (final q in round) q.shown.length], sizes);
+          for (final q in round) {
+            expect(q.options, hasLength(memoryOptions(game)));
+            for (final a in q.answers) {
+              expect(q.options, contains(a));
+            }
+          }
+        }
+      }
+    });
+
     test('the number pictures are one family', () {
       expect(lookAlikeFamily('3️⃣'), 'number');
       expect(lookAlikeFamily('🔟'), 'number');
@@ -172,11 +200,12 @@ void main() {
     Future<(FakeDevices, Progress)> play(
       WidgetTester t,
       MemoryGame game,
-      List<MemoryQuestion> round, {
+      List<MemoryQuestion>? round, {
       List<String> answers = const [],
       Child Function()? child,
+      Map<String, Object> prefs = const {},
     }) async {
-      SharedPreferences.setMockInitialValues({});
+      SharedPreferences.setMockInitialValues(prefs);
       final progress = await Progress.load();
       final t0 = t.binding.clock.now();
       final dev = FakeDevices(
@@ -459,6 +488,38 @@ void main() {
       expect(progress.thinkBest('memory-say', 'de-DE'), 0);
       await close(t, dev.log, mic: true);
     });
+
+    for (final best in [2, 3]) {
+      testWidgets(
+        'after $best stars: ${best == 3 ? 'a picture more, and '
+                  'the child hears why' : 'as before'}',
+        (t) async {
+          final (dev, _) = await play(
+            t,
+            MemoryGame.look,
+            null,
+            prefs: {'memory-look|de-DE': best},
+          );
+          while (!visible('memory-shown-0')) {
+            await t.pump(const Duration(milliseconds: 50));
+          }
+          final shown = find.byWidgetPredicate(
+            (w) =>
+                w.key is ValueKey<String> &&
+                (w.key! as ValueKey<String>).value.startsWith('memory-shown-'),
+          );
+          // the first question: 2 pictures, or 3 when harder
+          expect(shown, findsNWidgets(best == 3 ? 3 : 2));
+          final harder = dev.log
+              .started('tts')
+              .contains(
+                'Das machst du schon richtig gut! Jetzt werden es mehr.',
+              );
+          expect(harder, best == 3);
+          await close(t, dev.log);
+        },
+      );
+    }
 
     testWidgets('what did you see: never understood, the question still '
         'ends', (t) async {
