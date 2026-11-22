@@ -202,7 +202,7 @@ class _HomeScreenState extends State<HomeScreen> {
         name: s.memoryGroup,
         games: [
           memory(MemoryGame.look, const ['👀'], s.lookTitle),
-          memory(MemoryGame.hear, const ['🧠', '👂'], s.hearWordsTitle),
+          memory(MemoryGame.hear, const ['👂', '💬'], s.hearWordsTitle),
           memory(MemoryGame.missing, const ['❓'], s.missingTitle),
         ],
       ),

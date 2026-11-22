@@ -69,7 +69,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryHear:
         'Hör gut zu und merk dir die Wörter! Dann tippst du auf die passenden Bilder.',
     GameIntro.memoryMissing:
-        'Schau dir die Bilder gut an! Dann verstecke ich eins. Tippe auf das Bild, das fehlt!',
+        'Schau dir die Bilder gut an! Dann verstecke ich alle und nehme eins weg. Tippe auf das Bild, das fehlt!',
   },
   'en': {
     GameIntro.sayWord: 'Listen, then say the right word!',
@@ -85,11 +85,11 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.home: 'Look where we are! Tap the animal that lives here!',
     GameIntro.repeat: 'Listen and say it after me!',
     GameIntro.memoryLook:
-        'Look closely and remember the pictures! Then I hide them, and you find them again.',
+        'Look closely and remember the pictures! Then I’ll hide them, and you find them again.',
     GameIntro.memoryHear:
         'Listen closely and remember the words! Then tap the matching pictures.',
     GameIntro.memoryMissing:
-        'Look closely at the pictures! Then I hide one. Tap the picture that is missing!',
+        'Look closely at the pictures! Then I’ll hide them all and take one away. Tap the picture that is missing!',
   },
   'fr': {
     GameIntro.sayWord: 'Écoute bien, puis dis le bon mot !',
@@ -109,7 +109,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryHear:
         'Écoute bien et retiens les mots ! Ensuite, touche les bonnes images.',
     GameIntro.memoryMissing:
-        'Regarde bien les images ! Ensuite j’en cache une. Touche l’image qui manque !',
+        'Regarde bien les images ! Ensuite je les cache toutes et j’en enlève une. Touche l’image qui manque !',
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
@@ -128,7 +128,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryHear:
         'Ascolta bene e ricorda le parole! Poi tocca le immagini giuste.',
     GameIntro.memoryMissing:
-        'Guarda bene le immagini! Poi ne nascondo una. Tocca l’immagine che manca!',
+        'Guarda bene le immagini! Poi le nascondo tutte e ne tolgo una. Tocca l’immagine che manca!',
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
@@ -148,6 +148,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryHear:
         '¡Escucha bien y recuerda las palabras! Luego toca las imágenes correctas.',
     GameIntro.memoryMissing:
-        '¡Mira bien las imágenes! Luego escondo una. ¡Toca la imagen que falta!',
+        '¡Mira bien las imágenes! Luego las escondo todas y quito una. ¡Toca la imagen que falta!',
   },
 };

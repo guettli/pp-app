@@ -251,7 +251,7 @@ class S {
       'memoryGroup': 'Mémoire',
       'lookTitle': 'Retiens les images',
       'hearWordsTitle': 'Retiens les mots',
-      'missingTitle': 'Qu’est-ce qui manque ?',
+      'missingTitle': 'Qu’est-ce qui manque ?',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',

@@ -51,20 +51,63 @@ const memorySizes = <MemoryGame, List<int>>{
 /// for the missing one.
 int memoryOptions(MemoryGame game) => game == MemoryGame.missing ? 3 : 6;
 
-/// A round of [game] from [pool]: no picture twice in a question, and
-/// none of the previous question (it would be remembered from there),
-/// when the pool is big enough.
+/// Pictures that are easy to mix up after a few seconds: at most one of
+/// each family in a question. The number pictures (1️⃣ .. 🔟) are all the
+/// same blue square.
+const lookAlike = [
+  ['👵', '👴', '🧓'],
+  ['🚗', '🚕', '🚙', '🚓'],
+  ['🐦', '🐤', '🐥', '🐔', '🐣'],
+  ['🌹', '🌷', '🌸', '🌺'],
+  ['🍎', '🍅', '🍒', '🍓'],
+  ['🐶', '🐕'],
+  ['🐱', '🐈'],
+];
+
+/// The family of [emoji] for [lookAlike], or null.
+String? lookAlikeFamily(String emoji) {
+  final bare = bareEmoji(emoji);
+  if (bare.contains('⃣') || bare == '🔟') return 'number';
+  for (final (i, f) in lookAlike.indexed) {
+    if (f.map(bareEmoji).contains(bare)) return 'family$i';
+  }
+  return null;
+}
+
+/// A round of [game] from [pool]: no picture twice in a question, none
+/// of the previous question (it would be remembered from there), no two
+/// look-alikes, and no two that [similar] says sound alike (for "Remember
+/// the words"), as far as the pool allows.
 List<MemoryQuestion> makeMemoryRound(
   MemoryGame game,
   List<Phrase> pool,
-  math.Random rng,
-) {
+  math.Random rng, {
+  bool Function(Phrase a, Phrase b)? similar,
+}) {
   // one phrase per picture: two with the same picture cannot be told apart
   final seen = <String>{};
   final pics = [
     for (final p in pool)
       if (p.emoji.isNotEmpty && seen.add(bareEmoji(p.emoji))) p,
   ];
+
+  /// [need] pictures from [from] (shuffled) that go together, or null.
+  List<Phrase>? pick(List<Phrase> from, int need, {required bool strict}) {
+    final out = <Phrase>[];
+    final families = <String>{};
+    for (final p in from) {
+      final family = lookAlikeFamily(p.emoji);
+      if (strict && family != null && families.contains(family)) continue;
+      if (strict && similar != null && out.any((o) => similar(o, p))) {
+        continue;
+      }
+      out.add(p);
+      if (family != null) families.add(family);
+      if (out.length == need) return out;
+    }
+    return null;
+  }
+
   final out = <MemoryQuestion>[];
   var last = <Phrase>{};
   for (final n in memorySizes[game]!) {
@@ -72,9 +115,14 @@ List<MemoryQuestion> makeMemoryRound(
     final need = n + extra;
     if (pics.length < need) break;
     final fresh = [...pics.where((p) => !last.contains(p))]..shuffle(rng);
-    final from = fresh.length >= need ? fresh : ([...pics]..shuffle(rng));
-    final shown = from.sublist(0, n);
-    final others = from.sublist(n, need);
+    final all = [...pics]..shuffle(rng);
+    final chosen =
+        pick(fresh, need, strict: true) ??
+        pick(all, need, strict: true) ??
+        pick(fresh, need, strict: false) ??
+        pick(all, need, strict: false)!;
+    final shown = chosen.sublist(0, n);
+    final others = chosen.sublist(n, need);
     final MemoryQuestion q;
     if (game == MemoryGame.missing) {
       final missing = shown[rng.nextInt(n)];
@@ -150,7 +198,7 @@ const _lines = <String, List<String>>{
     '¡Mira bien!',
     '¡Escucha bien!',
     '¿Qué imágenes había?',
-    '¿Qué palabras oíste?',
+    '¿Qué palabras has oído?',
     '¿Qué imagen falta?',
   ],
 };

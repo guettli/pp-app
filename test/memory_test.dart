@@ -12,6 +12,7 @@ import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/memory/memory_rules.dart';
 import 'package:phoneme_party/memory/memory_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
+import 'package:phoneme_party/quiz/quiz_rules.dart' show soundsSimilar;
 import 'package:phoneme_party/think/think_rules.dart' show bareEmoji;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,6 +85,49 @@ void main() {
         });
       }
     }
+
+    for (final lang in langs) {
+      test('$lang: no look-alikes, and no sound-alikes to hear', () {
+        final book = books[lang]!;
+        final pool = [for (var w = 0; w < 3; w++) ...book.world(w)];
+        bool similar(Phrase a, Phrase b) => soundsSimilar(comparer, lang, a, b);
+        for (final game in MemoryGame.values) {
+          for (var seed = 0; seed < 40; seed++) {
+            final round = makeMemoryRound(
+              game,
+              pool,
+              math.Random(seed),
+              similar: game == MemoryGame.hear ? similar : null,
+            );
+            expect(round, hasLength(memorySizes[game]!.length));
+            for (final q in round) {
+              final all = {...q.shown, ...q.options}.toList();
+              final families = [for (final p in all) ?lookAlikeFamily(p.emoji)];
+              expect(
+                families.toSet(),
+                hasLength(families.length),
+                reason: '$q',
+              );
+              if (game != MemoryGame.hear) continue;
+              for (final a in all) {
+                for (final b in all) {
+                  if (a != b) {
+                    expect(similar(a, b), isFalse, reason: '$a / $b in $q');
+                  }
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    test('the number pictures are one family', () {
+      expect(lookAlikeFamily('3️⃣'), 'number');
+      expect(lookAlikeFamily('🔟'), 'number');
+      expect(lookAlikeFamily('🚕'), lookAlikeFamily('🚗'));
+      expect(lookAlikeFamily('🐮'), isNull);
+    });
 
     test('a small pool: as many questions as it allows', () {
       final pool = books['de-DE']!.phrases.take(5).toList();

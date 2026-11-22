@@ -28,7 +28,7 @@ import '../game/feedback.dart';
 import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
-import '../quiz/quiz_rules.dart' show quizStars;
+import '../quiz/quiz_rules.dart' show quizStars, soundsSimilar;
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
 import '../ui/round_button.dart';
@@ -137,9 +137,18 @@ class _MemoryScreenState extends State<MemoryScreen>
 
   List<MemoryQuestion> _makeRound() {
     final app = widget.app;
-    final round = makeMemoryRound(widget.game, app.knownWords(), _rng);
+    // "Remember the words": no wrong picture that sounds like a word said
+    bool similar(Phrase a, Phrase b) =>
+        soundsSimilar(app.comparer, app.book.lang, a, b);
+    List<MemoryQuestion> make(List<Phrase> pool) => makeMemoryRound(
+      widget.game,
+      pool,
+      _rng,
+      similar: _hear ? similar : null,
+    );
+    final round = make(app.knownWords());
     if (round.length == memorySizes[widget.game]!.length) return round;
-    return makeMemoryRound(widget.game, app.book.phrases, _rng);
+    return make(app.book.phrases);
   }
 
   @override
@@ -419,6 +428,8 @@ class _MemoryScreenState extends State<MemoryScreen>
 
   Widget _stage() => switch (_phase) {
     _Phase.speaking => _big(_hear ? '👂' : '👀', key: 'memory-wait'),
+    // "What's missing?": where the gap row will be, in its layout
+    _Phase.show when _missing => _missingLayout(),
     _Phase.show => _grid([
       for (final (i, p) in _q.shown.indexed)
         _picture(p.emoji, key: 'memory-shown-$i'),
@@ -435,16 +446,25 @@ class _MemoryScreenState extends State<MemoryScreen>
       dots: MemoryScreen.hideSeconds,
       lit: _hideLeft,
     ),
-    _Phase.pick || _Phase.result =>
-      _missing
-          ? Column(
-              children: [
-                Expanded(flex: 2, child: _gapRow()),
-                Expanded(flex: 3, child: _options()),
-              ],
-            )
-          : _options(),
+    _Phase.pick || _Phase.result => _missing ? _missingLayout() : _options(),
   };
+
+  /// "What's missing?": the pictures in a panel (the same place and
+  /// layout when shown and when one is gone), the choices beside or below.
+  Widget _missingLayout() => LayoutBuilder(
+    builder: (context, c) {
+      final wide = c.maxWidth > c.maxHeight;
+      final picking = _phase != _Phase.show;
+      return Flex(
+        direction: wide ? Axis.horizontal : Axis.vertical,
+        children: [
+          Expanded(child: _gapRow()),
+          SizedBox.square(dimension: wide ? 0 : 12),
+          Expanded(child: picking ? _options() : const SizedBox()),
+        ],
+      );
+    },
+  );
 
   /// One big picture, with a row of dots under it ([lit] of [dots] full).
   Widget _big(String emoji, {required String key, int dots = 0, int lit = 0}) =>
@@ -500,7 +520,9 @@ class _MemoryScreenState extends State<MemoryScreen>
     ),
     child: _grid([
       for (final (i, p) in _q.shown.indexed)
-        if (p == _q.missing)
+        if (_phase == _Phase.show)
+          _picture(p.emoji, key: 'memory-shown-$i')
+        else if (p == _q.missing)
           _picture(
             _phase == _Phase.result ? p.emoji : '❓',
             key: 'memory-gap',
@@ -584,7 +606,8 @@ class _MemoryScreenState extends State<MemoryScreen>
           perRow = per;
         }
       }
-      cell = math.max(math.min(cell, 220), 40);
+      // never bigger than the room (a tiny landscape phone at large text)
+      cell = math.max(math.min(cell, 220), 0);
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

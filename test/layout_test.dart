@@ -367,6 +367,21 @@ void main() {
       });
     }
 
+    testWidgets('what is missing on a tiny landscape phone, $name', (t) async {
+      await show(
+        t,
+        (app) => MemoryScreen(app: app, game: MemoryGame.missing),
+        size: const Size(568, 320),
+        text: text,
+      );
+      for (var i = 0; i < 600; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+        expect(t.takeException(), isNull, reason: 'at ${i * 50} ms');
+      }
+      expect(find.byKey(const ValueKey('memory-gap')), findsOneWidget);
+      await close(t);
+    });
+
     testWidgets('word to picture, $name', (t) async {
       await show(
         t,
