@@ -409,6 +409,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
+          scrollable: true,
           title: Row(
             children: [
               const EmojiImage('🏆', size: 48),

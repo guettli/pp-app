@@ -681,11 +681,12 @@ class _PlayScreenState extends State<PlayScreen>
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Row(
           children: [
             const EmojiImage('🏆', size: 48),
             const SizedBox(width: 12),
-            Text(s.worldDone),
+            Flexible(child: Text(s.worldDone)),
           ],
         ),
         content: Column(
