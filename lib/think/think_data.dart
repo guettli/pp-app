@@ -121,9 +121,9 @@ const needs = <Need>[
   Need({'🛏️'}, maybe: {'📖'}, {
     'de': 'Ich bin müde und will schlafen.',
     'en': 'I am tired and want to sleep.',
-    'fr': 'Je suis fatigué et je veux dormir.',
-    'it': 'Sono stanco e voglio dormire.',
-    'es': 'Estoy cansado y quiero dormir.',
+    'fr': 'J’ai sommeil et je veux dormir.',
+    'it': 'Ho sonno e voglio dormire.',
+    'es': 'Tengo sueño y quiero dormir.',
   }),
   Need(
     {'🔨'},
@@ -210,8 +210,8 @@ const needs = <Need>[
     'de': 'Ich bin von oben bis unten schmutzig.',
     'en': 'I am dirty from head to toe.',
     'fr': 'Je suis sale de la tête aux pieds.',
-    'it': 'Sono sporco dalla testa ai piedi.',
-    'es': 'Estoy sucio de pies a cabeza.',
+    'it': 'Ho fango dappertutto, dalla testa ai piedi.',
+    'es': 'Tengo barro de pies a cabeza.',
   }),
   Need(
     {'🥁', '🎸', '🎻', '🎺'},

@@ -107,14 +107,18 @@ void main() {
         r'\b(content|contente|heureux|heureuse|fatigué|fatiguée|seul|seule|'
         r'fier|fière|contento|contenta|arrabbiato|arrabbiata|stanco|stanca|'
         r'solo|sola|andato|andata|enfadado|enfadada|cansado|cansada|'
-        r'asustado|asustada|quieto|quieta|orgulloso|orgullosa)\b',
+        r'asustado|asustada|quieto|quieta|orgulloso|orgullosa|'
+        r'sporco|sporca|sucio|sucia)\b',
         caseSensitive: false,
       );
       for (final code in ['fr', 'it', 'es']) {
-        for (final st in feelingStories) {
-          for (final line in [st.say[code]!, st.help[code]!]) {
-            expect(gendered.hasMatch(line), isFalse, reason: line);
-          }
+        final lines = [
+          for (final st in feelingStories) ...[st.say[code]!, st.help[code]!],
+          // what do I need: the problems are the child's own
+          for (final n in needs) n.say[code]!,
+        ];
+        for (final line in lines) {
+          expect(gendered.hasMatch(line), isFalse, reason: line);
         }
       }
       // every feeling is the answer of some story
