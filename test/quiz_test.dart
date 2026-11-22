@@ -174,6 +174,25 @@ void main() {
     }
   });
 
+  test('the question\'s word said back is no answer; a mumbled one is', () {
+    final b = books['de-DE']!;
+    Phrase w(String t) => b.phrases.firstWhere((p) => p.text == t);
+    String ipa(String t) => w(t).ipa.replaceAll('/', '');
+    // "Was fängt an wie Gitarre? Gurke, Haus oder Mond?"
+    final o = [w('Gurke'), w('Haus'), w('Mond')];
+    final like = w('Gitarre');
+    expect(
+      heardOption(comparer, o, ipa('Gitarre'), 'de-DE', echo: like),
+      isNull,
+    );
+    expect(
+      heardOption(comparer, o, ipa('Gurke'), 'de-DE', echo: like),
+      w('Gurke'),
+    );
+    // Gurke, a little unclear (close to Gitarre by its first sounds)
+    expect(heardOption(comparer, o, 'ɡʊakə', 'de-DE', echo: like), w('Gurke'));
+  });
+
   test('an answer counts only when it is clearly one of the words', () {
     final b = books['de-DE']!;
     Phrase w(String t) => b.phrases.firstWhere((p) => p.text == t);

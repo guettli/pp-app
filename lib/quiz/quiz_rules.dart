@@ -16,6 +16,14 @@ const minAnswerSame = 0.5;
 /// misheard.
 const minAnswerMargin = 0.2;
 
+/// How close the question's own word may come to the best option before
+/// the child's word counts as said back, not as an answer. Small: the
+/// answer starts like that word by design (Blatt, Blitz), and a child's
+/// slightly unclear answer must still count (with the full answer margin
+/// about one in nine such answers was lost; an echo gets past the other
+/// checks only rarely anyway).
+const echoMargin = 0.1;
+
 /// Share of sounds of [c] that are exactly the expected ones.
 double sameShare(Comparison c) {
   final longer = math.max(c.target.length, c.actual.length);
@@ -52,7 +60,7 @@ Phrase? heardOption(
     final e = best([
       for (final w in echo.accepted) comparer.compare(w.ipa, ipa, lang),
     ]);
-    if (e >= score - minAnswerMargin) return null;
+    if (e >= score - echoMargin) return null;
   }
   return option;
 }
