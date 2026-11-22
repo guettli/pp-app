@@ -37,44 +37,62 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = S.of(context);
     final lang = await showModalBottomSheet<String>(
       context: context,
+      // five languages and a title: more than half of a small phone
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                s.chooseLanguage,
-                style: Theme.of(ctx).textTheme.titleLarge,
-              ),
-            ),
-            for (final l in studyLanguages)
-              ListTile(
-                leading: EmojiImage(languageFlags[l]!, size: 36),
-                title: Text(
-                  languageNames[l]!,
-                  style: const TextStyle(fontSize: 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  s.chooseLanguage,
+                  style: Theme.of(ctx).textTheme.titleLarge,
                 ),
-                selected: l == app.book.lang,
-                onTap: () => Navigator.pop(ctx, l),
               ),
-          ],
+              for (final l in studyLanguages)
+                ListTile(
+                  leading: EmojiImage(languageFlags[l]!, size: 36),
+                  title: Text(
+                    languageNames[l]!,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  selected: l == app.book.lang,
+                  onTap: () => Navigator.pop(ctx, l),
+                ),
+            ],
+          ),
         ),
       ),
     );
     if (lang != null && lang != app.book.lang) {
       await app.switchLanguage(lang);
-      setState(() {});
+      // new in the other language, not in this one
+      setState(_fresh.clear);
     }
   }
 
+  /// Worlds opened by the last world played: they sparkle until tapped.
+  final _fresh = <int>{};
+
   Future<void> _open(int world) async {
+    setState(() => _fresh.remove(world));
+    final before = [
+      for (var w = 0; w < app.book.worldCount; w++) app.worldOpen(w),
+    ];
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => PlayScreen(app: app, world: world),
       ),
     );
-    setState(() {}); // refresh stars
+    if (!mounted) return;
+    setState(() {
+      // refresh stars; a world that just opened: shown as new
+      for (var w = 0; w < before.length; w++) {
+        if (!before[w] && app.worldOpen(w)) _fresh.add(w);
+      }
+    });
   }
 
   Future<void> _push(Widget Function() screen) async {
@@ -272,11 +290,18 @@ class _HomeScreenState extends State<HomeScreen> {
                 final open = app.worldOpen(w);
                 final stars = app.worldStars(w);
                 final max = book.world(w).length * 3;
-                return Material(
+                final fresh = open && _fresh.contains(w);
+                final tile = Material(
                   color: open
                       ? const Color(0xFF2B2B6B)
                       : const Color(0xFF1D1D45),
-                  borderRadius: BorderRadius.circular(20),
+                  // a world that just opened: a golden frame
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20),
+                    side: fresh
+                        ? const BorderSide(color: Color(0xFFFFD54F), width: 4)
+                        : BorderSide.none,
+                  ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: open ? () => _open(w) : null,
@@ -328,6 +353,25 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                   ),
+                );
+                // always in a Stack: the tap's ripple stays when ✨ goes
+                return Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Positioned.fill(child: tile),
+                    if (fresh)
+                      Positioned(
+                        top: -6,
+                        right: -6,
+                        child: IgnorePointer(
+                          child: EmojiImage(
+                            '✨',
+                            key: ValueKey('world-new-$w'),
+                            size: 32,
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),
