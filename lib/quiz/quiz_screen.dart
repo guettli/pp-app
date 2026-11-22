@@ -647,21 +647,39 @@ class _QuizScreenState extends State<QuizScreen>
                   if (_q.ask.like case final like?)
                     _likeHeader(like)
                   else
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        _lines.question(_q.ask),
-                        textAlign: TextAlign.center,
-                        style: _text.copyWith(fontSize: 28),
+                    // large text on a small phone: the question shrinks,
+                    // the pictures keep their room
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.sizeOf(context).height * 0.17,
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: SizedBox(
+                          width: MediaQuery.sizeOf(context).width - 32,
+                          child: Text(
+                            _lines.question(_q.ask),
+                            textAlign: TextAlign.center,
+                            style: _text.copyWith(fontSize: 28),
+                          ),
+                        ),
                       ),
                     ),
                   Expanded(child: _options()),
                   AnimatedOpacity(
                     opacity: _phase == _Phase.listening ? 1 : 0,
                     duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      s.yourTurn,
-                      style: _text.copyWith(fontSize: 28),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.sizeOf(context).height * 0.07,
+                      ),
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          s.yourTurn,
+                          style: _text.copyWith(fontSize: 28),
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
