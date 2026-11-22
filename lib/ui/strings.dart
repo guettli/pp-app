@@ -53,6 +53,25 @@ class S {
   String get hearWordsTitle => _t['hearWordsTitle']!;
   String get missingTitle => _t['missingTitle']!;
   String get sayWhatTitle => _t['sayWhatTitle']!;
+  String get togetherGroup => _t['togetherGroup']!;
+  String get togetherTitle => _t['togetherTitle']!;
+  String get openMatch => _t['openMatch']!;
+  String get joinMatch => _t['joinMatch']!;
+  String get showCode => _t['showCode']!;
+  String get wantsToPlay => _t['wantsToPlay']!;
+  String get yes => _t['yes']!;
+  String get no => _t['no']!;
+  String get typeCode => _t['typeCode']!;
+  String get codeWrong => _t['codeWrong']!;
+  String get undo => _t['undo']!;
+  String get youAre => _t['youAre']!;
+  String get waitForYes => _t['waitForYes']!;
+  String get connecting => _t['connecting']!;
+  String get codeTaken => _t['codeTaken']!;
+  String get friendGone => _t['friendGone']!;
+  String get offline => _t['offline']!;
+  String get linkFailed => _t['linkFailed']!;
+  String get wave => _t['wave']!;
   String get phoneTalks => _t['phoneTalks']!;
   String get phoneSilent => _t['phoneSilent']!;
   String get phoneListens => _t['phoneListens']!;
@@ -126,6 +145,25 @@ class S {
       'hearWordsTitle': 'Wörter merken',
       'missingTitle': 'Was fehlt?',
       'sayWhatTitle': 'Was hast du gesehen?',
+      'togetherGroup': 'Zusammen',
+      'togetherTitle': 'Zusammen spielen',
+      'openMatch': 'Spiel aufmachen',
+      'joinMatch': 'Mitspielen',
+      'showCode': 'Zeig deinem Freund diese Bilder!',
+      'wantsToPlay': 'möchte mitspielen',
+      'yes': 'Ja',
+      'no': 'Nein',
+      'typeCode': 'Tipp die Bilder deines Freundes!',
+      'codeWrong': 'Die Bilder passen nicht. Versuch es nochmal!',
+      'undo': 'Zurück',
+      'youAre': 'Du bist',
+      'waitForYes': 'Warte, bis dein Freund Ja sagt.',
+      'connecting': 'Ich verbinde euch …',
+      'codeTaken': 'Da spielt schon jemand mit.',
+      'friendGone': 'Dein Freund ist nicht mehr da.',
+      'offline': 'Keine Verbindung zum Internet.',
+      'linkFailed': 'Die Handys finden sich nicht.',
+      'wave': 'Winken',
       'phoneTalks': 'Das Handy spricht',
       'phoneSilent': 'Das Handy spricht nicht',
       'phoneListens': 'Das Handy hört zu',
@@ -200,6 +238,25 @@ class S {
       'hearWordsTitle': 'Remember the words',
       'missingTitle': 'What’s missing?',
       'sayWhatTitle': 'What did you see?',
+      'togetherGroup': 'Together',
+      'togetherTitle': 'Play together',
+      'openMatch': 'Start a game',
+      'joinMatch': 'Join',
+      'showCode': 'Show your friend these pictures!',
+      'wantsToPlay': 'wants to play',
+      'yes': 'Yes',
+      'no': 'No',
+      'typeCode': 'Tap your friend\'s pictures!',
+      'codeWrong': 'Those pictures don\'t match. Try again!',
+      'undo': 'Back',
+      'youAre': 'You are',
+      'waitForYes': 'Wait until your friend says yes.',
+      'connecting': 'Connecting you …',
+      'codeTaken': 'Someone is already playing.',
+      'friendGone': 'Your friend is not there any more.',
+      'offline': 'No internet connection.',
+      'linkFailed': 'The phones can\'t find each other.',
+      'wave': 'Wave',
       'phoneTalks': 'The phone talks',
       'phoneSilent': 'The phone stays quiet',
       'phoneListens': 'The phone listens',
@@ -273,6 +330,25 @@ class S {
       'hearWordsTitle': 'Retiens les mots',
       'missingTitle': 'Qu’est-ce qui manque ?',
       'sayWhatTitle': 'Qu’as-tu vu ?',
+      'togetherGroup': 'Ensemble',
+      'togetherTitle': 'Jouer ensemble',
+      'openMatch': 'Ouvrir une partie',
+      'joinMatch': 'Rejoindre',
+      'showCode': 'Montre ces images à ton ami !',
+      'wantsToPlay': 'veut jouer',
+      'yes': 'Oui',
+      'no': 'Non',
+      'typeCode': 'Touche les images de ton ami !',
+      'codeWrong': 'Ces images ne vont pas. Essaie encore !',
+      'undo': 'Retour',
+      'youAre': 'Tu es',
+      'waitForYes': 'Attends que ton ami dise oui.',
+      'connecting': 'Je vous connecte…',
+      'codeTaken': 'Quelqu’un joue déjà.',
+      'friendGone': 'Ton ami n’est plus là.',
+      'offline': 'Pas de connexion Internet.',
+      'linkFailed': 'Les téléphones ne se trouvent pas.',
+      'wave': 'Saluer',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',
@@ -347,6 +423,25 @@ class S {
       'hearWordsTitle': 'Ricorda le parole',
       'missingTitle': 'Cosa manca?',
       'sayWhatTitle': 'Cosa hai visto?',
+      'togetherGroup': 'Insieme',
+      'togetherTitle': 'Giocare insieme',
+      'openMatch': 'Apri una partita',
+      'joinMatch': 'Partecipa',
+      'showCode': 'Mostra queste immagini al tuo amico!',
+      'wantsToPlay': 'vuole giocare',
+      'yes': 'Sì',
+      'no': 'No',
+      'typeCode': 'Tocca le immagini del tuo amico!',
+      'codeWrong': 'Queste immagini non vanno. Riprova!',
+      'undo': 'Indietro',
+      'youAre': 'Tu sei',
+      'waitForYes': 'Aspetta che il tuo amico dica sì.',
+      'connecting': 'Vi collego…',
+      'codeTaken': 'Qualcuno sta già giocando.',
+      'friendGone': 'Il tuo amico non c’è più.',
+      'offline': 'Nessuna connessione a Internet.',
+      'linkFailed': 'I telefoni non si trovano.',
+      'wave': 'Saluta',
       'phoneTalks': 'Il telefono parla',
       'phoneSilent': 'Il telefono non parla',
       'phoneListens': 'Il telefono ascolta',
@@ -421,6 +516,25 @@ class S {
       'hearWordsTitle': 'Recuerda las palabras',
       'missingTitle': '¿Qué falta?',
       'sayWhatTitle': '¿Qué has visto?',
+      'togetherGroup': 'Juntos',
+      'togetherTitle': 'Jugar juntos',
+      'openMatch': 'Abrir una partida',
+      'joinMatch': 'Unirse',
+      'showCode': '¡Enseña estas imágenes a tu amigo!',
+      'wantsToPlay': 'quiere jugar',
+      'yes': 'Sí',
+      'no': 'No',
+      'typeCode': '¡Toca las imágenes de tu amigo!',
+      'codeWrong': 'Esas imágenes no coinciden. ¡Inténtalo otra vez!',
+      'undo': 'Atrás',
+      'youAre': 'Eres',
+      'waitForYes': 'Espera a que tu amigo diga que sí.',
+      'connecting': 'Os estoy conectando…',
+      'codeTaken': 'Ya hay alguien jugando.',
+      'friendGone': 'Tu amigo ya no está.',
+      'offline': 'No hay conexión a Internet.',
+      'linkFailed': 'Los teléfonos no se encuentran.',
+      'wave': 'Saludar',
       'phoneTalks': 'El teléfono habla',
       'phoneSilent': 'El teléfono no habla',
       'phoneListens': 'El teléfono escucha',

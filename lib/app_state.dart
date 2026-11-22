@@ -8,6 +8,9 @@ import 'data/progress.dart';
 import 'game/game_io.dart';
 import 'net/app_update.dart';
 import 'net/feedback.dart';
+import 'net/match.dart';
+import 'net/peer_link.dart';
+import 'net/together.dart';
 import 'net/quiz_report.dart';
 import 'phonetics/phoneme_distance.dart';
 import 'phonetics/recognizer.dart';
@@ -25,6 +28,7 @@ class AppState {
     this.feedback,
     this.quizReports,
     this.updater,
+    this.together,
   }) : facts = facts ?? Facts(const {});
 
   final Recognizer recognizer;
@@ -47,6 +51,9 @@ class AppState {
   /// Updates from Google Play; null: none (tests).
   final AppUpdater? updater;
 
+  /// Two-player games over the internet; null: none (tests).
+  final Together? together;
+
   static Future<AppState> load() async {
     final progress = await Progress.load();
     final comparer = PhonemeComparer.fromJson(
@@ -65,6 +72,7 @@ class AppState {
       feedback: FeedbackOutbox(prefs, HttpFeedbackTransport()),
       quizReports: HttpQuizReportSender(),
       updater: PlayAppUpdater(prefs),
+      together: Together(HttpMatchSignal(), const WebRtcLinkMaker()),
     );
   }
 

@@ -11,6 +11,7 @@ import '../quiz/quiz_screen.dart';
 import '../read/read_aloud_screen.dart';
 import '../spell/spell_screen.dart';
 import '../think/think_screen.dart';
+import '../together/together_screen.dart';
 import '../voice/voice_screen.dart';
 import 'audio_badge.dart';
 import 'emoji_image.dart';
@@ -240,6 +241,21 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       (key: 'feel', emoji: '😄', name: s.feelGroup, games: [faces, feelings]),
+      if (app.together case final together?)
+        (
+          key: 'together',
+          emoji: '🤝',
+          name: s.togetherGroup,
+          games: [
+            (
+              screen: () => TogetherScreen(together: together),
+              emojis: const ['👋'],
+              name: s.wave,
+              audio: Audio.none,
+              best: null,
+            ),
+          ],
+        ),
     ];
   }
 

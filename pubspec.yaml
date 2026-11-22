@@ -17,6 +17,7 @@ dependencies:
   audioplayers: 6.8.1
   in_app_update: 5.0.0
   shared_preferences: 2.5.6
+  flutter_webrtc: 1.6.3
 
 dev_dependencies:
   flutter_test:
