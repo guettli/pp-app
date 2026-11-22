@@ -16,6 +16,7 @@ import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
+import 'package:phoneme_party/ui/round_parts.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,6 +78,53 @@ void main() {
     for (var i = 0; i < 40; i++) {
       await t.pump(const Duration(milliseconds: 50));
     }
+  }
+
+  for (final (name, size, text) in [
+    ('portrait', const Size(360, 640), 1.0),
+    ('landscape', const Size(640, 360), 1.0),
+    ('large text', const Size(360, 640), 1.6),
+    ('landscape, large text', const Size(640, 360), 1.6),
+  ]) {
+    testWidgets('round end: the hare jumps, then all is still, $name', (
+      t,
+    ) async {
+      await show(
+        t,
+        (app) => Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => showRoundEnd(
+                  context,
+                  stars: 3,
+                  right: 8,
+                  total: 8,
+                  record: true,
+                ),
+                child: const Text('end'),
+              ),
+            ),
+          ),
+        ),
+        size: size,
+        text: text,
+      );
+      await t.tap(find.text('end'));
+      // mid-jump too: nothing may overflow
+      for (var i = 0; i < 12; i++) {
+        await t.pump(const Duration(milliseconds: 100));
+        expect(t.takeException(), isNull);
+      }
+      expect(find.byKey(const ValueKey('cheer-hare')), findsOneWidget);
+      // the OK button is in view
+      expect(find.text('Great').hitTestable(), findsOneWidget);
+      // once, not forever: pumpAndSettle ends
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('8 / 8'), findsOneWidget);
+      await close(t);
+    });
   }
 
   testWidgets('the tiles show the stars of the best rounds', (t) async {
