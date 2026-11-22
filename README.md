@@ -42,11 +42,12 @@ built with Flutter. Native successor of the web app
 
 ## More games (above the worlds)
 
-Above the worlds, the games are sorted into four groups, two big tiles a
+Above the worlds, the games are sorted into groups, two big tiles a
 row, by what the child practises: 👂 listening (listen closely, sound
 detective), 📖 reading (word to picture, letter puzzle, read aloud),
-🎤 speaking (hold it long, low and high) and 🤔 thinking (what do I
-need, who am I, odd one out, who lives here, quiz). A group opens a screen with its games
+🎤 speaking (hold it long, low and high), 🤔 thinking (what do I
+need, who am I, odd one out, who lives here, quiz), 🧠 memory and
+😄 feelings (feeling faces, how do I feel). A group opens a screen with its games
 (`lib/ui/game_tile.dart`). Each game tile shows the stars of its best
 round (⭐⭐⭐, the ones not yet earned faint), each group tile the stars of
 its games (⭐ 5/15), so a child sees what it has done and what is left.
@@ -125,6 +126,19 @@ and high also listen (and so do the worlds).
   🌴 jungle, ❄️ ice, 🏜️ desert, 🏠 at home), and three animals; one lives
   there. Animals that might live there too (a penguin in the sea, a mouse
   in a house) are never offered as wrong pictures.
+- **😄😠 Feeling faces** and **🍦😢 How do I feel?** (feelings): naming
+  a feeling is the first step to coping with it. Six feelings, each with
+  its face: happy, sad, angry, scared, surprised, disgusted. In *Feeling
+  faces* the phone asks "Welches Gesicht ist traurig?" and the child taps
+  one of four faces. In *How do I feel?* the phone tells a small story
+  ("Mein Eis ist auf den Boden gefallen. Wie fühle ich mich?"), the child
+  taps one of three faces, and after the right one the phone says what
+  helps ("Wenn ich traurig bin, hilft mir eine Umarmung."). Faces that
+  might fit too (angry when the ice cream falls) are never offered as
+  wrong ones. In French, Italian and Spanish the feelings are nouns ("la
+  joie"): adjectives there would depend on whether the child is a boy or
+  a girl. Texts: `lib/think/feelings_data.dart`; the screen is the one of
+  the thinking games.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
   (`lib/voice/`); the sound is only measured, never recorded.
 - **📖 Word list:** every word with picture, rough size and weight and its

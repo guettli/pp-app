@@ -18,6 +18,10 @@
 // "Who lives here?" (🏞️, [ThinkGame.home]): a place (🌊) and three
 // animals; one lives there.
 //
+// "Feeling faces" (😄😠, [ThinkGame.faces]): a feeling is named, four
+// faces. "How do I feel?" (🍦😢, [ThinkGame.feelings]): a small story,
+// three faces; the right one says what helps (feelings_data.dart).
+//
 // A wrong tap says what the tapped picture is and goes on with the next
 // clue (or the problem once more). Only a right first tap counts for the
 // stars. No microphone.
@@ -42,7 +46,7 @@ import '../ui/strings.dart';
 import 'think_rules.dart';
 
 /// The name is the key of the best round in [Progress.thinkBest].
-enum ThinkGame { needs, riddle, odd, home }
+enum ThinkGame { needs, riddle, odd, home, faces, feelings }
 
 enum _Phase { speaking, choosing, result }
 
@@ -111,6 +115,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       ThinkGame.riddle => makeRiddleRound(book, _rng),
       ThinkGame.odd => makeOddRound(book, widget.app.facts, _rng),
       ThinkGame.home => makeHomeRound(book, _rng),
+      ThinkGame.faces => makeFacesRound(_lang, _rng),
+      ThinkGame.feelings => makeFeelingsRound(_lang, _rng),
     };
   }
 
@@ -220,6 +226,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
           ThinkGame.riddle => GameIntro.riddle,
           ThinkGame.odd => GameIntro.odd,
           ThinkGame.home => GameIntro.home,
+          ThinkGame.faces => GameIntro.faces,
+          ThinkGame.feelings => GameIntro.feelings,
         }, _lang),
       );
       if (mounted) setState(() => _introPlaying = false);
@@ -349,6 +357,8 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
           ThinkGame.riddle => s.riddleTitle,
           ThinkGame.odd => s.oddTitle,
           ThinkGame.home => s.homeTitle,
+          ThinkGame.faces => s.facesTitle,
+          ThinkGame.feelings => s.feelingsTitle,
         }),
       ),
       body: SafeArea(
