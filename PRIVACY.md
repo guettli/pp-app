@@ -2,7 +2,7 @@
 
 *Deutsch: siehe unten.*
 
-Last updated: 2026-11-16
+Last updated: 2026-11-22
 
 Der Hase lacht is a speaking game for children. It is free, has no ads, no
 in-app purchases, no account and no tracking or analytics.
@@ -91,6 +91,12 @@ earlier using the contact above (the time of the report is enough). The
 legal basis is the consent of the grown-up who switches it on
 (Art. 6(1)(a) GDPR), which can be withdrawn by switching it off.
 
+With the same switch, the thinking games (no microphone) show a 🐞 button
+too. After asking, it sends the question on the screen (what the phone
+said, the pictures, the right one, which were tapped) and a note the
+grown-up may type, as a feedback report (see above: same details, same
+way, deleted after twelve months). No recording is sent.
+
 ## Your rights
 
 You can ask for access to a report, its correction or its deletion, using
@@ -110,7 +116,7 @@ Source code: <https://github.com/guettli/pp-app>
 
 # Datenschutzerklärung – Der Hase lacht (Android-App)
 
-Stand: 16.11.2026
+Stand: 22.11.2026
 
 Der Hase lacht ist ein Sprechspiel für Kinder. Es ist kostenlos und hat
 keine Werbung, keine In-App-Käufe, kein Konto und kein Tracking oder
@@ -209,6 +215,13 @@ gelöscht; eine frühere Löschung können Sie über den Kontakt oben
 verlangen (der Zeitpunkt der Meldung genügt). Rechtsgrundlage ist die
 Einwilligung des Erwachsenen, der sie einschaltet (Art. 6 Abs. 1 lit. a
 DSGVO); Ausschalten widerruft sie.
+
+Mit demselben Schalter zeigen auch die Denkspiele (ohne Mikrofon) einen
+🐞-Knopf. Nach einer Rückfrage sendet er die Frage auf dem Bildschirm
+(was das Handy gesagt hat, die Bilder, das richtige, welche getippt
+wurden) und eine Notiz, die der Erwachsene schreiben kann, als
+Rückmeldung (siehe oben: dieselben Angaben, derselbe Weg, Löschung nach
+zwölf Monaten). Es wird keine Aufnahme gesendet.
 
 ## Ihre Rechte
 

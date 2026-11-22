@@ -97,7 +97,7 @@ List<ThinkQuestion> makeNeedsRound(
 }
 
 /// [count] riddles of "Who am I?" with [options] pictures each; the wrong
-/// ones are other riddles' things the last clue does not fit.
+/// ones are other riddles' things that no clue fits.
 List<ThinkQuestion> makeRiddleRound(
   PhraseBook book,
   math.Random rng, {

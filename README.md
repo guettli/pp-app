@@ -111,8 +111,10 @@ and high also listen (and so do the worlds).
   to clear ("Ich lebe auf dem Bauernhof." "Ich fresse Gras." "Ich sage
   Muh!"); the child taps one of four pictures when sure. 💡 gives the next
   clue at any time, waiting costs nothing; a wrong tap brings the next
-  clue and costs the star. The last clue fits only the answer among all
-  riddles.
+  clue and costs the star. Each clue alone fits only the answer among
+  the pictures shown: a banana never comes with the apple (it can be
+  eaten and grows on a tree too), an owl never with the cat (it catches
+  mice).
 - **🐶🐱🚗 Odd one out:** four pictures, three of one kind (animals,
   food, clothes, plants, things with wheels, instruments, body parts,
   things that shine; from `assets/facts/facts.tsv`) and one of another
@@ -139,6 +141,10 @@ and high also listen (and so do the worlds).
   joie"): adjectives there would depend on whether the child is a boy or
   a girl. Texts: `lib/think/feelings_data.dart`; the screen is the one of
   the thinking games.
+- With quiz reports switched on, every thinking game shows 🐞 too: after
+  asking (with room for a note) it sends the current question (what was
+  said, the pictures, the answer, the taps) as a bug report through the
+  feedback outbox. No recording.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
   (`lib/voice/`); the sound is only measured, never recorded.
 - **📖 Word list:** every word with picture, rough size and weight and its
