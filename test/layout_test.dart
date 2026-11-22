@@ -16,6 +16,7 @@ import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
+import 'package:phoneme_party/ui/round_parts.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -77,6 +78,41 @@ void main() {
     for (var i = 0; i < 40; i++) {
       await t.pump(const Duration(milliseconds: 50));
     }
+  }
+
+  for (final text in [1.0, 1.6]) {
+    testWidgets('round end: the hare jumps, then all is still (text $text)', (
+      t,
+    ) async {
+      await show(
+        t,
+        (app) => Builder(
+          builder: (context) => Scaffold(
+            body: Center(
+              child: TextButton(
+                onPressed: () => showRoundEnd(
+                  context,
+                  stars: 3,
+                  right: 8,
+                  total: 8,
+                  record: true,
+                ),
+                child: const Text('end'),
+              ),
+            ),
+          ),
+        ),
+        text: text,
+      );
+      await t.tap(find.text('end'));
+      await t.pump(const Duration(milliseconds: 600));
+      expect(find.byKey(const ValueKey('cheer-hare')), findsOneWidget);
+      // once, not forever: pumpAndSettle ends
+      await t.pumpAndSettle();
+      expect(t.takeException(), isNull);
+      expect(find.text('8 / 8'), findsOneWidget);
+      await close(t);
+    });
   }
 
   testWidgets('the tiles show the stars of the best rounds', (t) async {
