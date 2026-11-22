@@ -716,6 +716,29 @@ class _QuizScreenState extends State<QuizScreen>
       builder: (context, c) {
         final w = (c.maxWidth - 16 * 4) / 3;
         final pic = math.min(w * 0.8, c.maxHeight * 0.45);
+        // portrait with room: two and one below, much bigger than three
+        // in a row (a third of the width)
+        if (c.maxHeight > c.maxWidth * 1.1) {
+          final w2 = (c.maxWidth - 16 * 3) / 2;
+          final pic2 = math.min(w2 * 0.75, (c.maxHeight - 16) / 2 - 64);
+          if (pic2 > pic) {
+            return FittedBox(
+              fit: BoxFit.scaleDown,
+              child: SizedBox(
+                width: c.maxWidth,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: [
+                    for (final o in _q.options)
+                      _option(o, w2, pic2, result: result),
+                  ],
+                ),
+              ),
+            );
+          }
+        }
         // shrinks when there is no room (landscape, large text)
         return FittedBox(
           fit: BoxFit.scaleDown,
@@ -745,8 +768,10 @@ class _QuizScreenState extends State<QuizScreen>
     return AnimatedBuilder(
       animation: _bounce,
       builder: (_, child) {
+        // at most into the 16 dp gap: big tiles (tablet) must not cover
+        // their neighbours
         final up = result && isAnswer
-            ? math.sin(_bounce.value * math.pi) * 0.15
+            ? math.sin(_bounce.value * math.pi) * math.min(0.15, 16 / width)
             : 0.0;
         return Transform.scale(scale: 1 + up, child: child);
       },

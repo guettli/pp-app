@@ -15,6 +15,7 @@ import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/read/read_aloud_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
+import 'package:phoneme_party/ui/emoji_image.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
 import 'package:phoneme_party/ui/round_parts.dart';
 import 'package:phoneme_party/ui/word_list_screen.dart';
@@ -189,6 +190,32 @@ void main() {
       await close(t);
     });
   }
+
+  testWidgets('quiz on a tall phone: two pictures and one below, big', (
+    t,
+  ) async {
+    await show(
+      t,
+      (app) => QuizScreen(app: app),
+      size: const Size(393, 829), // about the A80
+    );
+    for (var i = 0; i < 40; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    expect(t.takeException(), isNull);
+    expect(find.byType(Wrap), findsOneWidget);
+    // a picture much bigger than in one row (a third of the width, 80 %)
+    final pics = find.descendant(
+      of: find.byType(Wrap),
+      matching: find.byType(EmojiImage),
+    );
+    expect(pics, findsNWidgets(3));
+    expect(
+      t.getSize(pics.first).width,
+      greaterThan((393 - 64) / 3 * 0.8 * 1.3),
+    );
+    await close(t);
+  });
 
   for (final (name, size, text) in [
     ('portrait', const Size(360, 640), 1.0),
