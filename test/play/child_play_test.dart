@@ -496,6 +496,22 @@ void main() {
       await show(t, MemoryScreen(app: app, game: game));
       bool seen(String k) => find.byKey(ValueKey(k)).evaluate().isNotEmpty;
       var n = 0;
+      if (game == MemoryGame.say) {
+        // the child names what it saw (the fake hears what it heard last)
+        for (var e = 0; e < 40000 && !seen('memory-slot-0'); e += 100) {
+          await t.pump(const Duration(milliseconds: 100));
+          if (seen('memory-shown-0') && e % 1000 == 0 && e < 25000) {
+            await shot(t, 'say-shown');
+          }
+        }
+        await shot(t, 'say-q1-slots');
+        await settle(t, 12000);
+        n = said(dev, n);
+        await shot(t, 'say-q1-later');
+        await t.pumpWidget(const SizedBox());
+        await settle(t, 6000);
+        return;
+      }
       for (var q = 0; q < 5; q++) {
         final shots = <String>{};
         // look (or listen), wait while hidden, then the pictures

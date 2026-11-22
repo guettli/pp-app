@@ -210,7 +210,7 @@ class _HomeScreenState extends State<HomeScreen> {
       screen: () => MemoryScreen(app: app, game: g),
       emojis: emojis,
       name: name,
-      audio: Audio.output,
+      audio: g == MemoryGame.say ? Audio.both : Audio.output,
       best: () => p.thinkBest(MemoryScreen.progressKey(g), lang),
     );
     return [
@@ -236,6 +236,7 @@ class _HomeScreenState extends State<HomeScreen> {
           memory(MemoryGame.look, const ['👀'], s.lookTitle),
           memory(MemoryGame.hear, const ['👂', '💬'], s.hearWordsTitle),
           memory(MemoryGame.missing, const ['❓'], s.missingTitle),
+          memory(MemoryGame.say, const ['👀', '🎤'], s.sayWhatTitle),
         ],
       ),
       (key: 'feel', emoji: '😄', name: s.feelGroup, games: [faces, feelings]),
