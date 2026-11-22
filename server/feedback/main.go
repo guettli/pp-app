@@ -140,8 +140,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/pp-app/api/turn":
 		s.serveTURN(w, r)
 		return
-	case "/pp-app/api/match/new", "/pp-app/api/match/join", "/pp-app/api/match/send",
-		"/pp-app/api/match/recv", "/pp-app/api/match/leave":
+	case "/pp-app/api/match/new", "/pp-app/api/match/join", "/pp-app/api/match/reject",
+		"/pp-app/api/match/send", "/pp-app/api/match/recv", "/pp-app/api/match/leave":
 		s.serveMatch(w, r, strings.TrimPrefix(r.URL.Path, "/pp-app/api/match/"))
 		return
 	default:
