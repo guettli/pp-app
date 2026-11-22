@@ -66,9 +66,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.needs: 'Hör gut zu und hilf mir! Tippe auf das, was ich brauche!',
     GameIntro.riddle:
         'Rate, wer ich bin! Hör auf die Tipps und tippe auf das richtige Bild. Die Lampe gibt dir noch einen Tipp.',
-    GameIntro.feelings:
-        'Hör gut zu! Wie fühle ich mich? Tippe auf das richtige Gesicht!',
-    GameIntro.faces: 'Schau dir die Gesichter an und tippe auf das richtige!',
     GameIntro.odd:
         'Drei Bilder gehören zusammen. Tippe auf das Bild, das nicht dazu passt!',
     GameIntro.home: 'Schau, wo wir sind! Tippe auf das Tier, das hier wohnt!',
@@ -79,6 +76,10 @@ const _lines = <String, Map<GameIntro, String>>{
         'Hör gut zu und merk dir die Wörter! Dann tippst du auf die passenden Bilder.',
     GameIntro.memoryMissing:
         'Schau dir die Bilder gut an! Dann verstecke ich alle und nehme eins weg. Tippe auf das Bild, das fehlt!',
+    GameIntro.faces:
+        'Hör gut zu! Ich sage ein Gefühl. Tippe auf das passende Gesicht!',
+    GameIntro.feelings:
+        'Hör gut zu! Wie fühle ich mich? Tippe auf das richtige Gesicht!',
   },
   'en': {
     GameIntro.sayWord: 'Listen, then say the right word!',
@@ -89,8 +90,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.needs: 'Listen and help me! Tap what I need!',
     GameIntro.riddle:
         'Guess who I am! Listen to the clues and tap the right picture. The lamp gives you another clue.',
-    GameIntro.feelings: 'Listen! How do I feel? Tap the right face!',
-    GameIntro.faces: 'Look at the faces and tap the right one!',
     GameIntro.odd:
         'Three pictures belong together. Tap the one that doesn’t belong!',
     GameIntro.home: 'Look where we are! Tap the animal that lives here!',
@@ -101,6 +100,8 @@ const _lines = <String, Map<GameIntro, String>>{
         'Listen closely and remember the words! Then tap the matching pictures.',
     GameIntro.memoryMissing:
         'Look closely at the pictures! Then I’ll hide them all and take one away. Tap the picture that is missing!',
+    GameIntro.faces: 'Listen! I say a feeling. Tap the face that shows it!',
+    GameIntro.feelings: 'Listen! How do I feel? Tap the right face!',
   },
   'fr': {
     GameIntro.sayWord: 'Écoute bien, puis dis le bon mot !',
@@ -111,9 +112,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.needs: 'Écoute bien et aide-moi ! Touche ce dont j’ai besoin !',
     GameIntro.riddle:
         'Devine qui je suis ! Écoute les indices et touche la bonne image. La lampe te donne un autre indice.',
-    GameIntro.feelings:
-        'Écoute bien ! Qu’est-ce que je ressens ? Touche le bon visage !',
-    GameIntro.faces: 'Regarde les visages et touche le bon !',
     GameIntro.odd:
         'Trois images vont ensemble. Touche celle qui n’est pas comme les autres !',
     GameIntro.home: 'Regarde où nous sommes ! Touche l’animal qui vit ici !',
@@ -124,6 +122,10 @@ const _lines = <String, Map<GameIntro, String>>{
         'Écoute bien et retiens les mots ! Ensuite, touche les bonnes images.',
     GameIntro.memoryMissing:
         'Regarde bien les images ! Ensuite je les cache toutes et j’en enlève une. Touche l’image qui manque !',
+    GameIntro.faces:
+        'Écoute bien ! Je dis une émotion. Touche le visage qui la montre !',
+    GameIntro.feelings:
+        'Écoute bien ! Qu’est-ce que je ressens ? Touche le bon visage !',
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
@@ -134,8 +136,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.needs: 'Ascolta bene e aiutami! Tocca quello che mi serve!',
     GameIntro.riddle:
         'Indovina chi sono! Ascolta gli indizi e tocca l’immagine giusta. La lampadina ti dà un altro indizio.',
-    GameIntro.feelings: 'Ascolta bene! Cosa provo? Tocca la faccia giusta!',
-    GameIntro.faces: 'Guarda le facce e tocca quella giusta!',
     GameIntro.odd: 'Tre immagini vanno insieme. Tocca quella che non c’entra!',
     GameIntro.home: 'Guarda dove siamo! Tocca l’animale che vive qui!',
     GameIntro.repeat: 'Ascolta bene e ripeti dopo di me!',
@@ -145,6 +145,9 @@ const _lines = <String, Map<GameIntro, String>>{
         'Ascolta bene e ricorda le parole! Poi tocca le immagini giuste.',
     GameIntro.memoryMissing:
         'Guarda bene le immagini! Poi le nascondo tutte e ne tolgo una. Tocca l’immagine che manca!',
+    GameIntro.faces:
+        'Ascolta bene! Dico un’emozione. Tocca la faccia che la mostra!',
+    GameIntro.feelings: 'Ascolta bene! Cosa provo? Tocca la faccia giusta!',
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
@@ -155,8 +158,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.needs: '¡Escucha bien y ayúdame! ¡Toca lo que necesito!',
     GameIntro.riddle:
         '¡Adivina quién soy! Escucha las pistas y toca la imagen correcta. La bombilla te da otra pista.',
-    GameIntro.feelings: '¡Escucha bien! ¿Qué siento? ¡Toca la cara correcta!',
-    GameIntro.faces: '¡Mira las caras y toca la correcta!',
     GameIntro.odd:
         'Tres imágenes van juntas. ¡Toca la que no va con las demás!',
     GameIntro.home: '¡Mira dónde estamos! ¡Toca el animal que vive aquí!',
@@ -167,5 +168,8 @@ const _lines = <String, Map<GameIntro, String>>{
         '¡Escucha bien y recuerda las palabras! Luego toca las imágenes correctas.',
     GameIntro.memoryMissing:
         '¡Mira bien las imágenes! Luego las escondo todas y quito una. ¡Toca la imagen que falta!',
+    GameIntro.faces:
+        '¡Escucha bien! Digo una emoción. ¡Toca la cara que la muestra!',
+    GameIntro.feelings: '¡Escucha bien! ¿Qué siento? ¡Toca la cara correcta!',
   },
 };

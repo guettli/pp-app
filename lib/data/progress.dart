@@ -125,8 +125,9 @@ class Progress {
     return true;
   }
 
-  /// Most stars (0..3) for one round of a thinking game ([game]: needs,
-  /// riddle, odd, home).
+  /// Most stars (0..3) for one round of a thinking, feelings or memory
+  /// game ([game]: needs, riddle, odd, home, faces, feelings, or
+  /// MemoryScreen.progressKey).
   int thinkBest(String game, String lang) => _prefs.getInt('$game|$lang') ?? 0;
 
   /// Stores [stars] if it is a new best; returns whether it was.

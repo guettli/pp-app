@@ -246,7 +246,7 @@ List<ThinkQuestion> makeHomeRound(
 /// The faces of all feelings in [lang], as pictures to tap (one instance
 /// each: options are compared by identity).
 Map<Feeling, Phrase> feelingFaces(String lang) {
-  final names = feelingNames[_code(lang)] ?? feelingNames['en']!;
+  final names = feelingNames[_code(lang)]!;
   return {
     for (final f in Feeling.values)
       f: Phrase(text: names[f]!, emoji: feelingEmoji[f]!, ipa: '', level: 0),
@@ -299,7 +299,7 @@ List<ThinkQuestion> makeFacesRound(
 }) {
   final code = _code(lang);
   final faces = feelingFaces(lang);
-  final question = faceQuestion[code] ?? faceQuestion['en']!;
+  final question = faceQuestion[code]!;
   final order = <Feeling>[];
   while (order.length < count) {
     order.addAll([...Feeling.values]..shuffle(rng));

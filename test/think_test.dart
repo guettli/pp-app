@@ -89,6 +89,28 @@ void main() {
           expect(st.say[code], isNotEmpty, reason: '$code ${st.yes}');
           expect(st.help[code], isNotEmpty, reason: '$code ${st.yes}');
           expect(st.maybe, isNot(contains(st.yes)));
+          // enough clearly wrong faces, or the story never comes up
+          expect(
+            Feeling.values.where((f) => f != st.yes && !st.maybe.contains(f)),
+            hasLength(greaterThanOrEqualTo(2)),
+            reason: '${st.say['en']}',
+          );
+        }
+      }
+      // fr, it, es: nothing depends on whether the child is a boy or a
+      // girl (no gendered adjective about "me")
+      final gendered = RegExp(
+        r'\b(content|contente|heureux|heureuse|fatigué|fatiguée|seul|seule|'
+        r'fier|fière|contento|contenta|arrabbiato|arrabbiata|stanco|stanca|'
+        r'solo|sola|andato|andata|enfadado|enfadada|cansado|cansada|'
+        r'asustado|asustada|quieto|quieta|orgulloso|orgullosa)\b',
+        caseSensitive: false,
+      );
+      for (final code in ['fr', 'it', 'es']) {
+        for (final st in feelingStories) {
+          for (final line in [st.say[code]!, st.help[code]!]) {
+            expect(gendered.hasMatch(line), isFalse, reason: line);
+          }
         }
       }
       // every feeling is the answer of some story
@@ -429,6 +451,33 @@ void main() {
       expect(find.text('traurig'), findsOneWidget);
       await wait(t, 8000);
       expect(progress.thinkBest('feelings', 'de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('feeling faces: wrong, its name and the question again', (
+      t,
+    ) async {
+      final faces = feelingFaces('de-DE');
+      const ask = 'Welches Gesicht ist wütend?';
+      final q = ThinkQuestion(
+        [ask],
+        [
+          faces[Feeling.sad]!,
+          faces[Feeling.angry]!,
+          faces[Feeling.happy]!,
+          faces[Feeling.scared]!,
+        ],
+        faces[Feeling.angry]!,
+      );
+      final (dev, progress) = await play(t, ThinkGame.faces, [q]);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), [ask]);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // traurig
+      await wait(t, 4000);
+      expect(dev.log.started('tts'), [ask, 'traurig', ask]);
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('faces', 'de-DE'), 0);
       await close(t, dev.log);
     });
 

@@ -118,7 +118,7 @@ class S {
       'memoryGroup': 'Merken',
       'feelGroup': 'Gefühle',
       'feelingsTitle': 'Wie fühle ich mich?',
-      'facesTitle': 'Gefühle-Gesichter',
+      'facesTitle': 'Gefühlsgesichter',
       'lookTitle': 'Bilder merken',
       'hearWordsTitle': 'Wörter merken',
       'missingTitle': 'Was fehlt?',

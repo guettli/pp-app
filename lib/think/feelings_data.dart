@@ -3,13 +3,13 @@
 // first step to coping with it.
 //
 // "How do I feel?" (🍦😢): a small story; one of three faces fits. Faces
-// that might fit too (sad or angry when the ice cream falls) are never
+// that might fit too (angry when the ice cream falls) are never
 // offered as wrong ones. After the right face the phone says what helps.
 // "Faces" (😄😠): the phone names a feeling, the child taps its face.
 //
 // The feelings are nouns in fr, it and es ("la joie"): adjectives there
-// depend on whether the child is a boy or a girl. No line says
-// "content/contente" either.
+// depend on whether the child is a boy or a girl, and no story or help
+// line depends on it either (a test checks for gendered words).
 
 enum Feeling { happy, sad, angry, scared, surprised, disgusted }
 
@@ -58,12 +58,12 @@ const feelingNames = <String, Map<Feeling, String>>{
     Feeling.disgusted: 'il disgusto',
   },
   'es': {
-    Feeling.happy: 'alegría',
-    Feeling.sad: 'tristeza',
-    Feeling.angry: 'enfado',
-    Feeling.scared: 'miedo',
-    Feeling.surprised: 'sorpresa',
-    Feeling.disgusted: 'asco',
+    Feeling.happy: 'la alegría',
+    Feeling.sad: 'la tristeza',
+    Feeling.angry: 'el enfado',
+    Feeling.scared: 'el miedo',
+    Feeling.surprised: 'la sorpresa',
+    Feeling.disgusted: 'el asco',
   },
 };
 
@@ -150,11 +150,11 @@ const feelingStories = <FeelingStory>[
       'es': 'Por la noche hay truenos muy fuertes.',
     },
     {
-      'de': 'Wenn ich Angst habe, gehe ich zu Mama oder Papa.',
-      'en': 'When I am scared, I go to Mum or Dad.',
-      'fr': 'Quand j’ai peur, je vais voir maman ou papa.',
-      'it': 'Quando ho paura, vado dalla mamma o dal papà.',
-      'es': 'Cuando tengo miedo, voy con mamá o papá.',
+      'de': 'Wenn ich Angst habe, gehe ich zu jemandem, der mich lieb hat.',
+      'en': 'When I am scared, I go to someone who loves me.',
+      'fr': 'Quand j’ai peur, je vais voir quelqu’un qui m’aime.',
+      'it': 'Quando ho paura, vado da qualcuno che mi vuole bene.',
+      'es': 'Cuando tengo miedo, voy con alguien que me quiere.',
     },
   ),
   FeelingStory(
@@ -164,7 +164,7 @@ const feelingStories = <FeelingStory>[
       'de': 'Ein Kind nimmt mir einfach mein Spielzeug weg.',
       'en': 'A child just takes my toy away.',
       'fr': 'Un enfant me prend mon jouet.',
-      'it': 'Un bambino mi prende il gioco.',
+      'it': 'Un bambino mi porta via il giocattolo.',
       'es': 'Un niño me quita mi juguete.',
     },
     {
@@ -187,7 +187,7 @@ const feelingStories = <FeelingStory>[
       'en': 'There is an old, mushy banana in my bag.',
       'fr': 'Il y a une vieille banane toute molle dans mon sac.',
       'it': 'Nello zaino c’è una banana vecchia e molliccia.',
-      'es': 'En mi mochila hay un plátano viejo y aplastado.',
+      'es': 'En mi mochila hay un plátano viejo y pocho.',
     },
     {
       'de': 'Bäh! Ich werfe sie weg und wasche mir die Hände.',
@@ -231,7 +231,7 @@ const feelingStories = <FeelingStory>[
           'ruhig.',
       'en': 'My heart beats fast. I breathe deeply, and it calms down.',
       'fr': 'Mon cœur bat vite. Je respire profondément et il se calme.',
-      'it': 'Il mio cuore batte forte. Respiro profondamente e si calma.',
+      'it': 'Il cuore mi batte forte. Faccio un respiro profondo e si calma.',
       'es': 'Mi corazón late rápido. Respiro hondo y se calma.',
     },
   ),
@@ -242,12 +242,12 @@ const feelingStories = <FeelingStory>[
       'de': 'Ich bin zum ersten Mal ohne Hilfe Fahrrad gefahren.',
       'en': 'I rode my bike without help for the first time.',
       'fr': 'Pour la première fois, j’ai fait du vélo sans aide.',
-      'it': 'Per la prima volta ho guidato la bici senza aiuto.',
+      'it': 'Per la prima volta ho pedalato senza aiuto.',
       'es': 'Por primera vez he montado en bici sin ayuda.',
     },
     {
-      'de': 'Darauf bin ich stolz! Stolz fühlt sich warm und schön an.',
-      'en': 'I am proud! Pride feels warm and nice.',
+      'de': 'Ich bin stolz auf mich! Das fühlt sich warm und schön an.',
+      'en': 'I am proud of myself! That feels warm and nice.',
       'fr': 'Quelle fierté ! C’est un sentiment chaud et doux.',
       'it': 'Che orgoglio! È una sensazione calda e bella.',
       'es': '¡Qué orgullo! Es un sentimiento cálido y bonito.',
@@ -258,7 +258,7 @@ const feelingStories = <FeelingStory>[
     maybe: {Feeling.sad},
     {
       'de': 'Auf dem Spielplatz sehe ich Mama nicht mehr.',
-      'en': 'At the playground I cannot see Mum any more.',
+      'en': 'At the playground I can’t see Mum anymore.',
       'fr': 'Au parc, je ne vois plus maman.',
       'it': 'Al parco giochi non vedo più la mamma.',
       'es': 'En el parque ya no veo a mamá.',
@@ -318,11 +318,11 @@ const feelingStories = <FeelingStory>[
       'es': 'El cartero trae un paquete con mi nombre.',
     },
     {
-      'de': 'Was da wohl drin ist?',
-      'en': 'I wonder what is inside!',
-      'fr': 'Qu’est-ce qu’il y a dedans ?',
-      'it': 'Chissà cosa c’è dentro!',
-      'es': '¿Qué habrá dentro?',
+      'de': 'Ich atme tief durch und mache es ganz vorsichtig auf.',
+      'en': 'I take a deep breath and open it very carefully.',
+      'fr': 'Je respire un grand coup et je l’ouvre tout doucement.',
+      'it': 'Faccio un bel respiro e lo apro con calma.',
+      'es': 'Respiro hondo y lo abro con mucho cuidado.',
     },
   ),
   FeelingStory(
@@ -347,7 +347,7 @@ const feelingStories = <FeelingStory>[
   ),
   FeelingStory(
     Feeling.scared,
-    maybe: {Feeling.surprised},
+    maybe: {Feeling.surprised, Feeling.happy},
     {
       'de': 'Ein großer Hund bellt laut und rennt auf mich zu.',
       'en': 'A big dog barks loudly and runs towards me.',
