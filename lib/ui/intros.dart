@@ -80,7 +80,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryMissing:
         'Schau dir die Bilder gut an! Dann verstecke ich alle und nehme eins weg. Tippe auf das Bild, das fehlt!',
     GameIntro.memorySay:
-        'Schau dir die Bilder gut an und merk sie dir! Dann verstecke ich sie, und du sagst mir, was du gesehen hast.',
+        'Schau dir die Bilder gut an und merk sie dir! Dann verstecke ich sie, und du sagst mir eins nach dem anderen, was du gesehen hast.',
     GameIntro.faces:
         'Hör gut zu! Ich sage ein Gefühl. Tippe auf das passende Gesicht!',
     GameIntro.feelings:
@@ -106,7 +106,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryMissing:
         'Look closely at the pictures! Then I’ll hide them all and take one away. Tap the picture that is missing!',
     GameIntro.memorySay:
-        'Look closely and remember the pictures! Then I’ll hide them, and you tell me what you saw.',
+        'Look closely and remember the pictures! Then I’ll hide them, and you tell me one by one what you saw.',
     GameIntro.faces: 'Listen! I say a feeling. Tap the face that shows it!',
     GameIntro.feelings: 'Listen! How do I feel? Tap the right face!',
   },
@@ -130,7 +130,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryMissing:
         'Regarde bien les images ! Ensuite je les cache toutes et j’en enlève une. Touche l’image qui manque !',
     GameIntro.memorySay:
-        'Regarde bien les images et retiens-les ! Ensuite je les cache, et tu me dis ce que tu as vu.',
+        'Regarde bien les images et retiens-les ! Ensuite je les cache, et tu me dis une par une ce que tu as vu.',
     GameIntro.faces:
         'Écoute bien ! Je dis une émotion. Touche le visage qui la montre !',
     GameIntro.feelings:
@@ -155,7 +155,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryMissing:
         'Guarda bene le immagini! Poi le nascondo tutte e ne tolgo una. Tocca l’immagine che manca!',
     GameIntro.memorySay:
-        'Guarda bene le immagini e ricordale! Poi le nascondo e tu mi dici cosa hai visto.',
+        'Guarda bene le immagini e ricordale! Poi le nascondo e tu mi dici una alla volta cosa hai visto.',
     GameIntro.faces:
         'Ascolta bene! Dico un’emozione. Tocca la faccia che la mostra!',
     GameIntro.feelings: 'Ascolta bene! Cosa provo? Tocca la faccia giusta!',
@@ -180,7 +180,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.memoryMissing:
         '¡Mira bien las imágenes! Luego las escondo todas y quito una. ¡Toca la imagen que falta!',
     GameIntro.memorySay:
-        '¡Mira bien las imágenes y recuérdalas! Luego las escondo y tú me dices qué has visto.',
+        '¡Mira bien las imágenes y recuérdalas! Luego las escondo y tú me dices una a una qué has visto.',
     GameIntro.faces:
         '¡Escucha bien! Digo una emoción. ¡Toca la cara que la muestra!',
     GameIntro.feelings: '¡Escucha bien! ¿Qué siento? ¡Toca la cara correcta!',

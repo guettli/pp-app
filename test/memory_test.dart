@@ -12,7 +12,8 @@ import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/memory/memory_rules.dart';
 import 'package:phoneme_party/memory/memory_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
-import 'package:phoneme_party/quiz/quiz_rules.dart' show soundsSimilar;
+import 'package:phoneme_party/quiz/quiz_rules.dart'
+    show heardOption, soundsSimilar;
 import 'package:phoneme_party/think/think_rules.dart' show bareEmoji;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -121,6 +122,29 @@ void main() {
             }
           }
         }
+      });
+    }
+
+    for (final lang in langs) {
+      test('$lang what did you see: each shown word is understood', () {
+        final book = books[lang]!;
+        final pool = [for (var w = 0; w < 3; w++) ...book.world(w)];
+        bool fair(List<Phrase> shown, List<Phrase> options) => shown.every(
+          (p) => heardOption(comparer, options, p.ipa, lang) == p,
+        );
+        var unfair = 0;
+        for (var seed = 0; seed < 40; seed++) {
+          for (final q in makeMemoryRound(
+            MemoryGame.say,
+            pool,
+            math.Random(seed),
+            similar: (a, b) => soundsSimilar(comparer, lang, a, b),
+            fair: fair,
+          )) {
+            if (!fair(q.shown, q.options)) unfair++;
+          }
+        }
+        expect(unfair, 0);
       });
     }
 
@@ -410,7 +434,7 @@ void main() {
       await wait(t, 12000);
       expect(dev.log.started('tts').take(4).toList(), [
         'Schau genau!',
-        'Was hast du gesehen? Sag es mir!',
+        'Was hast du gesehen? Sag mir ein Bild!',
         'Buch! Und was noch?',
         startsWith('Hund! '),
       ]);
@@ -429,9 +453,27 @@ void main() {
         answers: [w('Kuh').ipa, w('Hund').ipa, w('Buch').ipa],
       );
       await untilSlots(t);
-      await wait(t, 15000);
+      await wait(t, 25000);
       expect(dev.log.started('tts'), contains('Das war nicht dabei.'));
       expect(find.text('0 / 1'), findsOneWidget);
+      expect(progress.thinkBest('memory-say', 'de-DE'), 0);
+      await close(t, dev.log, mic: true);
+    });
+
+    testWidgets('what did you see: never understood, the question still '
+        'ends', (t) async {
+      final (dev, progress) = await play(t, MemoryGame.say, [
+        two(),
+      ], answers: List.filled(20, 'ŋŋ'));
+      await untilSlots(t);
+      for (var tap = 0; tap < 6; tap++) {
+        await wait(t, 12000);
+        if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+        await t.tap(find.byKey(const ValueKey('memory-mic')));
+      }
+      expect(find.byType(AlertDialog), findsOneWidget);
+      // two pictures: five words heard at most
+      expect(dev.log.started('mic'), hasLength(5));
       expect(progress.thinkBest('memory-say', 'de-DE'), 0);
       await close(t, dev.log, mic: true);
     });

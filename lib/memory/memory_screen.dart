@@ -133,9 +133,11 @@ class _MemoryScreenState extends State<MemoryScreen>
   _Mic _mic = _Mic.busy;
   int _unclear = 0;
 
-  /// Words heard for the current question: enough, and the pictures are
-  /// shown (a child saying the same wrong word again and again).
+  /// Words heard for the current question (understood or not): enough,
+  /// and the pictures are shown (a child saying the same wrong word
+  /// again and again, or one the phone does not understand).
   int _tries = 0;
+  int get _maxTries => _q.shown.length + 3;
   WordListener? _listenerOrNull;
   WordListener get _listener =>
       _listenerOrNull ??= WordListener(widget.app.io.mic());
@@ -168,12 +170,18 @@ class _MemoryScreenState extends State<MemoryScreen>
     // "Remember the words": no wrong picture that sounds like a word said
     bool similar(Phrase a, Phrase b) =>
         soundsSimilar(app.comparer, app.book.lang, a, b);
+    // what did you see: each picture's word must be understood among the
+    // words listened for (the shown ones and some that were not there)
+    bool fair(List<Phrase> shown, List<Phrase> options) => shown.every(
+      (p) => heardOption(app.comparer, options, p.ipa, app.book.lang) == p,
+    );
     List<MemoryQuestion> make(List<Phrase> pool) => makeMemoryRound(
       widget.game,
       pool,
       _rng,
       // what did you see: the recogniser must tell the words apart
       similar: _hear || _naming ? similar : null,
+      fair: _naming ? fair : null,
     );
     final round = make(app.knownWords());
     if (round.length == memorySizes[widget.game]!.length) return round;
@@ -406,8 +414,14 @@ class _MemoryScreenState extends State<MemoryScreen>
   /// [said]: the word the child said (one of the question's words), or
   /// null when it was not understood.
   Future<void> _named(int id, Phrase? said) async {
+    // every word counts: never stuck on a word the phone cannot understand
+    _tries++;
     if (said == null) {
       _unclear++;
+      if (_tries >= _maxTries) {
+        await _done(id, null);
+        return;
+      }
       await _say(QuizLines.of(_lang).notUnderstood);
       if (!_current(id)) return;
       if (_unclear >= MemoryScreen.maxUnclear) {
@@ -418,7 +432,6 @@ class _MemoryScreenState extends State<MemoryScreen>
       return;
     }
     _unclear = 0;
-    _tries++;
     if (_q.shown.contains(said)) {
       setState(() => _found.add(said));
       if (_found.length == _q.shown.length) {
@@ -439,7 +452,7 @@ class _MemoryScreenState extends State<MemoryScreen>
     }
     if (!_current(id)) return;
     // the same words again and again: enough, show them
-    if (_tries >= _q.shown.length + 3) {
+    if (_tries >= _maxTries) {
       await _done(id, null);
       return;
     }
