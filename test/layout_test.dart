@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
+import 'package:phoneme_party/game/play_screen.dart';
 import 'package:phoneme_party/listen/listen_screen.dart';
 import 'package:phoneme_party/memory/memory_rules.dart';
 import 'package:phoneme_party/memory/memory_screen.dart';
@@ -131,6 +132,30 @@ void main() {
       await close(t);
     });
   }
+
+  testWidgets('a world that just opened sparkles until it is tapped', (
+    t,
+  ) async {
+    late AppState app;
+    await show(t, (a) {
+      app = a;
+      return HomeScreen(app: a);
+    });
+    expect(find.byKey(const ValueKey('world-new-1')), findsNothing);
+    await t.tap(find.text('0/24'));
+    await t.pump();
+    await t.pump(const Duration(milliseconds: 500));
+    // the child plays world 1 well: world 2 opens
+    for (final p in app.book.world(0)) {
+      await app.progress.record(app.book.lang, p.text, 3);
+    }
+    Navigator.of(t.element(find.byType(PlayScreen))).pop();
+    await t.pumpAndSettle();
+    expect(find.byKey(const ValueKey('world-new-1')), findsOneWidget);
+    expect(find.byKey(const ValueKey('world-new-0')), findsNothing);
+    expect(t.takeException(), isNull);
+    await close(t);
+  });
 
   testWidgets('the tiles show the stars of the best rounds', (t) async {
     await show(
