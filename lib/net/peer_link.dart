@@ -121,6 +121,8 @@ Exception _wrap(Object e) => e is Exception ? e : Exception('webrtc: $e');
 
 class _WebRtcPending implements PendingLink {
   _WebRtcPending(this.pc) {
+    // a failure before anyone waits for the channel is not an error
+    _opened.future.ignore();
     pc.onConnectionState = (s) {
       _state = s;
       if (s == RTCPeerConnectionState.RTCPeerConnectionStateFailed &&

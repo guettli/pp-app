@@ -77,7 +77,9 @@ class HostMatch {
   String get code => _code!;
 
   /// The animal of the guest waiting for a yes, if one is.
-  int? get waiting => _guest == 0 ? null : _animal;
+  int? get waiting => _guest == 0 || _closed ? null : _animal;
+
+  bool get closed => _closed;
   var _animal = 0;
 
   /// Opens the match; returns its code.
@@ -120,7 +122,7 @@ class HostMatch {
       _events.add(Joined(_animal));
     } else if (m.from == 'service' && type == 'left') {
       _guest = 0;
-      _failAnswer(const MatchError(MatchFailure.gone, 'guest left'));
+      _failAnswer(const MatchError(MatchFailure.guestLeft));
       _events.add(GuestLeft());
     } else if (m.from == 'guest' && type == 'answer') {
       final a = _answer;
@@ -135,11 +137,14 @@ class HostMatch {
   }
 
   /// The host's child said yes to the guest it sees: offer, answer, open
-  /// the link. Fails with [MatchFailure.gone] when that guest left, and
-  /// with [MatchFailure.taken] when another one is in the match by now.
+  /// the link. Fails with [MatchFailure.guestLeft] when that guest left,
+  /// and with [MatchFailure.taken] when another one is in the match by
+  /// now; the code is still open then ([waiting] may name the next guest).
+  /// Any other failure ends the match.
   Future<PeerLink> accept() async {
     final guest = _guest;
-    if (guest == 0) throw const MatchError(MatchFailure.gone, 'no guest');
+    if (guest == 0) throw const MatchError(MatchFailure.guestLeft);
+    if (_answer != null) throw StateError('accept() runs already');
     // listen before anything can fail it (a "left" during the offer)
     final answer = _answer = Completer();
     final answered = answer.future.timeout(linkTimeout);
@@ -147,7 +152,7 @@ class HostMatch {
     final pending = await together.links.offer(await _ice!);
     try {
       if (_closed) throw _closedError;
-      if (_guest != guest) throw const MatchError(MatchFailure.gone, 'left');
+      if (_guest != guest) throw const MatchError(MatchFailure.guestLeft);
       await _signal.send(
         code,
         _token!,
@@ -164,6 +169,7 @@ class HostMatch {
       await close(); // the meeting point is done
       return link;
     } catch (e) {
+      if (identical(_answer, answer)) _answer = null; // e.g. a timeout
       await pending.dispose();
       rethrow;
     }
@@ -200,7 +206,12 @@ class GuestMatch {
         j = await _signal.join(code, n);
         break;
       } on MatchError catch (e) {
-        if (e.failure != MatchFailure.offline || tries >= 3 || _closed) {
+        // a lost answer is asked again; not when the service said "busy"
+        // (that would only use up the joins it allows)
+        if (e.failure != MatchFailure.offline ||
+            e.detail.endsWith(' 429') ||
+            tries >= 3 ||
+            _closed) {
           rethrow;
         }
         await Future<void>.delayed(

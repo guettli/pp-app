@@ -543,6 +543,41 @@ void main() {
       });
     });
 
+    testWidgets('the match ends while connecting: the screen says so', (
+      tester,
+    ) async {
+      final signal = FakeSignal();
+      final t = Together(signal, FakeLinks(), retryPause: _short);
+      await tester.runAsync(() async {
+        await tester.pumpWidget(MaterialApp(home: TogetherScreen(together: t)));
+        await tester.tap(find.byKey(const ValueKey('together-open')));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+        final guest = GuestMatch(t);
+        await guest.join('3f0a');
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await tester.pump();
+        // yes, twice (a double tap), and the match expires right then
+        await tester.tap(find.byKey(const ValueKey('together-yes')));
+        await tester.tap(
+          find.byKey(const ValueKey('together-yes')),
+          warnIfMissed: false,
+        );
+        signal.matches.remove('3f0a');
+        await Future<void>.delayed(const Duration(milliseconds: 300));
+        await tester.pump();
+        expect(
+          find.text('These pictures are too old. Start a new game!'),
+          findsOneWidget,
+        );
+        expect(signal.calls.where((c) => c == 'send').length, lessThan(2));
+        // and stays there
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+        await tester.pump();
+        expect(find.byKey(const ValueKey('together-again')), findsOneWidget);
+      });
+    });
+
     testWidgets('host says no: the code waits for the next friend', (
       tester,
     ) async {

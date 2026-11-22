@@ -97,6 +97,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
 
   void _fail(_Why why) {
     if (!mounted) return;
+    _gen++; // whatever is still under way is stale now
     _closeAll();
     setState(() {
       _why = why;
@@ -112,6 +113,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
   };
 
   Future<void> _open() async {
+    if (_step != _Step.choose) return; // a double tap
     final gen = ++_gen;
     setState(() {
       _isHost = true;
@@ -148,6 +150,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
 
   /// Back to the code, or straight to the next guest's animal.
   void _waitAgain(HostMatch host) {
+    if (!identical(host, _host) || host.closed) return;
     final next = host.waiting;
     setState(() {
       _animal = next;
@@ -157,7 +160,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
 
   Future<void> _answer(bool yes) async {
     final host = _host;
-    if (host == null) return;
+    if (host == null || _step != _Step.ask) return; // a double tap
     final gen = _gen;
     if (!yes) {
       setState(() => _step = _Step.showCode);
@@ -179,11 +182,19 @@ class _TogetherScreenState extends State<TogetherScreen> {
     } on MatchError catch (e) {
       if (!mounted || gen != _gen) return;
       // that guest went (or another came): the code is still open
-      if (e.failure == MatchFailure.gone && e.detail != 'closed' ||
+      if (e.failure == MatchFailure.guestLeft ||
           e.failure == MatchFailure.taken) {
         _waitAgain(host);
       } else {
         _fail(_whyOf(e));
+      }
+    } on TimeoutException {
+      if (!mounted || gen != _gen) return;
+      // no link with that guest; another may wait already
+      if (host.waiting != null) {
+        _waitAgain(host);
+      } else {
+        _fail(_Why.noLink);
       }
     } catch (e) {
       if (gen == _gen) _fail(_whyOf(e));

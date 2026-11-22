@@ -26,6 +26,10 @@ enum MatchFailure {
   /// The match is gone (the other phone left or said no, or it expired).
   gone,
 
+  /// Host: the guest the child said yes to went away before the link was
+  /// up; the code is open for the next one.
+  guestLeft,
+
   /// No internet, or the service is busy.
   offline,
 }
