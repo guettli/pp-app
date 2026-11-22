@@ -136,7 +136,9 @@ List<ThinkQuestion> makeRiddleRound(
 /// part only in its one kind (a fish is an animal and food: never). The
 /// odd one is clearly not of the three's kind, and the three clearly not
 /// of the odd one's (a cow might be food: never three animals and a
-/// pizza), so there is exactly one answer.
+/// pizza), and no other property singles one of the four out (never
+/// frog, flamingo, shark and a scarf: the flamingo is the only one that
+/// flies), so there is exactly one answer.
 List<ThinkQuestion> makeOddRound(
   PhraseBook book,
   Facts facts,
@@ -185,9 +187,21 @@ List<ThinkQuestion> makeOddRound(
           if (!odds.contains(p) && factOf[p]!.truth(kind) == Truth.no) p,
       ];
       if (cands.isEmpty) continue;
-      pick = cands[rng.nextInt(cands.length)];
-      three = (group..shuffle(rng)).take(3).toList();
-      break;
+      // no second answer: no other property (flies, cold, ...) may single
+      // out one of the four (frog, flamingo, shark and a scarf: the
+      // flamingo flies)
+      for (var i = 0; i < 30; i++) {
+        final c = cands[rng.nextInt(cands.length)];
+        final g = (group..shuffle(rng)).take(3).toList();
+        final four = [
+          for (final p in [...g, c]) factOf[p]!,
+        ];
+        if (singledOut(four, {kind, ok}) != null) continue;
+        pick = c;
+        three = g;
+        break;
+      }
+      if (pick != null) break;
     }
     if (pick == null || three == null) continue;
     odds.add(pick);
@@ -206,6 +220,22 @@ List<ThinkQuestion> makeOddRound(
     );
   }
   return out;
+}
+
+/// The property besides [skip] by which one of [four] differs clearly
+/// from the three others (all clearly the other way), or null: then only
+/// the kind tells the odd one.
+Prop? singledOut(List<Fact> four, Set<Prop> skip) {
+  for (final p in Prop.values) {
+    if (skip.contains(p)) continue;
+    for (final x in four) {
+      final t = x.truth(p);
+      if (t == Truth.unclear) continue;
+      final other = t == Truth.yes ? Truth.no : Truth.yes;
+      if (four.every((y) => identical(y, x) || y.truth(p) == other)) return p;
+    }
+  }
+  return null;
 }
 
 /// [count] places of "Who lives here?", each with one animal that lives
