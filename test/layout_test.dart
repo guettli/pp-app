@@ -216,7 +216,7 @@ void main() {
     testWidgets('home, $name', (t) async {
       await show(t, (app) => HomeScreen(app: app), size: size);
       expect(t.takeException(), isNull);
-      for (final g in ['hear', 'read', 'speak', 'think', 'memory']) {
+      for (final g in ['hear', 'read', 'speak', 'think', 'memory', 'feel']) {
         expect(find.byKey(ValueKey('group-$g')), findsOneWidget);
       }
       await close(t);
@@ -309,7 +309,7 @@ void main() {
       );
       expect(t.takeException(), isNull);
       var games = 0;
-      for (final g in ['hear', 'read', 'speak', 'think', 'memory']) {
+      for (final g in ['hear', 'read', 'speak', 'think', 'memory', 'feel']) {
         // landscape: the lower groups are below the fold
         await t.ensureVisible(find.byKey(ValueKey('group-$g')));
         await t.pumpAndSettle();
@@ -333,7 +333,7 @@ void main() {
         await t.pageBack();
         await t.pumpAndSettle();
       }
-      expect(games, 15);
+      expect(games, 17);
       await close(t);
     });
 
@@ -371,7 +371,10 @@ void main() {
           await t.pump(const Duration(milliseconds: 50));
         }
         expect(t.takeException(), isNull);
-        final n = game == ThinkGame.needs || game == ThinkGame.home ? 3 : 4;
+        final n = switch (game) {
+          ThinkGame.needs || ThinkGame.home || ThinkGame.feelings => 3,
+          ThinkGame.riddle || ThinkGame.odd || ThinkGame.faces => 4,
+        };
         for (var o = 0; o < n; o++) {
           await t.tap(find.byKey(ValueKey('think-option-$o')));
           for (var i = 0; i < 20; i++) {

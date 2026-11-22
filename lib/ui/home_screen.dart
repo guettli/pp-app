@@ -192,6 +192,20 @@ class _HomeScreenState extends State<HomeScreen> {
       audio: Audio.output,
       best: () => p.thinkBest('home', lang),
     );
+    final faces = (
+      screen: () => ThinkScreen(app: app, game: ThinkGame.faces),
+      emojis: const ['😄', '😠'],
+      name: s.facesTitle,
+      audio: Audio.output,
+      best: () => p.thinkBest('faces', lang),
+    );
+    final feelings = (
+      screen: () => ThinkScreen(app: app, game: ThinkGame.feelings),
+      emojis: const ['🍦', '😢'],
+      name: s.feelingsTitle,
+      audio: Audio.output,
+      best: () => p.thinkBest('feelings', lang),
+    );
     Game memory(MemoryGame g, List<String> emojis, String name) => (
       screen: () => MemoryScreen(app: app, game: g),
       emojis: emojis,
@@ -224,6 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
           memory(MemoryGame.missing, const ['❓'], s.missingTitle),
         ],
       ),
+      (key: 'feel', emoji: '😄', name: s.feelGroup, games: [faces, feelings]),
     ];
   }
 

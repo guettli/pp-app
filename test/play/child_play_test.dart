@@ -279,7 +279,7 @@ void main() {
     transcript.writeln('# Home');
     await show(t, HomeScreen(app: app));
     await shot(t, 'home');
-    for (final g in ['hear', 'read', 'speak', 'think', 'memory']) {
+    for (final g in ['hear', 'read', 'speak', 'think', 'memory', 'feel']) {
       transcript.writeln('# Group $g');
       await t.ensureVisible(find.byKey(ValueKey('group-$g')));
       await settle(t);

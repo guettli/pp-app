@@ -42,6 +42,12 @@ enum GameIntro {
 
   /// What's missing: look, one hides, tap the one that is gone.
   memoryMissing,
+
+  /// Feeling faces: hear a feeling, tap its face.
+  faces,
+
+  /// How do I feel: hear a story, tap the face.
+  feelings,
 }
 
 /// The intro of [game] in [lang] (e.g. "de-DE"); English if unknown.
@@ -70,6 +76,10 @@ const _lines = <String, Map<GameIntro, String>>{
         'Hör gut zu und merk dir die Wörter! Dann tippst du auf die passenden Bilder.',
     GameIntro.memoryMissing:
         'Schau dir die Bilder gut an! Dann verstecke ich alle und nehme eins weg. Tippe auf das Bild, das fehlt!',
+    GameIntro.faces:
+        'Hör gut zu! Ich sage ein Gefühl. Tippe auf das passende Gesicht!',
+    GameIntro.feelings:
+        'Hör gut zu! Wie fühle ich mich? Tippe auf das richtige Gesicht!',
   },
   'en': {
     GameIntro.sayWord: 'Listen, then say the right word!',
@@ -90,6 +100,8 @@ const _lines = <String, Map<GameIntro, String>>{
         'Listen closely and remember the words! Then tap the matching pictures.',
     GameIntro.memoryMissing:
         'Look closely at the pictures! Then I’ll hide them all and take one away. Tap the picture that is missing!',
+    GameIntro.faces: 'Listen! I say a feeling. Tap the face that shows it!',
+    GameIntro.feelings: 'Listen! How do I feel? Tap the right face!',
   },
   'fr': {
     GameIntro.sayWord: 'Écoute bien, puis dis le bon mot !',
@@ -110,6 +122,10 @@ const _lines = <String, Map<GameIntro, String>>{
         'Écoute bien et retiens les mots ! Ensuite, touche les bonnes images.',
     GameIntro.memoryMissing:
         'Regarde bien les images ! Ensuite je les cache toutes et j’en enlève une. Touche l’image qui manque !',
+    GameIntro.faces:
+        'Écoute bien ! Je dis une émotion. Touche le visage qui la montre !',
+    GameIntro.feelings:
+        'Écoute bien ! Qu’est-ce que je ressens ? Touche le bon visage !',
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
@@ -129,6 +145,9 @@ const _lines = <String, Map<GameIntro, String>>{
         'Ascolta bene e ricorda le parole! Poi tocca le immagini giuste.',
     GameIntro.memoryMissing:
         'Guarda bene le immagini! Poi le nascondo tutte e ne tolgo una. Tocca l’immagine che manca!',
+    GameIntro.faces:
+        'Ascolta bene! Dico un’emozione. Tocca la faccia che la mostra!',
+    GameIntro.feelings: 'Ascolta bene! Cosa provo? Tocca la faccia giusta!',
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
@@ -149,5 +168,8 @@ const _lines = <String, Map<GameIntro, String>>{
         '¡Escucha bien y recuerda las palabras! Luego toca las imágenes correctas.',
     GameIntro.memoryMissing:
         '¡Mira bien las imágenes! Luego las escondo todas y quito una. ¡Toca la imagen que falta!',
+    GameIntro.faces:
+        '¡Escucha bien! Digo una emoción. ¡Toca la cara que la muestra!',
+    GameIntro.feelings: '¡Escucha bien! ¿Qué siento? ¡Toca la cara correcta!',
   },
 };

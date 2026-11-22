@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import '../data/phrases.dart';
 import '../quiz/facts.dart';
+import 'feelings_data.dart';
 import 'think_data.dart';
 
 /// One question: what the phone says (one clue, or several said one
@@ -240,4 +241,82 @@ List<ThinkQuestion> makeHomeRound(
     );
   }
   return out;
+}
+
+/// The faces of all feelings in [lang], as pictures to tap (one instance
+/// each: options are compared by identity).
+Map<Feeling, Phrase> feelingFaces(String lang) {
+  final names = feelingNames[_code(lang)]!;
+  return {
+    for (final f in Feeling.values)
+      f: Phrase(text: names[f]!, emoji: feelingEmoji[f]!, ipa: '', level: 0),
+  };
+}
+
+/// [count] stories of "How do I feel?", each with a different feeling as
+/// the answer, and [options] - 1 faces that clearly do not fit. After the
+/// right face: what helps.
+List<ThinkQuestion> makeFeelingsRound(
+  String lang,
+  math.Random rng, {
+  int count = 6,
+  int options = 3,
+}) {
+  final code = _code(lang);
+  final faces = feelingFaces(lang);
+  final out = <ThinkQuestion>[];
+  final answers = <Feeling>{};
+  for (final st in [...feelingStories]..shuffle(rng)) {
+    if (out.length == count) break;
+    final say = st.say[code];
+    final help = st.help[code];
+    if (say == null || help == null || answers.contains(st.yes)) continue;
+    final wrong = [
+      for (final f in Feeling.values)
+        if (f != st.yes && !st.maybe.contains(f)) faces[f]!,
+    ]..shuffle(rng);
+    if (wrong.length < options - 1) continue;
+    answers.add(st.yes);
+    out.add(
+      ThinkQuestion(
+        ['$say ${feelingQuestion[code]}'],
+        [faces[st.yes]!, ...wrong.take(options - 1)]..shuffle(rng),
+        faces[st.yes]!,
+        because: help,
+      ),
+    );
+  }
+  return out;
+}
+
+/// [count] questions of "Feeling faces": a feeling is named, [options]
+/// faces are shown. Every feeling once while there are enough.
+List<ThinkQuestion> makeFacesRound(
+  String lang,
+  math.Random rng, {
+  int count = 6,
+  int options = 4,
+}) {
+  final code = _code(lang);
+  final faces = feelingFaces(lang);
+  final question = faceQuestion[code]!;
+  final order = <Feeling>[];
+  while (order.length < count) {
+    order.addAll([...Feeling.values]..shuffle(rng));
+  }
+  return [
+    for (final f in order.take(count))
+      ThinkQuestion(
+        [question.replaceAll('{f}', faces[f]!.text)],
+        [
+          faces[f]!,
+          ...([...Feeling.values]
+                ..remove(f)
+                ..shuffle(rng))
+              .take(options - 1)
+              .map((o) => faces[o]!),
+        ]..shuffle(rng),
+        faces[f]!,
+      ),
+  ];
 }

@@ -46,6 +46,9 @@ class S {
   String get speakGroup => _t['speakGroup']!;
   String get thinkGroup => _t['thinkGroup']!;
   String get memoryGroup => _t['memoryGroup']!;
+  String get feelGroup => _t['feelGroup']!;
+  String get feelingsTitle => _t['feelingsTitle']!;
+  String get facesTitle => _t['facesTitle']!;
   String get lookTitle => _t['lookTitle']!;
   String get hearWordsTitle => _t['hearWordsTitle']!;
   String get missingTitle => _t['missingTitle']!;
@@ -113,6 +116,9 @@ class S {
       'speakGroup': 'Sprechen',
       'thinkGroup': 'Denken',
       'memoryGroup': 'Merken',
+      'feelGroup': 'Gefühle',
+      'feelingsTitle': 'Wie fühle ich mich?',
+      'facesTitle': 'Gefühlsgesichter',
       'lookTitle': 'Bilder merken',
       'hearWordsTitle': 'Wörter merken',
       'missingTitle': 'Was fehlt?',
@@ -181,6 +187,9 @@ class S {
       'speakGroup': 'Speaking',
       'thinkGroup': 'Thinking',
       'memoryGroup': 'Memory',
+      'feelGroup': 'Feelings',
+      'feelingsTitle': 'How do I feel?',
+      'facesTitle': 'Feeling faces',
       'lookTitle': 'Remember the pictures',
       'hearWordsTitle': 'Remember the words',
       'missingTitle': 'What’s missing?',
@@ -249,6 +258,9 @@ class S {
       'speakGroup': 'Parler',
       'thinkGroup': 'Réfléchir',
       'memoryGroup': 'Mémoire',
+      'feelGroup': 'Émotions',
+      'feelingsTitle': 'Qu’est-ce que je ressens ?',
+      'facesTitle': 'Les visages des émotions',
       'lookTitle': 'Retiens les images',
       'hearWordsTitle': 'Retiens les mots',
       'missingTitle': 'Qu’est-ce qui manque ?',
@@ -317,6 +329,9 @@ class S {
       'speakGroup': 'Parlare',
       'thinkGroup': 'Pensare',
       'memoryGroup': 'Memoria',
+      'feelGroup': 'Emozioni',
+      'feelingsTitle': 'Cosa provo?',
+      'facesTitle': 'Le facce delle emozioni',
       'lookTitle': 'Ricorda le immagini',
       'hearWordsTitle': 'Ricorda le parole',
       'missingTitle': 'Cosa manca?',
@@ -385,6 +400,9 @@ class S {
       'speakGroup': 'Hablar',
       'thinkGroup': 'Pensar',
       'memoryGroup': 'Memoria',
+      'feelGroup': 'Emociones',
+      'feelingsTitle': '¿Qué siento?',
+      'facesTitle': 'Caras de emociones',
       'lookTitle': 'Recuerda las imágenes',
       'hearWordsTitle': 'Recuerda las palabras',
       'missingTitle': '¿Qué falta?',

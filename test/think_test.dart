@@ -12,6 +12,7 @@ import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/ui/emoji_image.dart';
+import 'package:phoneme_party/think/feelings_data.dart';
 import 'package:phoneme_party/think/think_data.dart';
 import 'package:phoneme_party/think/think_rules.dart';
 import 'package:phoneme_party/think/think_screen.dart';
@@ -72,6 +73,51 @@ void main() {
         }
       }
       expect(riddles.map((r) => r.emoji).toSet(), hasLength(riddles.length));
+    });
+
+    test('every feeling, story and help in every language', () {
+      for (final lang in langs) {
+        final code = lang.split('-').first;
+        expect(feelingQuestion[code], isNotEmpty);
+        expect(faceQuestion[code], contains('{f}'));
+        expect(introLine(GameIntro.feelings, lang), isNotEmpty);
+        expect(introLine(GameIntro.faces, lang), isNotEmpty);
+        final names = feelingNames[code]!;
+        expect(names.keys.toSet(), Feeling.values.toSet());
+        expect(names.values.toSet(), hasLength(Feeling.values.length));
+        for (final st in feelingStories) {
+          expect(st.say[code], isNotEmpty, reason: '$code ${st.yes}');
+          expect(st.help[code], isNotEmpty, reason: '$code ${st.yes}');
+          expect(st.maybe, isNot(contains(st.yes)));
+          // enough clearly wrong faces, or the story never comes up
+          expect(
+            Feeling.values.where((f) => f != st.yes && !st.maybe.contains(f)),
+            hasLength(greaterThanOrEqualTo(2)),
+            reason: '${st.say['en']}',
+          );
+        }
+      }
+      // fr, it, es: nothing depends on whether the child is a boy or a
+      // girl (no gendered adjective about "me")
+      final gendered = RegExp(
+        r'\b(content|contente|heureux|heureuse|fatigué|fatiguée|seul|seule|'
+        r'fier|fière|contento|contenta|arrabbiato|arrabbiata|stanco|stanca|'
+        r'solo|sola|andato|andata|enfadado|enfadada|cansado|cansada|'
+        r'asustado|asustada|quieto|quieta|orgulloso|orgullosa)\b',
+        caseSensitive: false,
+      );
+      for (final code in ['fr', 'it', 'es']) {
+        for (final st in feelingStories) {
+          for (final line in [st.say[code]!, st.help[code]!]) {
+            expect(gendered.hasMatch(line), isFalse, reason: line);
+          }
+        }
+      }
+      // every feeling is the answer of some story
+      expect(feelingStories.map((s) => s.yes).toSet(), Feeling.values.toSet());
+      for (final e in feelingEmoji.values) {
+        expect(File('assets/emoji/${emojiKey(e)}.webp').existsSync(), isTrue);
+      }
     });
 
     test('odd one out and who lives here: every language, every picture', () {
@@ -241,6 +287,50 @@ void main() {
     }
   });
 
+  group('feelings rounds', () {
+    for (final lang in langs) {
+      test('$lang: how do I feel', () {
+        final code = lang.split('-').first;
+        for (var seed = 0; seed < 30; seed++) {
+          final round = makeFeelingsRound(lang, math.Random(seed));
+          expect(round, hasLength(6));
+          // every feeling once
+          expect(round.map((q) => q.answer.emoji).toSet(), hasLength(6));
+          for (final q in round) {
+            expect(q.options, hasLength(3), reason: '$q');
+            expect(q.options, contains(q.answer));
+            expect(q.options.map((o) => o.emoji).toSet(), hasLength(3));
+            final st = feelingStories.firstWhere(
+              (st) => q.clues.single.startsWith(st.say[code]!),
+            );
+            expect(q.answer.emoji, feelingEmoji[st.yes]);
+            expect(q.because, st.help[code]);
+            final fits = {st.yes, ...st.maybe}.map((f) => feelingEmoji[f]);
+            for (final o in q.options) {
+              if (o != q.answer) {
+                expect(fits, isNot(contains(o.emoji)), reason: '$q');
+              }
+            }
+          }
+        }
+      });
+
+      test('$lang: feeling faces', () {
+        for (var seed = 0; seed < 30; seed++) {
+          final round = makeFacesRound(lang, math.Random(seed));
+          expect(round, hasLength(6));
+          expect(round.map((q) => q.answer.emoji).toSet(), hasLength(6));
+          for (final q in round) {
+            expect(q.options, hasLength(4), reason: '$q');
+            expect(q.options, contains(q.answer));
+            expect(q.options.map((o) => o.emoji).toSet(), hasLength(4));
+            expect(q.clues.single, contains(q.answer.text));
+          }
+        }
+      });
+    }
+  });
+
   group('screen', () {
     Phrase w(String text) =>
         books['de-DE']!.phrases.firstWhere((p) => p.text == text);
@@ -335,6 +425,71 @@ void main() {
       await wait(t, 6000);
       expect(find.text('0 / 1'), findsOneWidget);
       expect(progress.thinkBest('needs', 'de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('how do I feel: the face, what helps, then praise', (t) async {
+      final faces = feelingFaces('de-DE');
+      const story = 'Mein Eis ist auf den Boden gefallen. Wie fühle ich mich?';
+      const help = 'Wenn ich traurig bin, hilft mir eine Umarmung.';
+      final q = ThinkQuestion(
+        [story],
+        [faces[Feeling.happy]!, faces[Feeling.sad]!, faces[Feeling.disgusted]!],
+        faces[Feeling.sad]!,
+        because: help,
+      );
+      final (dev, progress) = await play(t, ThinkGame.feelings, [q]);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), [story]);
+      expect(find.byKey(const ValueKey('think-hint')), findsNothing);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // fröhlich
+      await wait(t, 4000);
+      expect(dev.log.started('tts'), [story, 'fröhlich', story]);
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 1500);
+      expect(dev.log.started('tts').last, startsWith('traurig! $help '));
+      expect(find.text('traurig'), findsOneWidget);
+      await wait(t, 8000);
+      expect(progress.thinkBest('feelings', 'de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('feeling faces: wrong, its name and the question again', (
+      t,
+    ) async {
+      final faces = feelingFaces('de-DE');
+      const ask = 'Welches Gesicht ist wütend?';
+      final q = ThinkQuestion(
+        [ask],
+        [
+          faces[Feeling.sad]!,
+          faces[Feeling.angry]!,
+          faces[Feeling.happy]!,
+          faces[Feeling.scared]!,
+        ],
+        faces[Feeling.angry]!,
+      );
+      final (dev, progress) = await play(t, ThinkGame.faces, [q]);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), [ask]);
+      await t.tap(find.byKey(const ValueKey('think-option-0'))); // traurig
+      await wait(t, 4000);
+      expect(dev.log.started('tts'), [ask, 'traurig', ask]);
+      await t.tap(find.byKey(const ValueKey('think-option-1')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('faces', 'de-DE'), 0);
+      await close(t, dev.log);
+    });
+
+    testWidgets('feeling faces: right at once, three stars', (t) async {
+      final round = makeFacesRound('de-DE', math.Random(1), count: 1);
+      final (dev, progress) = await play(t, ThinkGame.faces, round);
+      await wait(t, 1500);
+      expect(dev.log.started('tts'), [round.single.clues.single]);
+      final i = round.single.options.indexOf(round.single.answer);
+      await t.tap(find.byKey(ValueKey('think-option-$i')));
+      await wait(t, 6000);
+      expect(progress.thinkBest('faces', 'de-DE'), 3);
       await close(t, dev.log);
     });
 
