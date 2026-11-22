@@ -191,9 +191,13 @@ Signing re-signs what phones get). It is checked like the APK: package id,
 name, permissions, versionCode = build number, not a debug key.
 
 Installed from Play, the app updates itself (`lib/net/app_update.dart`,
-Play in-app updates, flexible): at start it asks Play for a newer
-version; Play asks once and downloads it in the background; the next
-start installs it. Installed from an APK: no update check.
+Play in-app updates, immediate): at start it asks Play for a newer
+version; Play asks (at most every three days), and "Update" shows Play's
+full-screen progress, installs it and starts the app again. (It was a
+flexible update before: Play downloaded in the background and the app
+installed it only at a real restart, which Android rarely does, so after
+"Update" nothing seemed to happen.) Installed from an APK: no update
+check.
 
 CI uploads each release's bundle to the **internal testing** track
 (`dagger call -m ci upload-to-play`, `tool/play_upload.py`) when the
