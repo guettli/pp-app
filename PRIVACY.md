@@ -103,6 +103,34 @@ said, the pictures, the right one, which were tapped) and a note the
 grown-up may type, as a feedback report (see above: same details, same
 way, deleted after twelve months). No recording is sent.
 
+## Playing together (two phones)
+
+In "Together", two phones play with each other over the internet. One
+phone opens a game and shows four pictures (a code); the other phone taps
+them in. The child on the first phone sees an animal for the other phone
+and says yes or no; only after "yes" do the phones exchange anything about
+themselves. Nothing is sent unless a child opens or joins such a game.
+
+- To find each other, both phones talk to the developer's server
+  (`relaxandplay.de`, as above). It keeps, **in memory only**, the code,
+  random tokens and the two connection offers. Such an offer contains the
+  phone's network addresses (its IP addresses on the local network and on
+  the internet), which the other phone needs to connect. All of it is gone
+  when the phones are connected, after a minute without requests, and
+  after two hours at the latest. Nothing of it is written to disk or
+  logged; the IP address is used, in memory and for at most one hour, to
+  limit requests, as for feedback.
+- Then the phones talk **directly** with each other (WebRTC, encrypted).
+  The other phone learns this phone's network addresses. Only game moves
+  are sent (which picture was tapped), never audio, pictures or names.
+- When the two phones cannot reach each other directly, the encrypted game
+  moves go through a relay on the same server (TURN). It cannot read them;
+  it sees the addresses and how much is sent, keeps no logs and stores
+  nothing.
+
+The legal basis is the legitimate interest in letting children play
+together that wish to (Art. 6(1)(f) GDPR); a game is only started by them.
+
 ## Your rights
 
 You can ask for access to a report, its correction or its deletion, using
@@ -235,6 +263,38 @@ Mit demselben Schalter zeigen auch die Denkspiele (ohne Mikrofon) einen
 wurden) und eine Notiz, die der Erwachsene schreiben kann, als
 Rückmeldung (siehe oben: dieselben Angaben, derselbe Weg, Löschung nach
 zwölf Monaten). Es wird keine Aufnahme gesendet.
+
+## Zusammen spielen (zwei Handys)
+
+Bei „Zusammen“ spielen zwei Handys über das Internet miteinander. Ein
+Handy macht ein Spiel auf und zeigt vier Bilder (einen Code); das andere
+Handy tippt sie ein. Das Kind am ersten Handy sieht ein Tier für das andere
+Handy und sagt Ja oder Nein; erst nach „Ja“ tauschen die Handys etwas über
+sich aus. Es wird nichts gesendet, solange kein Kind so ein Spiel aufmacht
+oder ihm beitritt.
+
+- Damit sie sich finden, sprechen beide Handys mit dem Server des
+  Entwicklers (`relaxandplay.de`, wie oben). Er hält **nur im
+  Arbeitsspeicher** den Code, zufällige Schlüssel und die beiden
+  Verbindungsangebote. So ein Angebot enthält die Netzwerkadressen des
+  Handys (seine IP-Adressen im lokalen Netz und im Internet), die das andere
+  Handy zum Verbinden braucht. Alles ist weg, sobald die Handys verbunden
+  sind, nach einer Minute ohne Anfragen und spätestens nach zwei Stunden.
+  Nichts davon wird auf Platte geschrieben oder protokolliert; die
+  IP-Adresse dient, wie bei Rückmeldungen, nur im Arbeitsspeicher und
+  höchstens eine Stunde lang dazu, Anfragen zu begrenzen.
+- Danach sprechen die Handys **direkt** miteinander (WebRTC,
+  verschlüsselt). Das andere Handy erfährt dabei die Netzwerkadressen dieses
+  Handys. Gesendet werden nur Spielzüge (welches Bild getippt wurde), nie
+  Ton, Bilder oder Namen.
+- Erreichen sich die Handys nicht direkt, laufen die verschlüsselten
+  Spielzüge über eine Weiterleitung auf demselben Server (TURN). Sie kann
+  sie nicht lesen; sie sieht die Adressen und wie viel gesendet wird, führt
+  kein Protokoll und speichert nichts.
+
+Rechtsgrundlage ist das berechtigte Interesse, Kindern das gemeinsame
+Spielen zu ermöglichen, das sie selbst starten (Art. 6 Abs. 1 lit. f
+DSGVO).
 
 ## Ihre Rechte
 

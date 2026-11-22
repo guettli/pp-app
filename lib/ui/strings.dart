@@ -53,6 +53,27 @@ class S {
   String get hearWordsTitle => _t['hearWordsTitle']!;
   String get missingTitle => _t['missingTitle']!;
   String get sayWhatTitle => _t['sayWhatTitle']!;
+  String get togetherGroup => _t['togetherGroup']!;
+  String get togetherTitle => _t['togetherTitle']!;
+  String get openMatch => _t['openMatch']!;
+  String get joinMatch => _t['joinMatch']!;
+  String get showCode => _t['showCode']!;
+  String get wantsToPlay => _t['wantsToPlay']!;
+  String get yes => _t['yes']!;
+  String get no => _t['no']!;
+  String get typeCode => _t['typeCode']!;
+  String get codeWrong => _t['codeWrong']!;
+  String get undo => _t['undo']!;
+  String get youAre => _t['youAre']!;
+  String get waitForYes => _t['waitForYes']!;
+  String get connecting => _t['connecting']!;
+  String get codeTaken => _t['codeTaken']!;
+  String get friendGone => _t['friendGone']!;
+  String get offline => _t['offline']!;
+  String get linkFailed => _t['linkFailed']!;
+  String get wave => _t['wave']!;
+  String get codeExpired => _t['codeExpired']!;
+  String get notAccepted => _t['notAccepted']!;
   String get phoneTalks => _t['phoneTalks']!;
   String get phoneSilent => _t['phoneSilent']!;
   String get phoneListens => _t['phoneListens']!;
@@ -126,6 +147,27 @@ class S {
       'hearWordsTitle': 'Wörter merken',
       'missingTitle': 'Was fehlt?',
       'sayWhatTitle': 'Was hast du gesehen?',
+      'notAccepted': 'Diesmal hat es nicht geklappt. Versuch es nochmal!',
+      'codeExpired': 'Die Bilder gelten nicht mehr. Mach ein neues Spiel auf!',
+      'togetherGroup': 'Zusammen',
+      'togetherTitle': 'Zusammen spielen',
+      'openMatch': 'Spiel aufmachen',
+      'joinMatch': 'Mitspielen',
+      'showCode': 'Zeig diese Bilder dem anderen Kind!',
+      'wantsToPlay': 'möchte mitspielen',
+      'yes': 'Ja',
+      'no': 'Nein',
+      'typeCode': 'Tipp die Bilder vom anderen Handy!',
+      'codeWrong': 'Die Bilder passen nicht. Versuch es nochmal!',
+      'undo': 'Zurück',
+      'youAre': 'Du bist',
+      'waitForYes': 'Warte, bis das andere Kind Ja sagt.',
+      'connecting': 'Ich verbinde euch …',
+      'codeTaken': 'Da spielt schon jemand mit.',
+      'friendGone': 'Das andere Kind ist nicht mehr da.',
+      'offline': 'Keine Verbindung zum Internet.',
+      'linkFailed': 'Die Handys finden sich nicht.',
+      'wave': 'Winken',
       'phoneTalks': 'Das Handy spricht',
       'phoneSilent': 'Das Handy spricht nicht',
       'phoneListens': 'Das Handy hört zu',
@@ -200,6 +242,27 @@ class S {
       'hearWordsTitle': 'Remember the words',
       'missingTitle': 'What’s missing?',
       'sayWhatTitle': 'What did you see?',
+      'notAccepted': 'It didn\'t work this time. Try again!',
+      'codeExpired': 'These pictures are too old. Start a new game!',
+      'togetherGroup': 'Together',
+      'togetherTitle': 'Play together',
+      'openMatch': 'Start a game',
+      'joinMatch': 'Join',
+      'showCode': 'Show these pictures to the other child!',
+      'wantsToPlay': 'wants to play',
+      'yes': 'Yes',
+      'no': 'No',
+      'typeCode': 'Tap the pictures from the other phone!',
+      'codeWrong': 'Those pictures don\'t match. Try again!',
+      'undo': 'Back',
+      'youAre': 'You are',
+      'waitForYes': 'Wait until the other child says yes.',
+      'connecting': 'Connecting you…',
+      'codeTaken': 'Someone is already playing.',
+      'friendGone': 'The other child is not there any more.',
+      'offline': 'No internet connection.',
+      'linkFailed': 'The phones can\'t find each other.',
+      'wave': 'Wave',
       'phoneTalks': 'The phone talks',
       'phoneSilent': 'The phone stays quiet',
       'phoneListens': 'The phone listens',
@@ -273,6 +336,27 @@ class S {
       'hearWordsTitle': 'Retiens les mots',
       'missingTitle': 'Qu’est-ce qui manque ?',
       'sayWhatTitle': 'Qu’as-tu vu ?',
+      'notAccepted': 'Ça n’a pas marché cette fois. Essaie encore !',
+      'codeExpired': 'Ces images ne valent plus. Ouvre une nouvelle partie !',
+      'togetherGroup': 'Ensemble',
+      'togetherTitle': 'Jouer ensemble',
+      'openMatch': 'Ouvrir une partie',
+      'joinMatch': 'Rejoindre',
+      'showCode': 'Montre ces images à l’autre enfant !',
+      'wantsToPlay': 'veut jouer',
+      'yes': 'Oui',
+      'no': 'Non',
+      'typeCode': 'Touche les images de l’autre téléphone !',
+      'codeWrong': 'Ces images ne vont pas. Essaie encore !',
+      'undo': 'Retour',
+      'youAre': 'Tu es',
+      'waitForYes': 'Attends que l’autre enfant dise oui.',
+      'connecting': 'Je vous connecte…',
+      'codeTaken': 'Quelqu’un joue déjà.',
+      'friendGone': 'L’autre enfant n’est plus là.',
+      'offline': 'Pas de connexion Internet.',
+      'linkFailed': 'Les téléphones ne se trouvent pas.',
+      'wave': 'Saluer',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',
@@ -347,6 +431,27 @@ class S {
       'hearWordsTitle': 'Ricorda le parole',
       'missingTitle': 'Cosa manca?',
       'sayWhatTitle': 'Cosa hai visto?',
+      'notAccepted': 'Questa volta non ha funzionato. Riprova!',
+      'codeExpired': 'Queste immagini non valgono più. Apri una nuova partita!',
+      'togetherGroup': 'Insieme',
+      'togetherTitle': 'Giocare insieme',
+      'openMatch': 'Apri una partita',
+      'joinMatch': 'Partecipa',
+      'showCode': 'Mostra queste immagini a chi gioca con te!',
+      'wantsToPlay': 'vuole giocare',
+      'yes': 'Sì',
+      'no': 'No',
+      'typeCode': 'Tocca le immagini dell’altro telefono!',
+      'codeWrong': 'Queste immagini non vanno. Riprova!',
+      'undo': 'Indietro',
+      'youAre': 'Tu sei',
+      'waitForYes': 'Aspetta che dall’altra parte dicano sì.',
+      'connecting': 'Vi collego…',
+      'codeTaken': 'Qualcuno sta già giocando.',
+      'friendGone': 'Chi giocava con te non c’è più.',
+      'offline': 'Nessuna connessione a Internet.',
+      'linkFailed': 'I telefoni non si trovano.',
+      'wave': 'Saluta',
       'phoneTalks': 'Il telefono parla',
       'phoneSilent': 'Il telefono non parla',
       'phoneListens': 'Il telefono ascolta',
@@ -421,6 +526,27 @@ class S {
       'hearWordsTitle': 'Recuerda las palabras',
       'missingTitle': '¿Qué falta?',
       'sayWhatTitle': '¿Qué has visto?',
+      'notAccepted': 'Esta vez no ha funcionado. ¡Inténtalo otra vez!',
+      'codeExpired': 'Estas imágenes ya no valen. ¡Abre una partida nueva!',
+      'togetherGroup': 'Juntos',
+      'togetherTitle': 'Jugar juntos',
+      'openMatch': 'Abrir una partida',
+      'joinMatch': 'Unirse',
+      'showCode': '¡Enseña estas imágenes a quien juega contigo!',
+      'wantsToPlay': 'quiere jugar',
+      'yes': 'Sí',
+      'no': 'No',
+      'typeCode': '¡Toca las imágenes del otro teléfono!',
+      'codeWrong': 'Esas imágenes no coinciden. ¡Inténtalo otra vez!',
+      'undo': 'Atrás',
+      'youAre': 'Eres',
+      'waitForYes': 'Espera a que digan que sí al otro lado.',
+      'connecting': 'Os estoy conectando…',
+      'codeTaken': 'Ya hay alguien jugando.',
+      'friendGone': 'Quien jugaba contigo ya no está.',
+      'offline': 'No hay conexión a Internet.',
+      'linkFailed': 'Los teléfonos no se encuentran.',
+      'wave': 'Saludar',
       'phoneTalks': 'El teléfono habla',
       'phoneSilent': 'El teléfono no habla',
       'phoneListens': 'El teléfono escucha',
