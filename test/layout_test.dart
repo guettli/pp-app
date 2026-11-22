@@ -191,6 +191,36 @@ void main() {
     });
   }
 
+  testWidgets('quiz with large text on a small phone: pictures stay big', (
+    t,
+  ) async {
+    await show(t, (app) => QuizScreen(app: app), text: 1.6);
+    for (var i = 0; i < 40; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
+    expect(t.takeException(), isNull);
+    final pics = find.byWidgetPredicate((w) => w is EmojiImage && w.size > 1);
+    // the question picture aside: the three answers, each still a picture
+    // a child can see (it once shrank to a few dp)
+    // on screen (after any FittedBox scaling)
+    final sizes = [
+      for (final e in pics.evaluate())
+        () {
+          final box = e.renderObject! as RenderBox;
+          final a = box.localToGlobal(Offset.zero);
+          final b = box.localToGlobal(box.size.bottomRight(Offset.zero));
+          return b.dx - a.dx;
+        }(),
+    ];
+    sizes.sort();
+    expect(
+      sizes.reversed.take(3).every((w) => w > 60),
+      isTrue,
+      reason: '$sizes',
+    );
+    await close(t);
+  });
+
   testWidgets('quiz on a tall phone: two pictures and one below, big', (
     t,
   ) async {

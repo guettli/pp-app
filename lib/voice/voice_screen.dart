@@ -290,6 +290,9 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       if (far > 0) record = await progress.recordPitch(far, low: low);
     }
     if (!_current(id)) return;
+    // a record is worth saying only with a star: the first try is always
+    // one ("Great! New record!", then "hold it once more" for 0.7 s)
+    if (stars == 0) record = false;
     final judged = stars != null && (_hold || _pitchStep != _PitchStep.normal);
     if (judged) _stars[_step] = math.max(_stars[_step], stars);
     final after = stars == null

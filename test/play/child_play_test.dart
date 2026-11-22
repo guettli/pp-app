@@ -25,6 +25,8 @@ import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
 import 'package:phoneme_party/listen/listen_screen.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
+import 'package:phoneme_party/read/read_aloud_screen.dart';
+import 'package:phoneme_party/voice/voice_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
 import 'package:phoneme_party/ui/home_screen.dart';
@@ -132,6 +134,24 @@ void main() {
       final words = {for (final p in book.phrases) p.text: p};
       final said = dev.log.started('tts');
       tries++;
+      // a written word (read aloud): read it, every third time mumbled
+      final written = find.byKey(const ValueKey('read-word')).evaluate();
+      if (written.isNotEmpty) {
+        final texts = written
+            .map((e) => e.widget)
+            .whereType<Text>()
+            .map((w) => w.data)
+            .whereType<String>();
+        final w = [for (final s in texts) ?words[s]];
+        if (w.isNotEmpty) {
+          transcript.writeln(
+            tries % 3 == 0
+                ? '  🗣️ (mumbles)'
+                : '  🗣️ "${w.first.text}" (reads)',
+          );
+          return tries % 3 == 0 ? 'ma' : w.first.ipa;
+        }
+      }
       // a word alone (the worlds): say it after the phone, every third
       // time mumbled
       final last = said.isEmpty ? '' : said.last;
@@ -387,6 +407,40 @@ void main() {
       await settle(t, 3000);
     });
   }
+
+  for (final game in VoiceGame.values) {
+    testWidgets('voice: ${game.name}', (t) async {
+      final (dev, app) = await start(t, 10, speaks: true);
+      transcript.writeln('# Voice game: ${game.name}');
+      await show(t, VoiceGameScreen(app: app, game: game));
+      var n = 0;
+      for (var step = 0; step < 8; step++) {
+        await settle(t, 5000);
+        n = said(dev, n);
+        if (step < 4) await shot(t, 'voice-${game.name}-step${step + 1}');
+      }
+      await t.pumpWidget(const SizedBox());
+      await settle(t, 3000);
+    });
+  }
+
+  testWidgets('read aloud', (t) async {
+    final (dev, app) = await start(t, 11, speaks: true);
+    transcript.writeln('# Read aloud');
+    await show(t, ReadAloudScreen(app: app));
+    var n = 0;
+    for (var step = 0; step < 12; step++) {
+      await settle(t, 5000);
+      n = said(dev, n);
+      if (step < 4) await shot(t, 'readaloud-step${step + 1}');
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+    }
+    await settle(t, 3000);
+    said(dev, n);
+    await shot(t, 'readaloud-end');
+    await t.pumpWidget(const SizedBox());
+    await settle(t, 3000);
+  });
 
   for (final game in ThinkGame.values) {
     testWidgets('think: ${game.name}', (t) async {

@@ -151,6 +151,11 @@ void main() {
       r.progress.holdBest('de-DE', lines.sounds[0].shown).inMilliseconds,
       closeTo(3500, 150),
     );
+    // the first, too short try is no record to cheer about
+    final cheer = r.said.indexWhere((s) => s.contains(lines.record));
+    final retry = r.said.indexOf(first, r.said.indexOf(first) + 1);
+    // ... the 3.5 s one is
+    expect(cheer, greaterThan(retry), reason: '${r.said}');
     r.expectClean();
   });
 
