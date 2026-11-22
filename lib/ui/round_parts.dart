@@ -64,6 +64,9 @@ Future<void> showRoundEnd(
     builder: (ctx) => PopScope(
       canPop: false,
       child: AlertDialog(
+        // a short screen with large text: the content scrolls, the OK
+        // button (actions) stays in view
+        scrollable: true,
         title: Row(
           children: [
             const EmojiImage('🏆', size: 48),
@@ -142,46 +145,67 @@ class _RoundEndCheerState extends State<RoundEndCheer>
     return 4 * f * (1 - f) * (1 - n / (jumps + 1));
   }
 
-  @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: _c,
-    builder: (context, _) => Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        SizedBox(
-          height: 112,
-          child: Align(
-            alignment: Alignment.bottomCenter,
-            child: Transform.translate(
-              offset: Offset(0, -36 * _jump()),
-              child: const EmojiImage(
-                '🐰',
-                key: ValueKey('cheer-hare'),
-                size: 72,
-              ),
-            ),
+  Widget _hare(double size, double lift) => Transform.translate(
+    offset: Offset(0, -lift * _jump()),
+    child: EmojiImage('🐰', key: const ValueKey('cheer-hare'), size: size),
+  );
+
+  Widget _stars() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (var i = 0; i < 3; i++)
+        Opacity(
+          opacity: i < widget.stars ? 1 : 0.25,
+          child: Transform.scale(
+            scale: i < widget.stars ? _pop(i) : 1,
+            child: const EmojiImage('⭐', size: 40),
           ),
         ),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (var i = 0; i < 3; i++)
-              Opacity(
-                opacity: i < widget.stars ? 1 : 0.25,
-                child: Transform.scale(
-                  scale: i < widget.stars ? _pop(i) : 1,
-                  child: const EmojiImage('⭐', size: 40),
-                ),
-              ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Text(
-          '${widget.right} / ${widget.total}',
-          style: const TextStyle(fontSize: 22),
-        ),
-        if (widget.record case final r?) Text(r),
-      ],
-    ),
+    ],
   );
+
+  @override
+  Widget build(BuildContext context) {
+    // landscape: no room above, the hare beside the stars, lower jumps
+    final short = MediaQuery.sizeOf(context).height < 500;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (short)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(
+                  height: 64,
+                  child: Align(
+                    alignment: Alignment.bottomCenter,
+                    child: _hare(44, 18),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _stars(),
+              ],
+            )
+          else ...[
+            SizedBox(
+              height: 112,
+              child: Align(
+                alignment: Alignment.bottomCenter,
+                child: _hare(72, 36),
+              ),
+            ),
+            _stars(),
+          ],
+          const SizedBox(height: 8),
+          Text(
+            '${widget.right} / ${widget.total}',
+            style: const TextStyle(fontSize: 22),
+          ),
+          if (widget.record case final r?) Text(r),
+        ],
+      ),
+    );
+  }
 }

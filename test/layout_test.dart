@@ -80,8 +80,13 @@ void main() {
     }
   }
 
-  for (final text in [1.0, 1.6]) {
-    testWidgets('round end: the hare jumps, then all is still (text $text)', (
+  for (final (name, size, text) in [
+    ('portrait', const Size(360, 640), 1.0),
+    ('landscape', const Size(640, 360), 1.0),
+    ('large text', const Size(360, 640), 1.6),
+    ('landscape, large text', const Size(640, 360), 1.6),
+  ]) {
+    testWidgets('round end: the hare jumps, then all is still, $name', (
       t,
     ) async {
       await show(
@@ -102,11 +107,18 @@ void main() {
             ),
           ),
         ),
+        size: size,
         text: text,
       );
       await t.tap(find.text('end'));
-      await t.pump(const Duration(milliseconds: 600));
+      // mid-jump too: nothing may overflow
+      for (var i = 0; i < 12; i++) {
+        await t.pump(const Duration(milliseconds: 100));
+        expect(t.takeException(), isNull);
+      }
       expect(find.byKey(const ValueKey('cheer-hare')), findsOneWidget);
+      // the OK button is in view
+      expect(find.text('Great').hitTestable(), findsOneWidget);
       // once, not forever: pumpAndSettle ends
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
