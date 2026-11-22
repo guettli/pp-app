@@ -40,6 +40,28 @@ void main() {
     );
   });
 
+  test('each phoneme knows the frame where it started', () {
+    final out = decodeCtc(
+      frames([
+        (0, .9),
+        (5, .9),
+        (0, .9),
+        (0, .9),
+        (4, .9),
+        (4, .9),
+        (0, .9),
+        (4, .9),
+        (8, .9),
+      ]),
+      9,
+      vocab,
+      tokens,
+    );
+    expect(out.map((p) => p.symbol).join(), 'nat');
+    // a, blank, a: one "a", from its first frame
+    expect(out.map((p) => p.start), [1, 4, 8]);
+  });
+
   test('merges duplicates separated by blank', () {
     expect(decode([(5, .9), (0, .9), (5, .9)]), 'n');
   });

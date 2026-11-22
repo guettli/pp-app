@@ -77,6 +77,7 @@ Future<VoiceRun> open(
   VoiceGame game,
   Tries tries, {
   void Function(FakeDevices dev)? prepare,
+  String Function()? recognized,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final progress = await Progress.load();
@@ -86,7 +87,8 @@ Future<VoiceRun> open(
   var n = 0;
   dev.mic.script = () => tries[(n++).clamp(0, tries.length - 1)];
   prepare?.call(dev);
-  final rec = FakeRecognizer(() => '');
+  // what the recognizer hears in a held sound ('': nothing clear)
+  final rec = FakeRecognizer(recognized ?? () => '');
   final app = AppState(rec, comparer, progress, book, io: dev.io);
   final nav = GlobalKey<NavigatorState>();
   await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const Scaffold()));
@@ -139,6 +141,43 @@ void main() {
     expect(r.tries, sounds.length);
     expect(r.dialog, findsOneWidget);
     expect(r.running, isEmpty);
+  });
+
+  testWidgets('hold it long: another sound than asked for does not count', (
+    t,
+  ) async {
+    // the child always says O; the first sound is A
+    final r = await open(t, VoiceGame.hold, [
+      aaa(250, 5.5),
+    ], recognized: () => 'oː');
+    final a = lines.sounds[0], o = lines.sounds[1];
+    await r.until(() => r.tries == 3, reason: 'A twice, then O');
+    expect(r.said, contains(lines.holdWrong(a, 'o')));
+    expect(lines.holdWrong(a, 'o'), 'Das klang wie O, nicht wie A.');
+    expect(r.said.where((s) => s == lines.holdSay(a)), hasLength(2));
+    expect(r.progress.holdBest('de-DE', a.shown), Duration.zero);
+    await r.until(() => r.tries == 4, reason: 'then U');
+    // the O was right
+    expect(
+      r.progress.holdBest('de-DE', o.shown).inMilliseconds,
+      closeTo(5500, 150),
+    );
+    r.expectClean();
+  });
+
+  testWidgets('hold it long: only the time of the right sound counts', (
+    t,
+  ) async {
+    // A for two thirds of the time, then O
+    final r = await open(t, VoiceGame.hold, [
+      aaa(250, 5.4),
+    ], recognized: () => 'aao');
+    await r.until(() => r.tries == 2, reason: 'the next sound');
+    expect(
+      r.progress.holdBest('de-DE', lines.sounds[0].shown).inMilliseconds,
+      closeTo(3600, 150),
+    );
+    r.expectClean();
   });
 
   testWidgets('hold it long: too short gets one more try', (t) async {

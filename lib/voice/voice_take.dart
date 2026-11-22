@@ -42,6 +42,11 @@ class VoiceTake {
   /// Nothing was voiced at all.
   bool get heardNothing => _done && !started;
 
+  /// The 20 ms frame (counted from the start of the recording) where the
+  /// sound started, and the one after its last voiced frame.
+  int? get startFrame => _start;
+  int? get endFrame => started ? _lastVoiced! + 1 : null;
+
   /// From the start of the sound to its last voiced frame.
   Duration get held =>
       started ? frame * (_lastVoiced! - _start! + 1) : Duration.zero;
