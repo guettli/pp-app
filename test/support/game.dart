@@ -30,7 +30,7 @@ class Game {
     await t.pumpWidget(MaterialApp(navigatorKey: nav, home: const Scaffold()));
     nav.currentState!.push(
       MaterialPageRoute<void>(
-        builder: (_) => PlayScreen(app: app, world: world),
+        builder: (_) => PlayScreen(app: app, world: world, intro: false),
       ),
     );
     await t.pump();

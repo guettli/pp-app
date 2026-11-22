@@ -8,6 +8,7 @@ import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
 import 'package:phoneme_party/listen/listen_rules.dart';
+import 'package:phoneme_party/game/play_screen.dart';
 import 'package:phoneme_party/listen/listen_screen.dart';
 import 'package:phoneme_party/phonetics/phoneme_distance.dart';
 import 'package:phoneme_party/quiz/facts.dart';
@@ -96,6 +97,25 @@ void main() {
     ]);
     expect(dev.log.started('mic'), isNotEmpty);
     await close(t, dev);
+  });
+
+  testWidgets('world: say it after me, then the word, then the mic', (t) async {
+    final dev = await run(t, (app) => PlayScreen(app: app, world: 0));
+    expect(dev.log.started('tts').take(2), [
+      introLine(GameIntro.repeat, 'de-DE'),
+      book.world(0).first.text,
+    ]);
+    // the microphone opens with the word, not during the intro
+    final intro = dev.log.intervals('tts').first;
+    final mic = dev.log.intervals('mic').first;
+    expect(mic.from, greaterThanOrEqualTo(intro.to!));
+    // (the world opens the mic while it says the word, on purpose: the
+    // echo gate; so not close(), which forbids any sound while recording)
+    expect(dev.log.problems, isEmpty, reason: '${dev.log}');
+    await t.pumpWidget(const SizedBox());
+    for (var i = 0; i < 60; i++) {
+      await t.pump(const Duration(milliseconds: 50));
+    }
   });
 
   testWidgets('listen: tap the picture, then the word', (t) async {

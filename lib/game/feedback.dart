@@ -10,7 +10,7 @@ import 'dart:typed_data';
 const praise = <String, List<List<String>>>{
   'de': [
     ['Noch mal!', 'Versuch es noch einmal!', 'Hör gut zu!', 'Gleich noch mal!'],
-    ['Gut!', 'Geschafft!', 'Weiter so!', 'Nicht schlecht!'],
+    ['Gut!', 'Fast geschafft!', 'Weiter so!', 'Nicht schlecht!'],
     ['Sehr gut!', 'Gut gemacht!', 'Schön!', 'Prima!', 'Klasse!'],
     [
       'Super!',
@@ -24,7 +24,7 @@ const praise = <String, List<List<String>>>{
   ],
   'en': [
     ['Once more!', 'Try again!', 'Listen carefully!', 'Have another go!'],
-    ['Good!', 'You did it!', 'Keep going!', 'Not bad!'],
+    ['Good!', 'Almost!', 'Keep going!', 'Not bad!'],
     ['Very good!', 'Well done!', 'Nice!', 'Great!', 'Lovely!'],
     [
       'Super!',
@@ -43,7 +43,7 @@ const praise = <String, List<List<String>>>{
       'Écoute bien !',
       'On recommence !',
     ],
-    ['Bien !', 'Tu as réussi !', 'Continue !', 'Pas mal !'],
+    ['Bien !', 'Presque !', 'Continue !', 'Pas mal !'],
     ['Très bien !', 'Bravo !', 'Bien dit !', 'Chouette !', 'Bien joué !'],
     [
       'Super !',
@@ -56,7 +56,7 @@ const praise = <String, List<List<String>>>{
   ],
   'it': [
     ['Ancora una volta!', 'Riprova!', 'Ascolta bene!', 'Ancora!'],
-    ['Bene!', 'Ce l’hai fatta!', 'Continua così!', 'Non male!'],
+    ['Bene!', 'Quasi!', 'Continua così!', 'Non male!'],
     ['Molto bene!', 'Ottimo lavoro!', 'Che bello!', 'Ottimo!', 'Ben fatto!'],
     [
       'Super!',
@@ -74,7 +74,7 @@ const praise = <String, List<List<String>>>{
       '¡Escucha bien!',
       '¡Una vez más!',
     ],
-    ['¡Bien!', '¡Lo has conseguido!', '¡Sigue así!', '¡No está mal!'],
+    ['¡Bien!', '¡Casi!', '¡Sigue así!', '¡No está mal!'],
     ['¡Muy bien!', '¡Bien hecho!', '¡Qué bien!', '¡Estupendo!', '¡Bravo!'],
     [
       '¡Súper!',

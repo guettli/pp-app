@@ -596,7 +596,8 @@ class _QuizScreenState extends State<QuizScreen>
     setState(() => _phase = _Phase.ready);
     // not when the app went to the background meanwhile
     unawaited(_sound(fanfare(_rng)));
-    var text = pickPraise(_lang, math.max(stars, 1), _rng, avoid: _lastPraise);
+    // the round is done: at least a "well done", never "almost"
+    var text = pickPraise(_lang, math.max(stars, 2), _rng, avoid: _lastPraise);
     if (record) text = '$text ${newRecordLine(_lang)}';
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
       if (mounted && !_paused) _say(text);

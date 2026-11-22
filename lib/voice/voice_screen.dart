@@ -310,7 +310,8 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     if (!_current(id)) return;
     var text = pickPraise(
       _lang,
-      shown,
+      // a new record is a success: never "Almost! New record!"
+      record ? math.max(shown, 2) : shown,
       _rng,
       avoid: _lastPraise,
       onward: after == AfterResult.next,

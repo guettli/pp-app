@@ -25,6 +25,9 @@ enum GameIntro {
   /// Who am I: hear clues, tap the picture.
   riddle,
 
+  /// The worlds: hear a word, say it after the phone.
+  repeat,
+
   /// Odd one out: tap the picture that does not belong.
   odd,
 
@@ -51,6 +54,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.odd:
         'Drei Bilder gehören zusammen. Tippe auf das Bild, das nicht dazu passt!',
     GameIntro.home: 'Schau, wo wir sind! Tippe auf das Tier, das hier wohnt!',
+    GameIntro.repeat: 'Hör gut zu und sprich mir nach!',
   },
   'en': {
     GameIntro.sayWord: 'Listen, then say the right word!',
@@ -64,6 +68,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.odd:
         'Three pictures belong together. Tap the one that doesn’t belong!',
     GameIntro.home: 'Look where we are! Tap the animal that lives here!',
+    GameIntro.repeat: 'Listen and say it after me!',
   },
   'fr': {
     GameIntro.sayWord: 'Écoute bien, puis dis le bon mot !',
@@ -77,6 +82,7 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.odd:
         'Trois images vont ensemble. Touche celle qui n’est pas comme les autres !',
     GameIntro.home: 'Regarde où nous sommes ! Touche l’animal qui vit ici !',
+    GameIntro.repeat: 'Écoute bien et répète après moi !',
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
@@ -89,6 +95,7 @@ const _lines = <String, Map<GameIntro, String>>{
         'Indovina chi sono! Ascolta gli indizi e tocca l’immagine giusta. La lampadina ti dà un altro indizio.',
     GameIntro.odd: 'Tre immagini vanno insieme. Tocca quella che non c’entra!',
     GameIntro.home: 'Guarda dove siamo! Tocca l’animale che vive qui!',
+    GameIntro.repeat: 'Ascolta bene e ripeti dopo di me!',
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
@@ -102,5 +109,6 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.odd:
         'Tres imágenes van juntas. ¡Toca la que no va con las demás!',
     GameIntro.home: '¡Mira dónde estamos! ¡Toca el animal que vive aquí!',
+    GameIntro.repeat: '¡Escucha bien y repite después de mí!',
   },
 };
