@@ -768,8 +768,10 @@ class _QuizScreenState extends State<QuizScreen>
     return AnimatedBuilder(
       animation: _bounce,
       builder: (_, child) {
+        // at most into the 16 dp gap: big tiles (tablet) must not cover
+        // their neighbours
         final up = result && isAnswer
-            ? math.sin(_bounce.value * math.pi) * 0.15
+            ? math.sin(_bounce.value * math.pi) * math.min(0.15, 16 / width)
             : 0.0;
         return Transform.scale(scale: 1 + up, child: child);
       },
