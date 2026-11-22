@@ -19,6 +19,7 @@ import '../phonetics/recognizer.dart';
 import '../ui/emoji_image.dart';
 import '../ui/intros.dart';
 import '../ui/round_button.dart';
+import '../ui/round_parts.dart';
 import '../ui/strings.dart';
 import 'rocket_launch.dart';
 import 'feedback.dart';
@@ -680,11 +681,12 @@ class _PlayScreenState extends State<PlayScreen>
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
+        scrollable: true,
         title: Row(
           children: [
             const EmojiImage('🏆', size: 48),
             const SizedBox(width: 12),
-            Text(s.worldDone),
+            Flexible(child: Text(s.worldDone)),
           ],
         ),
         content: Column(
@@ -699,12 +701,12 @@ class _PlayScreenState extends State<PlayScreen>
           ],
         ),
         actions: [
-          FilledButton(
+          DoneButton(
+            label: s.ok,
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: Text(s.ok),
           ),
         ],
       ),

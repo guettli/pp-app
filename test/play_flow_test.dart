@@ -100,6 +100,40 @@ void main() {
   for (final ios in [false, true]) {
     group(ios ? 'iOS TTS:' : 'Android TTS:', () => flows(ios));
   }
+
+  for (final (w, h, scale) in [
+    (360.0, 640.0, 1.6),
+    (640.0, 360.0, 1.0),
+    (640.0, 360.0, 1.6),
+  ]) {
+    testWidgets('the world-done dialog fits a ${w.toInt()}x${h.toInt()} phone '
+        'at text $scale', (t) async {
+      t.view.physicalSize = Size(w, h);
+      t.view.devicePixelRatio = 1;
+      t.platformDispatcher.textScaleFactorTestValue = scale;
+      addTearDown(t.view.reset);
+      addTearDown(t.platformDispatcher.clearTextScaleFactorTestValue);
+      final (g, _) = await start(t, iosTts: false);
+      await g.until(
+        () => g.dialog.evaluate().isNotEmpty,
+        limit: const Duration(minutes: 3),
+        reason: 'world-done dialog',
+      );
+      await g.wait(const Duration(seconds: 3));
+      expect(t.takeException(), isNull);
+      await t.scrollUntilVisible(
+        find.byIcon(Icons.check_rounded),
+        50,
+        scrollable: find
+            .descendant(
+              of: find.byType(AlertDialog),
+              matching: find.byType(Scrollable),
+            )
+            .first,
+      );
+      expect(find.byIcon(Icons.check_rounded).hitTestable(), findsOneWidget);
+    });
+  }
 }
 
 void flows(bool ios) {

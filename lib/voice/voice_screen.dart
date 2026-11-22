@@ -19,6 +19,7 @@ import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
 import '../ui/emoji_image.dart';
 import '../ui/round_button.dart';
+import '../ui/round_parts.dart';
 import '../ui/strings.dart';
 import 'pitch.dart';
 import 'voice_lines.dart';
@@ -408,6 +409,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       builder: (ctx) => PopScope(
         canPop: false,
         child: AlertDialog(
+          scrollable: true,
           title: Row(
             children: [
               const EmojiImage('🏆', size: 48),
@@ -432,12 +434,12 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
             ],
           ),
           actions: [
-            FilledButton(
+            DoneButton(
+              label: s.ok,
               onPressed: () {
                 Navigator.of(ctx).pop();
                 Navigator.of(context).pop();
               },
-              child: Text(s.ok),
             ),
           ],
         ),

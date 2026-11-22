@@ -44,6 +44,31 @@ class ProgressDots extends StatelessWidget {
   );
 }
 
+/// The button that closes an end-of-round dialog: big, green, a ✓ a
+/// preschooler understands without reading, the word for the grown-ups.
+class DoneButton extends StatelessWidget {
+  const DoneButton({super.key, required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+    style: FilledButton.styleFrom(
+      backgroundColor: const Color(0xFF00C853),
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+      // the theme's font, bigger and bold
+      textStyle: Theme.of(
+        context,
+      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+    ),
+    onPressed: onPressed,
+    icon: const Icon(Icons.check_rounded, size: 40),
+    label: Text(label),
+  );
+}
+
 /// The end of a round: [stars] of 3, [right] of [total], a new record.
 /// OK closes the dialog and the game. The back button cannot close it.
 ///
@@ -81,12 +106,12 @@ Future<void> showRoundEnd(
           record: record ? s.newRecord : null,
         ),
         actions: [
-          FilledButton(
+          DoneButton(
+            label: s.ok,
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
             },
-            child: Text(s.ok),
           ),
         ],
       ),

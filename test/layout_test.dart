@@ -120,6 +120,8 @@ void main() {
       expect(find.byKey(const ValueKey('cheer-hare')), findsOneWidget);
       // the OK button is in view
       expect(find.text('Great').hitTestable(), findsOneWidget);
+      // with a ✓ a child understands without reading
+      expect(find.byIcon(Icons.check_rounded).hitTestable(), findsOneWidget);
       // once, not forever: pumpAndSettle ends
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
