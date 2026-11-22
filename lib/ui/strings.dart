@@ -144,11 +144,11 @@ class S {
       'send': 'Senden',
       'feedbackSent': 'Danke! Gesendet.',
       'feedbackQueued': 'Danke! Wird gesendet, sobald Internet da ist.',
-      'quizReports': 'Rätsel-Aufnahmen und Denkspiel-Fragen senden können',
+      'quizReports': 'Aufnahmen und Denkspiel-Fragen senden können',
       'quizReportsInfo':
-          'Im Rätsel erscheint ein 🐞-Knopf. Ein Tipp darauf fragt nach (die Aufnahme lässt sich vorher anhören) und sendet dann die letzte Frage mit der Aufnahme des Kindes an den Entwickler, damit er die Spracherkennung verbessern kann. Gespeichert 90 Tage, nicht veröffentlicht. In den Denkspielen sendet 🐞 die Frage ohne Aufnahme als Rückmeldung (gelöscht nach 12 Monaten).',
-      'quizReportSend': 'Diese Frage an den Entwickler senden',
-      'quizReportAsk': 'Diese Frage mit der Aufnahme an den Entwickler senden?',
+          'In den Spielen, die zuhören (Welten, Rätsel, Anlaut-Detektiv, Lies vor, Lange Laute), erscheint ein 🐞-Knopf. Ein Tipp darauf fragt nach (die Aufnahme lässt sich vorher anhören) und sendet dann den letzten Versuch mit der Aufnahme des Kindes an den Entwickler, damit er die Spracherkennung verbessern kann. Gespeichert 90 Tage, nicht veröffentlicht. In den Denkspielen sendet 🐞 die Frage ohne Aufnahme als Rückmeldung (gelöscht nach 12 Monaten).',
+      'quizReportSend': 'An den Entwickler senden',
+      'quizReportAsk': 'Diese Aufnahme an den Entwickler senden?',
       'listenRecording': 'Aufnahme anhören',
       'thinkReportAsk': 'Diese Frage an den Entwickler senden?',
       'thinkReportNote': 'Was stimmt nicht? (freiwillig)',
@@ -218,13 +218,11 @@ class S {
       'send': 'Send',
       'feedbackSent': 'Thank you! Sent.',
       'feedbackQueued': 'Thank you! It will be sent when there is internet.',
-      'quizReports':
-          'Allow sending quiz recordings and thinking-game questions',
+      'quizReports': 'Allow sending recordings and thinking-game questions',
       'quizReportsInfo':
-          'A 🐞 button appears in the quiz. Tapping it asks first (the recording can be heard before) and then sends the last question with the child’s recording to the developer, to improve the speech recognition. Kept 90 days, not published. In the thinking games, 🐞 sends the question without a recording, as feedback (deleted after 12 months).',
-      'quizReportSend': 'Send this question to the developer',
-      'quizReportAsk':
-          'Send this question with the recording to the developer?',
+          'A 🐞 button appears in the games that listen (worlds, quiz, sound detective, read aloud, long sounds). Tapping it asks first (the recording can be heard before) and then sends the last try with the child’s recording to the developer, to improve the speech recognition. Kept 90 days, not published. In the thinking games, 🐞 sends the question without a recording, as feedback (deleted after 12 months).',
+      'quizReportSend': 'Send to the developer',
+      'quizReportAsk': 'Send this recording to the developer?',
       'listenRecording': 'Listen to the recording',
       'thinkReportAsk': 'Send this question to the developer?',
       'thinkReportNote': 'What is wrong? (optional)',
@@ -294,12 +292,11 @@ class S {
       'feedbackSent': 'Merci ! Envoyé.',
       'feedbackQueued': 'Merci ! Ce sera envoyé dès qu’il y aura internet.',
       'quizReports':
-          'Permettre d’envoyer les enregistrements des devinettes et les questions des jeux de réflexion',
+          'Permettre d’envoyer les enregistrements et les questions des jeux de réflexion',
       'quizReportsInfo':
-          'Un bouton 🐞 apparaît dans les devinettes. Après confirmation (l’enregistrement peut être écouté avant), il envoie la dernière question avec l’enregistrement de l’enfant au développeur, pour améliorer la reconnaissance vocale. Gardé 90 jours, jamais publié. Dans les jeux de réflexion, 🐞 envoie la question sans enregistrement, comme un retour (effacé après 12\u00A0mois).',
-      'quizReportSend': 'Envoyer cette question au développeur',
-      'quizReportAsk':
-          'Envoyer cette question avec l’enregistrement au développeur\u00A0?',
+          'Un bouton 🐞 apparaît dans les jeux qui écoutent (mondes, devinettes, détective des sons, lecture à voix haute, sons longs). Après confirmation (l’enregistrement peut être écouté avant), il envoie le dernier essai avec l’enregistrement de l’enfant au développeur, pour améliorer la reconnaissance vocale. Gardé 90 jours, jamais publié. Dans les jeux de réflexion, 🐞 envoie la question sans enregistrement, comme un retour (effacé après 12\u00A0mois).',
+      'quizReportSend': 'Envoyer au développeur',
+      'quizReportAsk': 'Envoyer cet enregistrement au développeur\u00A0?',
       'listenRecording': 'Écouter l’enregistrement',
       'thinkReportAsk': 'Envoyer cette question au développeur\u00A0?',
       'thinkReportNote': 'Qu’est-ce qui ne va pas\u00A0? (facultatif)',
@@ -369,12 +366,11 @@ class S {
       'feedbackSent': 'Grazie! Inviato.',
       'feedbackQueued': 'Grazie! Verrà inviato appena c’è internet.',
       'quizReports':
-          'Consenti l’invio delle registrazioni degli indovinelli e delle domande dei giochi di logica',
+          'Consenti l’invio delle registrazioni e delle domande dei giochi di logica',
       'quizReportsInfo':
-          'Negli indovinelli compare un pulsante 🐞. Dopo una conferma (la registrazione si può ascoltare prima) invia l’ultima domanda con la registrazione del bambino allo sviluppatore, per migliorare il riconoscimento vocale. Conservata 90 giorni, mai pubblicata. Nei giochi di logica, 🐞 invia la domanda senza registrazione, come un commento (cancellato dopo 12 mesi).',
-      'quizReportSend': 'Invia questa domanda allo sviluppatore',
-      'quizReportAsk':
-          'Inviare questa domanda con la registrazione allo sviluppatore?',
+          'Nei giochi che ascoltano (mondi, indovinelli, detective dei suoni, lettura ad alta voce, suoni lunghi) compare un pulsante 🐞. Dopo una conferma (la registrazione si può ascoltare prima) invia l’ultimo tentativo con la registrazione del bambino allo sviluppatore, per migliorare il riconoscimento vocale. Conservata 90 giorni, mai pubblicata. Nei giochi di logica, 🐞 invia la domanda senza registrazione, come un commento (cancellato dopo 12 mesi).',
+      'quizReportSend': 'Invia allo sviluppatore',
+      'quizReportAsk': 'Inviare questa registrazione allo sviluppatore?',
       'listenRecording': 'Ascolta la registrazione',
       'thinkReportAsk': 'Inviare questa domanda allo sviluppatore?',
       'thinkReportNote': 'Che cosa non va? (facoltativo)',
@@ -444,12 +440,11 @@ class S {
       'feedbackSent': '¡Gracias! Enviado.',
       'feedbackQueued': '¡Gracias! Se enviará cuando haya internet.',
       'quizReports':
-          'Permitir enviar grabaciones de las adivinanzas y preguntas de los juegos de pensar',
+          'Permitir enviar grabaciones y preguntas de los juegos de pensar',
       'quizReportsInfo':
-          'En las adivinanzas aparece un botón 🐞. Tras confirmar (la grabación se puede escuchar antes) envía la última pregunta con la grabación del niño al desarrollador, para mejorar el reconocimiento de voz. Se guarda 90 días, no se publica. En los juegos de pensar, 🐞 envía la pregunta sin grabación, como comentario (se borra a los 12 meses).',
-      'quizReportSend': 'Enviar esta pregunta al desarrollador',
-      'quizReportAsk':
-          '¿Enviar esta pregunta con la grabación al desarrollador?',
+          'En los juegos que escuchan (mundos, adivinanzas, detective de sonidos, lectura en voz alta, sonidos largos) aparece un botón 🐞. Tras confirmar (la grabación se puede escuchar antes) envía el último intento con la grabación del niño al desarrollador, para mejorar el reconocimiento de voz. Se guarda 90 días, no se publica. En los juegos de pensar, 🐞 envía la pregunta sin grabación, como comentario (se borra a los 12 meses).',
+      'quizReportSend': 'Enviar al desarrollador',
+      'quizReportAsk': '¿Enviar esta grabación al desarrollador?',
       'listenRecording': 'Escuchar la grabación',
       'thinkReportAsk': '¿Enviar esta pregunta al desarrollador?',
       'thinkReportNote': '¿Qué está mal? (opcional)',

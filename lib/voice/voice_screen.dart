@@ -20,7 +20,9 @@ import '../game/feedback.dart';
 import '../game/game_io.dart';
 import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
+import '../net/quiz_report.dart';
 import '../ui/emoji_image.dart';
+import '../ui/recording_report.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
@@ -67,6 +69,9 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
 
   /// Hold it long: the time of the right sound in the scored try.
   Duration? _counted;
+
+  /// 🐞 (hold it long): the last tries of the sound, with what was heard.
+  late final RecordingReports _reports = RecordingReports(widget.app);
 
   /// The child's own voice (Hz), from the first step of low and high.
   double? _baseline;
@@ -130,6 +135,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     _listener.dispose();
     _quietly(_tts.stop);
     _quietly(_sfx.dispose);
+    _reports.dispose();
     _float.dispose();
     super.dispose();
   }
@@ -145,6 +151,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       _listener.cancel(); // the mic first
       _quietly(_tts.stop);
       _quietly(_sfx.stop);
+      _reports.stopReplay();
       if (!_idle && mounted) setState(() => _phase = _Phase.ready);
     } else if (state == AppLifecycleState.resumed) {
       _paused = false; // goes on with a tap
@@ -263,7 +270,8 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     ({Duration counted, String? wrong})? sound;
     if (_hold) {
       setState(() => _phase = _Phase.speaking);
-      sound = await _checkSound(heard, audio!.takeBytes());
+      final pcm = audio!.takeBytes();
+      sound = await _checkSound(heard, pcm);
       if (!_current(id)) return;
       if (sound == null) {
         _fail(id, (s) => s.tryAgain);
@@ -279,13 +287,44 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
   /// Hold it long: how long the right sound was held, or the wrong sound
   /// heard instead ("a" when an O was asked for). Null if the recognizer
   /// failed.
+  ///
+  /// With reports on, the try is kept for 🐞: the whole recording, what
+  /// was heard, and which part of it counted.
   Future<({Duration counted, String? wrong})?> _checkSound(
     VoiceTake take,
     Uint8List pcm,
   ) async {
+    final sound = _lines.sounds[_step];
     final from = take.startFrame! * _frameBytes;
     final to = math.min(take.endFrame! * _frameBytes, pcm.length);
-    if (to <= from) return (counted: take.held, wrong: null);
+    // for a report: the held sound with a little before and after (the
+    // service takes 13 s; a longer hold loses its end)
+    final kept = to <= from
+        ? pcm
+        : Uint8List.sublistView(
+            pcm,
+            math.max(0, from - 16000),
+            math.min(pcm.length, to + 9600),
+          );
+    void keep(String ipa, VowelCheck? check) => _reports.keep(
+      sound,
+      QuizTry(
+        pcm: kept,
+        speech: take.started,
+        heard: ipa,
+        // the sound heard instead, if it was wrong
+        said: check == null
+            ? ''
+            : check.wrong
+            ? check.heard ?? ''
+            : sound.sound,
+        scores: [(option: sound.shown, score: check?.share ?? 1, same: 0)],
+      ),
+    );
+    if (to <= from) {
+      keep('', null);
+      return (counted: take.held, wrong: null);
+    }
     final Recognition r;
     try {
       r = await widget.app.recognizer.recognize(
@@ -297,8 +336,9 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       debugPrint('recognizing the held sound failed: $e\n$st');
       return null;
     }
-    final want = _lines.sounds[_step].sound;
+    final want = sound.sound;
     final check = checkVowel(r, want);
+    keep(r.ipa, check);
     debugPrint(
       'hold $want: heard "${r.ipa}" -> '
       '${check == null ? 'nothing clear' : '${check.share} ${check.heard}'}',
@@ -587,11 +627,41 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
             ),
           ),
         ),
-        // keeps the mic button centred
-        const SizedBox(width: 76),
+        if (_hold && _reports.on)
+          _reports.button(s, _sendReport)
+        else
+          // keeps the mic button centred
+          const SizedBox(width: 76),
       ],
     );
   }
+
+  /// 🐞: stops what runs (the mic first), asks, sends the last tries.
+  Future<void> _sendReport() => _reports.send(
+    this,
+    hold: () async {
+      _flow++;
+      _onward?.cancel();
+      _donePraise?.cancel();
+      await _listener.cancel();
+      await _quietly(_tts.stop);
+      await _quietly(_sfx.stop);
+      if (mounted && !_idle) setState(() => _phase = _Phase.ready);
+    },
+    paused: () => _paused,
+    update: () => setState(() {}),
+    topic: (of) {
+      final sound = of as HoldSound;
+      return (
+        question: 'hold: ${sound.shown}',
+        asked: _lines.holdSay(sound),
+        options: [
+          (text: sound.shown, ipa: [sound.sound]),
+        ],
+        answer: sound.shown,
+      );
+    },
+  );
 
   // --- hold it long ---------------------------------------------------
 

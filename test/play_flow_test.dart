@@ -46,9 +46,11 @@ Future<(Game, Fakes)> start(
   bool listensWhileSpeaking = true,
   Duration micStartup = Duration.zero,
   Duration micLatency = Duration.zero,
+  FakeQuizReports? reports,
 }) async {
   SharedPreferences.setMockInitialValues({});
   final progress = await Progress.load();
+  if (reports != null) await progress.setQuizReports(true);
   final t0 = t.binding.clock.now();
   final log = IoLog(() => t.binding.clock.now().difference(t0));
   final dev = FakeDevices(
@@ -69,7 +71,14 @@ Future<(Game, Fakes)> start(
     delay: recognizing,
     log: log,
   );
-  final app = AppState(rec, comparer, progress, book, io: dev.io);
+  final app = AppState(
+    rec,
+    comparer,
+    progress,
+    book,
+    io: dev.io,
+    quizReports: reports,
+  );
   game = await Game.open(t, app, log);
   return (game, Fakes(dev, rec));
 }
@@ -100,6 +109,37 @@ void main() {
   for (final ios in [false, true]) {
     group(ios ? 'iOS TTS:' : 'Android TTS:', () => flows(ios));
   }
+
+  testWidgets('🐞 sends the word with the recording and what was heard', (
+    t,
+  ) async {
+    final reports = FakeQuizReports();
+    final (g, _) = await start(
+      t,
+      iosTts: false,
+      answer: (_) => mumble,
+      reports: reports,
+    );
+    final bug = find.byTooltip('Send to the developer');
+    expect(bug, findsOneWidget);
+    await g.until(() => g.recordings == 1 && g.praise.isNotEmpty);
+    final word = g.words.first;
+    await t.tap(bug);
+    await t.pump();
+    await t.tap(find.text('Send'));
+    await g.wait(const Duration(seconds: 1));
+    final r = reports.sent.single;
+    expect(r.question, 'world 1: ${word.text}');
+    expect(r.answer, word.text);
+    final tr = r.tries.single;
+    expect(tr.heard, mumble);
+    expect(tr.said, '0');
+    expect(tr.pcm.length, greaterThan(16000));
+    // the game waits for a tap
+    final mics = g.recordings;
+    await g.wait(const Duration(seconds: 10));
+    expect(g.recordings, mics);
+  });
 
   for (final (w, h, scale) in [
     (360.0, 640.0, 1.6),

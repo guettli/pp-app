@@ -515,7 +515,7 @@ void main() {
       await expectClean(t, dev.log);
     });
 
-    final bug = find.byTooltip('Send this question to the developer');
+    final bug = find.byTooltip('Send to the developer');
 
     testWidgets('quiz reports off: no 🐞, nothing sent', (t) async {
       final reports = FakeQuizReports();
@@ -555,7 +555,7 @@ void main() {
       await t.pump();
       // asked first; nothing sent yet
       expect(
-        find.text('Send this question with the recording to the developer?'),
+        find.text('Send this recording to the developer?'),
         findsOneWidget,
       );
       expect(reports.sent, isEmpty);
@@ -814,15 +814,4 @@ void main() {
       await expectClean(t, dev.log);
     });
   });
-}
-
-class FakeQuizReports implements QuizReportSender {
-  final sent = <QuizReport>[];
-  SendResult result = SendResult.done;
-
-  @override
-  Future<SendResult> send(QuizReport report) async {
-    sent.add(report);
-    return result;
-  }
 }

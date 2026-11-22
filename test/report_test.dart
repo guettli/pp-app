@@ -195,11 +195,20 @@ void main() {
       '${int.parse(m[1]!) * int.parse(m[2]!)}',
     );
     await t.pump();
+    // the list is long (the switch explains the reports): scroll to it
+    await t.scrollUntilVisible(
+      find.text('studyLang: de-DE'),
+      100,
+      // the page's list (the text field scrolls too)
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('phone: Test Phone'), findsOneWidget);
     expect(find.text('studyLang: de-DE'), findsOneWidget);
     // quiz reports: off until switched on, behind the gate, kept
     final sw = find.byKey(const Key('quizReports'));
     expect(t.widget<SwitchListTile>(sw).value, isFalse);
+    await t.ensureVisible(sw);
+    await t.pumpAndSettle();
     await t.tap(sw);
     await t.pumpAndSettle();
     expect(progress.quizReports, isTrue);
