@@ -11,6 +11,9 @@
 // question; a grown-up has switched them on in the app. They are kept in
 // their own directory, 90 days.
 //
+// It also signs short-lived TURN credentials for the two-player games
+// (turn.go, POST /pp-app/api/turn); coturn on the vps checks them.
+//
 //	feedback               serve (LISTEN, default :8080; DIR, default
 //	                       /data/feedback; QUIZ_DIR, default /data/quiz)
 //	feedback list          print the stored reports, newest first
@@ -101,10 +104,12 @@ type Server struct {
 	Store Store
 	// Quiz stores quiz reports; nil: the route answers 404.
 	Quiz QuizStore
+	// TURN signs relay credentials; nil: the route answers 404.
+	TURN *TURN
 	Now  func() time.Time
 
-	limit, quizLimit *limiter
-	quizSlots        chan struct{}
+	limit, quizLimit, turnLimit *limiter
+	quizSlots                   chan struct{}
 }
 
 func NewServer(st Store) *Server {
@@ -113,6 +118,7 @@ func NewServer(st Store) *Server {
 		limit: newLimiter(perClient, perHour),
 		// one question at a time while a parent watches the child play
 		quizLimit: newLimiter(quizPerClient, quizPerHour),
+		turnLimit: newLimiter(turnPerClient, turnPerHour),
 		quizSlots: make(chan struct{}, quizUploads),
 	}
 }
@@ -125,6 +131,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	case "/pp-app/api/feedback":
 	case "/pp-app/api/quiz-report":
 		s.serveQuiz(w, r)
+		return
+	case "/pp-app/api/turn":
+		s.serveTURN(w, r)
 		return
 	default:
 		http.NotFound(w, r)
@@ -403,6 +412,7 @@ func main() {
 	addr := env("LISTEN", ":8080")
 	handler := NewServer(dir)
 	handler.Quiz = quiz
+	handler.TURN = turnFromEnv()
 	srv := &http.Server{
 		Addr:              addr,
 		Handler:           handler,
