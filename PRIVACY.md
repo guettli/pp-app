@@ -26,8 +26,10 @@ reports switched on, the quiz keeps the last question's recordings in
 memory until the next try or until the quiz is closed). Recordings are
 never saved to storage. They leave the device only as a quiz report (see
 below), which is off unless a grown-up switches it on. The voice games without
-words ("hold it long", "low and high") only measure the length and pitch
-of the sound.
+words ("hold it long", "low and high") measure the length and pitch of
+the sound; "hold it long" also keeps the held sound in memory until the
+speech recognition on the phone has checked that it was the right vowel,
+then discards it.
 
 ## What is stored on the phone
 

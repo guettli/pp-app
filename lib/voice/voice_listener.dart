@@ -1,8 +1,10 @@
 // The microphone part of the voice games, in one place: start, feed a
 // VoiceTake, and make sure the mic is off again however the try ends
 // (done, tap, error, stream end, app paused, screen closed). Audio is only
-// analysed, never kept.
+// analysed, never stored: "hold it long" keeps it in memory until the
+// recognizer has checked the sound.
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 
@@ -24,9 +26,11 @@ class VoiceListener {
 
   /// Records until [take] is done and returns it, or null when cancelled.
   /// [onFrame] is called for every 20 ms of sound (for a live display).
+  /// [audio] gets the 16-bit PCM, from the start of the recording.
   Future<VoiceTake?> listen(
     VoiceTake take, {
     void Function(VoiceTake take, VoiceFrame frame)? onFrame,
+    BytesBuilder? audio,
   }) async {
     await cancel();
     final gen = _gen;
@@ -54,6 +58,7 @@ class VoiceListener {
       }
       _sub = stream.listen(
         (chunk) {
+          audio?.add(chunk);
           for (final f in meter.addPcm16(chunk)) {
             take.add(f);
             onFrame?.call(take, f);

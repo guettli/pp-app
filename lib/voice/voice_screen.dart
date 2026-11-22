@@ -1,11 +1,14 @@
 // Voice games: no words, just the voice.
 // - Hold it long: "Aaaa" as long as you can; a balloon grows, and at 8 s it
-//   flies away. 3 / 5 / 8 s give 1 / 2 / 3 stars.
+//   flies away. 3 / 5 / 8 s give 1 / 2 / 3 stars. Only the time of the
+//   right sound counts: afterwards the recognizer checks it (a long A is
+//   no O, hold_vowel.dart).
 // - Low and high: "A" in your own voice, then low like a bear, then high
 //   like a mouse; the animal moves with the voice. Stars by how far from
 //   the own voice (in semitones).
 // The phone says what to do (low and high in its own voice, too), then
-// listens. Nothing is recorded: the sound is only measured, frame by frame.
+// listens. Nothing is stored: the sound is measured frame by frame; hold
+// it long keeps it in memory until the sound is checked, then drops it.
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:typed_data';
@@ -21,6 +24,8 @@ import '../ui/emoji_image.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
 import '../ui/strings.dart';
+import '../phonetics/recognizer.dart';
+import 'hold_vowel.dart';
 import 'pitch.dart';
 import 'voice_lines.dart';
 import 'voice_listener.dart';
@@ -59,6 +64,9 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
 
   /// The try that is being listened to or was just scored.
   VoiceTake? _take;
+
+  /// Hold it long: the time of the right sound in the scored try.
+  Duration? _counted;
 
   /// The child's own voice (Hz), from the first step of low and high.
   double? _baseline;
@@ -197,6 +205,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     setState(() {
       _phase = _Phase.speaking;
       _take = null;
+      _counted = null;
       _result = null;
       _resultStars = null;
       _newRecord = false;
@@ -231,11 +240,13 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       _phase = _Phase.listening;
       _take = take;
     });
+    final audio = _hold ? BytesBuilder(copy: false) : null;
     final heard = await _listener.listen(
       take,
       onFrame: (_, _) {
         if (mounted) setState(() {});
       },
+      audio: audio,
     );
     if (!_current(id)) return;
     if (heard == null) {
@@ -249,7 +260,53 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       return;
     }
     _attempts++;
-    await _score(id, heard);
+    ({Duration counted, String? wrong})? sound;
+    if (_hold) {
+      setState(() => _phase = _Phase.speaking);
+      sound = await _checkSound(heard, audio!.takeBytes());
+      if (!_current(id)) return;
+      if (sound == null) {
+        _fail(id, (s) => s.tryAgain);
+        return;
+      }
+    }
+    await _score(id, heard, sound);
+  }
+
+  /// 20 ms of 16 kHz 16-bit PCM.
+  static const _frameBytes = 640;
+
+  /// Hold it long: how long the right sound was held, or the wrong sound
+  /// heard instead ("a" when an O was asked for). Null if the recognizer
+  /// failed.
+  Future<({Duration counted, String? wrong})?> _checkSound(
+    VoiceTake take,
+    Uint8List pcm,
+  ) async {
+    final from = take.startFrame! * _frameBytes;
+    final to = math.min(take.endFrame! * _frameBytes, pcm.length);
+    if (to <= from) return (counted: take.held, wrong: null);
+    final Recognition r;
+    try {
+      r = await widget.app.recognizer.recognize(
+        prepareForRecognition(
+          pcm16ToFloat(Uint8List.sublistView(pcm, from, to)),
+        ),
+      );
+    } catch (e, st) {
+      debugPrint('recognizing the held sound failed: $e\n$st');
+      return null;
+    }
+    final want = _lines.sounds[_step].sound;
+    final check = checkVowel(r, want);
+    debugPrint(
+      'hold $want: heard "${r.ipa}" -> '
+      '${check == null ? 'nothing clear' : '${check.share} ${check.heard}'}',
+    );
+    // nothing clear heard: the time counts, the child is not punished
+    if (check == null) return (counted: take.held, wrong: null);
+    if (check.wrong) return (counted: Duration.zero, wrong: check.heard);
+    return (counted: take.held * check.share, wrong: null);
   }
 
   void _fail(int id, String Function(S) message) {
@@ -260,17 +317,23 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     ).showSnackBar(SnackBar(content: Text(message(S.of(context)))));
   }
 
-  Future<void> _score(int id, VoiceTake take) async {
+  Future<void> _score(
+    int id,
+    VoiceTake take, [
+    ({Duration counted, String? wrong})? sound,
+  ]) async {
     final progress = widget.app.progress;
     int? stars;
     var record = false;
     double? st;
     if (_hold) {
-      stars = holdStars(take.held);
+      final counted = sound!.counted;
+      _counted = counted;
+      stars = holdStars(counted);
       record = await progress.recordHold(
         _lang,
         _lines.sounds[_step].shown,
-        take.held,
+        counted,
       );
     } else if (_pitchStep == _PitchStep.normal) {
       final hz = take.pitch!;
@@ -322,6 +385,9 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     );
     _lastPraise = text;
     if (record) text = '$text ${_lines.record}';
+    // another sound than asked for: say which (no praise for it)
+    final wrong = sound?.wrong;
+    if (wrong != null) text = _lines.holdWrong(_lines.sounds[_step], wrong);
     await _say(text);
     if (!_current(id)) return;
     _onward = Timer(const Duration(milliseconds: 900), () {
@@ -533,7 +599,8 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
 
   Widget _holdScene(S s) {
     final sound = _lines.sounds[_step];
-    final held = (_take?.held.inMilliseconds ?? 0) / 1000;
+    // listening: how long so far; scored: the time of the right sound
+    final held = ((_counted ?? _take?.held)?.inMilliseconds ?? 0) / 1000;
     final best = widget.app.progress.holdBest(_lang, sound.shown);
     return LayoutBuilder(
       builder: (context, c) {

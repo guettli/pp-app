@@ -10,8 +10,12 @@ import 'fbank.dart';
 export 'audio.dart';
 
 class Recognition {
-  Recognition(this.phonemes);
+  Recognition(this.phonemes, {this.frames = 0});
   final List<DecodedPhoneme> phonemes;
+
+  /// Model frames of the audio ([DecodedPhoneme.start] is one of them);
+  /// 0 if unknown.
+  final int frames;
   String get ipa => phonemes.map((p) => p.symbol).join();
 }
 
@@ -58,7 +62,7 @@ class PhoneRecognizer implements Recognizer {
           .map((e) => e.toDouble())
           .toList();
       final t = out.shape[1], v = out.shape[2];
-      return Recognition(decodeCtc(data, t, v, _tokens));
+      return Recognition(decodeCtc(data, t, v, _tokens), frames: t);
     } finally {
       await x?.dispose();
       await xLens?.dispose();

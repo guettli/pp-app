@@ -146,7 +146,13 @@ and high also listen (and so do the worlds).
   said, the pictures, the answer, the taps) as a bug report through the
   feedback outbox. No recording.
 - **🎈 Hold it long** and **🐻🐭 Low and high:** voice games without words
-  (`lib/voice/`); the sound is only measured, never recorded.
+  (`lib/voice/`); the sound is measured, never stored. In *Hold it long*
+  only the time of the asked sound counts: after the try, the speech
+  recognition checks which vowel was held (`lib/voice/hold_vowel.dart`).
+  A long A instead of the O gives no stars ("Das klang wie A, nicht wie
+  O."), and "Ooo-aaa" counts only the O part. Close vowels count for each
+  other (O/U, E/I: the recognizer often hears a child's O as u); if the
+  recognizer hears no clear vowel, the time counts as before.
 - **📖 Word list:** every word with picture, rough size and weight and its
   properties; tapping a word says it.
 

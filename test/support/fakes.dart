@@ -466,9 +466,11 @@ class FakeRecognizer implements Recognizer {
     log?.checkNoEcho(audio);
     if (delay > Duration.zero) await Future<void>.delayed(delay);
     final ipa = answer();
+    final symbols = [for (final r in ipa.runes) String.fromCharCode(r)];
+    // one model frame per symbol, one after the other
     return Recognition([
-      for (final r in ipa.runes) DecodedPhoneme(String.fromCharCode(r), 1, 1),
-    ]);
+      for (final (i, s) in symbols.indexed) DecodedPhoneme(s, 1, 1, start: i),
+    ], frames: symbols.length);
   }
 }
 

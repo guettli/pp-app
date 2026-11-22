@@ -9,10 +9,15 @@
 import 'dart:math' as math;
 
 class DecodedPhoneme {
-  DecodedPhoneme(this.symbol, this.confidence, this.frames);
+  DecodedPhoneme(this.symbol, this.confidence, this.frames, {this.start = 0});
   final String symbol;
   final double confidence;
   final int frames;
+
+  /// The model frame where it was first heard (a held vowel: when it
+  /// started; the model gives one short peak per sound, so [frames] is
+  /// not how long it lasted).
+  final int start;
 
   @override
   String toString() => '$symbol(${confidence.toStringAsFixed(2)}x$frames)';
@@ -135,6 +140,7 @@ List<DecodedPhoneme> decodeCtc(
     final sym = tokens[id] ?? '';
     final n = end - t;
     final avg = sum / n;
+    final start = t;
     t = end;
     if (_isSpecial(id, sym)) continue;
     if (n == 1 && avg < _threshold(sym, minConfidence)) continue;
@@ -142,10 +148,15 @@ List<DecodedPhoneme> decodeCtc(
       final last = result.removeLast();
       final f = last.frames + n;
       result.add(
-        DecodedPhoneme(sym, (last.confidence * last.frames + sum) / f, f),
+        DecodedPhoneme(
+          sym,
+          (last.confidence * last.frames + sum) / f,
+          f,
+          start: last.start,
+        ),
       );
     } else {
-      result.add(DecodedPhoneme(sym, avg, n));
+      result.add(DecodedPhoneme(sym, avg, n, start: start));
     }
   }
   return result;
