@@ -21,11 +21,15 @@ enum _Step {
   showCode,
   ask,
   typeCode,
+  joining,
   waitHost,
   connecting,
   play,
   failed,
 }
+
+/// Why the screen shows [_Step.failed].
+enum _Why { taken, notAccepted, expired, offline, noLink }
 
 class TogetherScreen extends StatefulWidget {
   const TogetherScreen({super.key, required this.together});
@@ -42,30 +46,70 @@ class _TogetherScreenState extends State<TogetherScreen> {
   GuestMatch? _guest;
   PeerLink? _link;
   StreamSubscription<HostEvent>? _events;
+  late final AppLifecycleListener _lifecycle;
   List<String> _code = const [];
   final _typed = <int>[];
   int? _animal; // the guest's
   bool _isHost = false;
-  MatchFailure? _failure;
+  _Why _why = _Why.noLink;
   String? _note; // a wrong code, shown above the pictures
   var _gen = 0; // bumped on every new attempt; stale futures check it
 
   @override
+  void initState() {
+    super.initState();
+    // Leaving the app while looking for a friend ends the search: nobody
+    // waits for a phone in a pocket, and a code is not left open.
+    _lifecycle = AppLifecycleListener(onHide: _hidden);
+  }
+
+  void _hidden() {
+    if (const {
+      _Step.opening,
+      _Step.showCode,
+      _Step.ask,
+      _Step.joining,
+      _Step.waitHost,
+      _Step.connecting,
+    }.contains(_step)) {
+      _restart();
+    }
+  }
+
+  @override
   void dispose() {
-    unawaited(_events?.cancel());
-    unawaited(_host?.close());
-    unawaited(_guest?.close());
-    unawaited(_link?.close());
+    _lifecycle.dispose();
+    _gen++;
+    _closeAll();
     super.dispose();
   }
 
-  void _fail(Object e) {
+  void _closeAll() {
+    unawaited(_events?.cancel());
+    _events = null;
+    unawaited(_host?.close());
+    unawaited(_guest?.close());
+    unawaited(_link?.close());
+    _host = null;
+    _guest = null;
+    _link = null;
+  }
+
+  void _fail(_Why why) {
     if (!mounted) return;
+    _closeAll();
     setState(() {
-      _failure = e is MatchError ? e.failure : null;
+      _why = why;
       _step = _Step.failed;
     });
   }
+
+  _Why _whyOf(Object e) => switch (e) {
+    MatchError(failure: MatchFailure.offline) => _Why.offline,
+    MatchError(failure: MatchFailure.taken) => _Why.taken,
+    MatchError() => _isHost ? _Why.expired : _Why.notAccepted,
+    _ => _Why.noLink,
+  };
 
   Future<void> _open() async {
     final gen = ++_gen;
@@ -90,7 +134,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
           case GuestLeft():
             if (_step == _Step.ask) setState(() => _step = _Step.showCode);
           case MatchOver(:final error):
-            if (_step != _Step.play) _fail(error);
+            _fail(_whyOf(error));
         }
       });
       setState(() {
@@ -98,22 +142,32 @@ class _TogetherScreenState extends State<TogetherScreen> {
         _step = _Step.showCode;
       });
     } catch (e) {
-      if (gen == _gen) _fail(e);
+      if (gen == _gen) _fail(_whyOf(e));
     }
   }
 
+  /// Back to the code, or straight to the next guest's animal.
+  void _waitAgain(HostMatch host) {
+    final next = host.waiting;
+    setState(() {
+      _animal = next;
+      _step = next == null ? _Step.showCode : _Step.ask;
+    });
+  }
+
   Future<void> _answer(bool yes) async {
-    final host = _host!;
+    final host = _host;
+    if (host == null) return;
+    final gen = _gen;
     if (!yes) {
       setState(() => _step = _Step.showCode);
       try {
         await host.reject();
       } catch (e) {
-        _fail(e);
+        if (gen == _gen) _fail(_whyOf(e));
       }
       return;
     }
-    final gen = _gen;
     setState(() => _step = _Step.connecting);
     try {
       final link = await host.accept();
@@ -122,8 +176,17 @@ class _TogetherScreenState extends State<TogetherScreen> {
         return;
       }
       _play(link);
+    } on MatchError catch (e) {
+      if (!mounted || gen != _gen) return;
+      // that guest went (or another came): the code is still open
+      if (e.failure == MatchFailure.gone && e.detail != 'closed' ||
+          e.failure == MatchFailure.taken) {
+        _waitAgain(host);
+      } else {
+        _fail(_whyOf(e));
+      }
     } catch (e) {
-      if (gen == _gen) _fail(e);
+      if (gen == _gen) _fail(_whyOf(e));
     }
   }
 
@@ -138,7 +201,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
   }
 
   Future<void> _type(int picture) async {
-    if (_typed.length >= codeLength) return;
+    if (_step != _Step.typeCode || _typed.length >= codeLength) return;
     setState(() {
       _note = null;
       _typed.add(picture);
@@ -147,6 +210,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
     final gen = ++_gen;
     final code = picturesToCode(_typed);
     final guest = _guest = GuestMatch(widget.together);
+    setState(() => _step = _Step.joining);
     try {
       final animal = await guest.join(code);
       if (!mounted || gen != _gen) return;
@@ -165,16 +229,17 @@ class _TogetherScreenState extends State<TogetherScreen> {
       if (e.failure == MatchFailure.noSuchCode) {
         // mistyped: try again right here
         final s = S.of(context);
+        _guest = null;
         setState(() {
           _typed.clear();
           _note = s.codeWrong;
           _step = _Step.typeCode;
         });
       } else {
-        _fail(e);
+        _fail(_whyOf(e));
       }
     } catch (e) {
-      if (gen == _gen) _fail(e);
+      if (gen == _gen) _fail(_whyOf(e));
     }
   }
 
@@ -189,17 +254,9 @@ class _TogetherScreenState extends State<TogetherScreen> {
 
   void _restart() {
     _gen++;
-    unawaited(_events?.cancel());
-    _events = null;
-    unawaited(_host?.close());
-    unawaited(_guest?.close());
-    unawaited(_link?.close());
+    _closeAll();
     setState(() {
-      _host = null;
-      _guest = null;
-      _link = null;
       _animal = null;
-      _failure = null;
       _step = _Step.choose;
     });
   }
@@ -219,9 +276,8 @@ class _TogetherScreenState extends State<TogetherScreen> {
           padding: const EdgeInsets.all(16),
           child: switch (_step) {
             _Step.choose => _choose(s),
-            _Step.opening || _Step.connecting => _busy(
-              _step == _Step.connecting ? s.connecting : null,
-            ),
+            _Step.opening || _Step.joining => _busy(null),
+            _Step.connecting => _busy(s.connecting),
             _Step.showCode => _showCode(s),
             _Step.ask => _ask(s),
             _Step.typeCode => _typeCode(s),
@@ -464,17 +520,21 @@ class _TogetherScreenState extends State<TogetherScreen> {
         children: [
           const EmojiImage('😕', size: 96),
           const SizedBox(height: 16),
-          _text(switch (_failure) {
-            MatchFailure.taken => s.codeTaken,
-            MatchFailure.gone || MatchFailure.noSuchCode => s.friendGone,
-            MatchFailure.offline => s.offline,
-            null => s.linkFailed,
+          _text(switch (_why) {
+            _Why.taken => s.codeTaken,
+            _Why.notAccepted => s.notAccepted,
+            _Why.expired => s.codeExpired,
+            _Why.offline => s.offline,
+            _Why.noLink => s.linkFailed,
           }),
           const SizedBox(height: 24),
-          FilledButton(
+          RoundButton(
             key: const ValueKey('together-again'),
-            onPressed: _restart,
-            child: Text(s.tryAgain),
+            tooltip: s.tryAgain,
+            color: const Color(0xFF5C6BC0),
+            size: 96,
+            onTap: _restart,
+            child: const Icon(Icons.refresh, color: Colors.white, size: 56),
           ),
         ],
       ),

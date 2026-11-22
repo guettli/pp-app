@@ -362,7 +362,7 @@ sh -c "$RELEASE_APK_CHECK" check universal.apk`
 
 // releaseApkCheck makes sure the release APK is the real app: its id and
 // name (not the test app's), and exactly the permissions we mean: the
-// microphone, the internet (feedback a grown-up sends; see lib/net/) and the one Android adds by itself. A plugin that brings
+// microphone, the internet (feedback a grown-up sends, playing together; see lib/net/) and the one Android adds by itself. A plugin that brings
 // in another permission fails the build.
 const releaseApkCheck = `set -e
 b=$(/opt/android-sdk/build-tools/35.0.0/aapt2 dump badging "$1")

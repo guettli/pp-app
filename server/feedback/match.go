@@ -11,7 +11,7 @@ package main
 //	POST new    {}                          -> 201 {code, token}
 //	POST join   {code, nonce}               -> 200 {token, animal} | 404 | 409
 //	POST reject {code, token}               -> 204   (host: reopen the code)
-//	POST send   {code, token, msg, id?}     -> 204
+//	POST send   {code, token, msg, id?, guest?} -> 204 | 409
 //	POST recv   {code, token, after}        -> 200 {msgs, next}
 //	POST leave  {code, token}               -> 204
 //
@@ -20,7 +20,11 @@ package main
 // animal) and "left" from the service; a guest sees only what the host
 // sent after it joined (an earlier guest's offer is not its business). Tokens are in bodies, never in URLs
 // (access logs). A join with the same nonce again (a lost answer) gets the
-// same token; a send with the same id again is dropped.
+// same token; a send with the same id again is dropped. The host's offer
+// names the guest its child said yes to (guest: the seq of that "joined");
+// if another guest is in the match by now, the send is refused (409), so an
+// offer never reaches someone the child did not see. A guest that stops
+// asking for a minute counts as gone ("left"), while the host waits on.
 
 import (
 	"crypto/rand"
@@ -81,6 +85,7 @@ type side struct {
 	ids   map[string]bool
 	kick  chan struct{} // closed to end this side's waiting recv
 	base  int           // a guest sees messages after this seq only
+	join  int           // a guest: the seq of its "joined"
 }
 
 type match struct {
@@ -159,10 +164,26 @@ func newSide(now time.Time) side {
 // sweep drops the matches that are over. Call with mu held.
 func (ms *Matches) sweep(now time.Time) {
 	for c, m := range ms.byCode {
-		if m.gone(now) {
-			ms.drop(c)
-		}
+		ms.check(c, m, now)
 	}
+}
+
+// check drops m when it is over, or forgets a guest that stopped asking
+// while the host waits on (its app was closed, or the answer to its join
+// got lost); it reports whether m lives on. Call with mu held.
+func (ms *Matches) check(code string, m *match, now time.Time) bool {
+	if m.gone(now) {
+		ms.drop(code)
+		return false
+	}
+	if m.guest.token != "" && now.Sub(m.guest.seen) > matchIdle {
+		if !m.reopen(now) {
+			ms.drop(code)
+			return false
+		}
+		m.post("service", json.RawMessage(`{"type":"left"}`))
+	}
+	return true
 }
 
 func (ms *Matches) drop(code string) {
@@ -177,11 +198,7 @@ func (ms *Matches) drop(code string) {
 func (ms *Matches) get(code, tok string) (*match, string, *side, error) {
 	m := ms.byCode[code]
 	now := ms.now()
-	if m != nil && m.gone(now) {
-		ms.drop(code)
-		m = nil
-	}
-	if m == nil {
+	if m == nil || !ms.check(code, m, now) {
 		return nil, "", nil, errNoMatch
 	}
 	who, s := m.side(tok)
@@ -197,6 +214,7 @@ var (
 	errFull    = errors.New("someone joined already")
 	errBusy    = errors.New("try later")
 	errBudget  = errors.New("too many messages")
+	errNotThat = errors.New("another guest")
 )
 
 func (ms *Matches) create(owner, net string) (code, tok string, err error) {
@@ -240,11 +258,7 @@ func (ms *Matches) join(code, nonce string) (tok string, animal int, err error) 
 	defer ms.mu.Unlock()
 	now := ms.now()
 	m := ms.byCode[code]
-	if m != nil && m.gone(now) {
-		ms.drop(code)
-		m = nil
-	}
-	if m == nil {
+	if m == nil || !ms.check(code, m, now) {
 		return "", 0, errNoMatch
 	}
 	if m.guest.token != "" {
@@ -261,6 +275,7 @@ func (ms *Matches) join(code, nonce string) (tok string, animal int, err error) 
 	_, _ = rand.Read(b)
 	m.animal = int(b[0]) % matchAnimals
 	m.post("service", json.RawMessage(`{"type":"joined","animal":`+strconv.Itoa(m.animal)+`}`))
+	m.guest.join = len(m.msgs)
 	return m.guest.token, m.animal, nil
 }
 
@@ -294,12 +309,15 @@ func (ms *Matches) reject(code, tok string) error {
 	return nil
 }
 
-func (ms *Matches) send(code, tok, id string, msg json.RawMessage) error {
+func (ms *Matches) send(code, tok, id string, guest int, msg json.RawMessage) error {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	m, who, s, err := ms.get(code, tok)
 	if err != nil {
 		return err
+	}
+	if who == "host" && guest != 0 && (m.guest.token == "" || m.guest.join != guest) {
+		return errNotThat
 	}
 	if id != "" && s.ids[id] {
 		return nil // a retry: sent already
@@ -412,6 +430,7 @@ type matchReq struct {
 	Token string          `json:"token"`
 	Nonce string          `json:"nonce"`
 	ID    string          `json:"id"`
+	Guest int             `json:"guest"`
 	Msg   json.RawMessage `json:"msg"`
 	After int             `json:"after"`
 }
@@ -494,7 +513,9 @@ func (s *Server) serveMatch(w http.ResponseWriter, r *http.Request, op string) {
 			http.Error(w, "bad msg", http.StatusBadRequest)
 			return
 		}
-		switch err := ms.send(q.Code, q.Token, q.ID, q.Msg); {
+		switch err := ms.send(q.Code, q.Token, q.ID, q.Guest, q.Msg); {
+		case errors.Is(err, errNotThat):
+			http.Error(w, err.Error(), http.StatusConflict)
 		case errors.Is(err, errBudget):
 			http.Error(w, err.Error(), http.StatusRequestEntityTooLarge)
 		case err != nil:

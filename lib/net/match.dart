@@ -19,10 +19,11 @@ enum MatchFailure {
   /// No match with this code (mistyped, or it expired).
   noSuchCode,
 
-  /// Someone joined already.
+  /// Someone joined already (or, for the host's offer: another guest is
+  /// in the match by now).
   taken,
 
-  /// The match is gone (the other phone left, or it expired).
+  /// The match is gone (the other phone left or said no, or it expired).
   gone,
 
   /// No internet, or the service is busy.
@@ -45,11 +46,16 @@ abstract class MatchSignal {
   Future<({String code, String token})> create();
   Future<({String token, int animal})> join(String code, String nonce);
   Future<void> reject(String code, String token);
+
+  /// [guest]: the host's offer names the guest its child said yes to (the
+  /// seq of its "joined"); the service refuses it ([MatchFailure.taken])
+  /// when another guest is in the match by now.
   Future<void> send(
     String code,
     String token,
     Map<String, dynamic> msg, {
     String? id,
+    int? guest,
   });
 
   /// Waits a while for messages after [after]; may return none.
@@ -68,9 +74,13 @@ class HttpMatchSignal implements MatchSignal {
   HttpMatchSignal({Uri? base}) : base = base ?? matchBase;
   final Uri base;
 
-  Future<(int, Object?)> _post(
+  /// Posts [body] to [route] and gives the answer to [read], which checks
+  /// the status and reads the JSON. Anything unexpected (no internet, a
+  /// captive portal, odd JSON) is [MatchFailure.offline].
+  Future<T> _post<T>(
     String route,
-    Map<String, dynamic> body, {
+    Map<String, dynamic> body,
+    T Function(int status, Object? json) read, {
     Duration timeout = const Duration(seconds: 15),
   }) async {
     final client = HttpClient()
@@ -84,11 +94,10 @@ class HttpMatchSignal implements MatchSignal {
       req.add(b);
       final res = await req.close().timeout(timeout);
       final text = await res.transform(utf8.decoder).join().timeout(timeout);
-      Object? json;
-      if (res.headers.contentType?.mimeType == 'application/json') {
-        json = jsonDecode(text);
-      }
-      return (res.statusCode, json);
+      final json = res.headers.contentType?.mimeType == 'application/json'
+          ? jsonDecode(text)
+          : null;
+      return read(res.statusCode, json);
     } on MatchError {
       rethrow;
     } catch (e) {
@@ -99,34 +108,34 @@ class HttpMatchSignal implements MatchSignal {
     }
   }
 
-  Never _fail(int status, String route) {
+  static Never _fail(int status, String route) {
     throw MatchError(switch (status) {
-      404 =>
-        route == 'match/join' ? MatchFailure.noSuchCode : MatchFailure.gone,
+      404 when route == 'match/join' => MatchFailure.noSuchCode,
+      404 => MatchFailure.gone,
       409 => MatchFailure.taken,
       _ => MatchFailure.offline,
     }, '$route $status');
   }
 
   @override
-  Future<({String code, String token})> create() async {
-    final (st, j) = await _post('match/new', {});
-    if (st != 201 || j is! Map) _fail(st, 'match/new');
-    return (code: j['code'] as String, token: j['token'] as String);
-  }
+  Future<({String code, String token})> create() =>
+      _post('match/new', {}, (st, j) {
+        if (st != 201 || j is! Map) _fail(st, 'match/new');
+        return (code: j['code'] as String, token: j['token'] as String);
+      });
 
   @override
-  Future<({String token, int animal})> join(String code, String nonce) async {
-    final (st, j) = await _post('match/join', {'code': code, 'nonce': nonce});
-    if (st != 200 || j is! Map) _fail(st, 'match/join');
-    return (token: j['token'] as String, animal: j['animal'] as int);
-  }
+  Future<({String token, int animal})> join(String code, String nonce) =>
+      _post('match/join', {'code': code, 'nonce': nonce}, (st, j) {
+        if (st != 200 || j is! Map) _fail(st, 'match/join');
+        return (token: j['token'] as String, animal: j['animal'] as int);
+      });
 
   @override
-  Future<void> reject(String code, String token) async {
-    final (st, _) = await _post('match/reject', {'code': code, 'token': token});
-    if (st != 204) _fail(st, 'match/reject');
-  }
+  Future<void> reject(String code, String token) =>
+      _post('match/reject', {'code': code, 'token': token}, (st, _) {
+        if (st != 204) _fail(st, 'match/reject');
+      });
 
   @override
   Future<void> send(
@@ -134,27 +143,24 @@ class HttpMatchSignal implements MatchSignal {
     String token,
     Map<String, dynamic> msg, {
     String? id,
-  }) async {
-    final (st, _) = await _post('match/send', {
-      'code': code,
-      'token': token,
-      'msg': msg,
-      'id': ?id,
-    });
-    if (st != 204) _fail(st, 'match/send');
-  }
+    int? guest,
+  }) => _post(
+    'match/send',
+    {'code': code, 'token': token, 'msg': msg, 'id': ?id, 'guest': ?guest},
+    (st, _) {
+      if (st != 204) _fail(st, 'match/send');
+    },
+  );
 
   @override
   Future<({List<SignalMsg> msgs, int next})> recv(
     String code,
     String token,
     int after,
-  ) async {
-    final (st, j) = await _post('match/recv', {
-      'code': code,
-      'token': token,
-      'after': after,
-    }, timeout: const Duration(seconds: 25));
+  ) => _post('match/recv', {'code': code, 'token': token, 'after': after}, (
+    st,
+    j,
+  ) {
     if (st != 200 || j is! Map) _fail(st, 'match/recv');
     return (
       msgs: [
@@ -167,39 +173,41 @@ class HttpMatchSignal implements MatchSignal {
       ],
       next: j['next'] as int,
     );
-  }
+  }, timeout: const Duration(seconds: 25));
 
   @override
   Future<void> leave(String code, String token) async {
     try {
-      await _post('match/leave', {'code': code, 'token': token});
+      await _post('match/leave', {'code': code, 'token': token}, (_, _) {});
     } on MatchError {
       // gone anyway after a minute
     }
   }
 
   @override
-  Future<List<Map<String, dynamic>>> iceServers() async {
-    final (st, j) = await _post('turn', {});
+  Future<List<Map<String, dynamic>>> iceServers() => _post('turn', {}, (st, j) {
     if (st != 200 || j is! Map) _fail(st, 'turn');
     return [
       for (final s in j['iceServers'] as List)
         (s as Map).cast<String, dynamic>(),
     ];
-  }
+  });
 }
 
 /// Reads the messages of one phone in a match, one recv after the other,
 /// until [stop] or the match is gone (then the stream ends with a
-/// [MatchError]).
+/// [MatchError]). A short dead spot (a tunnel, Wi-Fi to mobile) is retried.
 class SignalReader {
-  SignalReader(this.signal, this.code, this.token) {
+  SignalReader(this.signal, this.code, this.token, {this.retryPause}) {
     unawaited(_run());
   }
 
   final MatchSignal signal;
   final String code;
   final String token;
+
+  /// The pause before the nth retry (tests make it short).
+  final Duration Function(int n)? retryPause;
   final _out = StreamController<SignalMsg>();
   var _stopped = false;
 
@@ -217,15 +225,19 @@ class SignalReader {
           if (_stopped) break;
           _out.add(m);
         }
-      } on MatchError catch (e) {
+      } catch (e) {
         if (_stopped) break;
-        // a short dead spot (tunnel, Wi-Fi to mobile): try again; the
-        // match waits a minute
-        if (e.failure == MatchFailure.offline && ++failures < 6) {
-          await Future<void>.delayed(Duration(seconds: 2 * failures));
+        final err = e is MatchError
+            ? e
+            : MatchError(MatchFailure.offline, '$e');
+        // the match waits a minute for a phone that does not ask
+        if (err.failure == MatchFailure.offline && ++failures < 6) {
+          await Future<void>.delayed(
+            retryPause?.call(failures) ?? Duration(seconds: 2 * failures),
+          );
           continue;
         }
-        _out.addError(e);
+        _out.addError(err);
         break;
       }
     }

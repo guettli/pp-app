@@ -468,3 +468,44 @@ func TestMatchStress(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+// The host's child said yes to one guest; if it went and another came
+// meanwhile, the offer must not reach the other.
+func TestMatchOfferOnlyForTheApprovedGuest(t *testing.T) {
+	s, _ := matchServer()
+	code, host, first := open(t, s)
+	_, got, _ := recv(t, s, "1.1.1.1", code, host, 0)
+	approved := got[0]["seq"]
+	call(t, s, "leave", "2.2.2.2", obj{"code": code, "token": first})
+	joinAs(t, s, code, strings.Repeat("ab", 8))
+	if st, _ := call(t, s, "send", "1.1.1.1", obj{"code": code, "token": host, "guest": approved, "msg": obj{"type": "offer"}}); st != 409 {
+		t.Fatal("offer for a guest the child did not see", st)
+	}
+	_, got, _ = recv(t, s, "1.1.1.1", code, host, 0)
+	last := got[len(got)-1]
+	if body(last)["type"] != "joined" {
+		t.Fatal(got)
+	}
+	if st, _ := call(t, s, "send", "1.1.1.1", obj{"code": code, "token": host, "guest": last["seq"], "msg": obj{"type": "offer"}}); st != 204 {
+		t.Fatal("offer for the current guest", st)
+	}
+}
+
+// A guest that stops asking (app closed, join answer lost) is gone after a
+// minute; the host, still waiting, hears "left" and the code is open again.
+func TestMatchIdleGuestLeaves(t *testing.T) {
+	s, c := matchServer()
+	code, host, _ := open(t, s)
+	_, _, after := recv(t, s, "1.1.1.1", code, host, 0)
+	for i := 0; i < 3; i++ {
+		c.add(30 * time.Second)
+		call(t, s, "send", "1.1.1.1", obj{"code": code, "token": host, "msg": 1}) // the host keeps asking
+	}
+	_, got, _ := recv(t, s, "1.1.1.1", code, host, after)
+	if len(got) != 1 || body(got[0])["type"] != "left" {
+		t.Fatal(got)
+	}
+	if st, _ := call(t, s, "join", "3.3.3.3", obj{"code": code, "nonce": strings.Repeat("ef", 8)}); st != 200 {
+		t.Error("code not open again", st)
+	}
+}

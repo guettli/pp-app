@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../net/peer_link.dart';
 import '../ui/emoji_image.dart';
+import '../ui/round_button.dart';
 import '../ui/strings.dart';
 
 class WaveGame extends StatefulWidget {
@@ -94,10 +95,13 @@ class _WaveGameState extends State<WaveGame> {
               style: const TextStyle(color: Colors.white, fontSize: 22),
             ),
             const SizedBox(height: 24),
-            FilledButton(
+            RoundButton(
               key: const ValueKey('together-again'),
-              onPressed: widget.onGone,
-              child: Text(s.tryAgain),
+              tooltip: s.tryAgain,
+              color: const Color(0xFF5C6BC0),
+              size: 96,
+              onTap: widget.onGone,
+              child: const Icon(Icons.refresh, color: Colors.white, size: 56),
             ),
           ],
         ),

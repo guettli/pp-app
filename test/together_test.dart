@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -15,6 +17,9 @@ class FakeSignal implements MatchSignal {
   var nextCode = 0x3f0a;
   var animal = 5;
   var offline = false;
+
+  /// Joins that fail as offline (the answer got lost) before one works.
+  var lostJoins = 0;
   final calls = <String>[];
 
   _M _get(String code, String token) {
@@ -43,10 +48,16 @@ class FakeSignal implements MatchSignal {
     _check('join');
     final m = matches[code];
     if (m == null) throw const MatchError(MatchFailure.noSuchCode);
+    if (m.guest == 'g-$nonce') return (token: m.guest!, animal: animal);
     if (m.guest != null) throw const MatchError(MatchFailure.taken);
     m.guest = 'g-$nonce';
     m.base = m.msgs.length;
     m.post('service', {'type': 'joined', 'animal': animal});
+    m.joined = m.msgs.length;
+    if (lostJoins > 0) {
+      lostJoins--;
+      throw const MatchError(MatchFailure.offline, 'answer lost');
+    }
     return (token: m.guest!, animal: animal);
   }
 
@@ -55,7 +66,6 @@ class FakeSignal implements MatchSignal {
     _check('reject');
     final m = _get(code, token);
     m.guest = null;
-    m.post('service', {'type': 'rejected'});
   }
 
   @override
@@ -64,9 +74,15 @@ class FakeSignal implements MatchSignal {
     String token,
     Map<String, dynamic> msg, {
     String? id,
+    int? guest,
   }) async {
     _check('send');
     final m = _get(code, token);
+    if (token == m.host &&
+        guest != null &&
+        (m.guest == null || m.joined != guest)) {
+      throw const MatchError(MatchFailure.taken, 'another guest');
+    }
     m.post(token == m.host ? 'host' : 'guest', msg);
   }
 
@@ -108,11 +124,23 @@ class FakeSignal implements MatchSignal {
   Future<List<Map<String, dynamic>>> iceServers() async => const [];
 }
 
+class _RealHttp extends HttpOverrides {}
+
+class _Broken extends FakeSignal {
+  @override
+  Future<({List<SignalMsg> msgs, int next})> recv(
+    String code,
+    String token,
+    int after,
+  ) async => throw TypeError();
+}
+
 class _M {
   _M(this.host);
   final String host;
   String? guest;
   int base = 0;
+  int joined = 0;
   final msgs = <SignalMsg>[];
   void post(String from, Map<String, dynamic> msg) =>
       msgs.add((seq: msgs.length + 1, from: from, msg: msg));
@@ -152,8 +180,15 @@ class _FakePending implements PendingLink {
   final link = FakeLink();
   final _ready = Completer<void>();
 
+  Map<String, dynamic>? accepted;
+
   @override
-  Future<void> accept(Map<String, dynamic> answer) async {}
+  Future<void> accept(Map<String, dynamic> answer) async {
+    if (answer['sdp'] != description['sdp']) {
+      throw StateError('an answer to another offer');
+    }
+    accepted = answer;
+  }
 
   @override
   Future<PeerLink> open(Duration timeout) async {
@@ -172,7 +207,7 @@ class _FakePending implements PendingLink {
 
 class FakeLink implements PeerLink {
   FakeLink? other;
-  final _in = StreamController<Map<String, dynamic>>.broadcast();
+  final _in = StreamController<Map<String, dynamic>>();
   final sent = <Map<String, dynamic>>[];
   @override
   Stream<Map<String, dynamic>> get messages => _in.stream;
@@ -184,10 +219,12 @@ class FakeLink implements PeerLink {
 
   @override
   Future<void> close() async {
-    await _in.close();
-    await other?._in.close();
+    if (!_in.isClosed) unawaited(_in.close());
+    if (other != null && !other!._in.isClosed) unawaited(other!._in.close());
   }
 }
+
+Duration _short(int n) => const Duration(milliseconds: 5);
 
 void main() {
   group('codes', () {
@@ -202,7 +239,7 @@ void main() {
   group('match flow', () {
     test('host and guest get linked after the host says yes', () async {
       final signal = FakeSignal();
-      final t = Together(signal, FakeLinks());
+      final t = Together(signal, FakeLinks(), retryPause: _short);
       final host = HostMatch(t);
       final code = await host.open();
       final joined = host.events.firstWhere((e) => e is Joined);
@@ -223,7 +260,7 @@ void main() {
 
     test('a rejected guest learns it', () async {
       final signal = FakeSignal();
-      final t = Together(signal, FakeLinks());
+      final t = Together(signal, FakeLinks(), retryPause: _short);
       final host = HostMatch(t);
       final code = await host.open();
       final guest = GuestMatch(t);
@@ -244,7 +281,7 @@ void main() {
     });
 
     test('a wrong code', () async {
-      final t = Together(FakeSignal(), FakeLinks());
+      final t = Together(FakeSignal(), FakeLinks(), retryPause: _short);
       await expectLater(
         GuestMatch(t).join('ffff'),
         throwsA(
@@ -255,6 +292,204 @@ void main() {
           ),
         ),
       );
+    });
+
+    test(
+      'the guest leaves while the host connects: no link, code open',
+      () async {
+        final signal = FakeSignal();
+        final t = Together(signal, FakeLinks(), retryPause: _short);
+        final host = HostMatch(t);
+        final code = await host.open();
+        final guest = GuestMatch(t);
+        await guest.join(code);
+        while (host.waiting == null) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        final accepting = host.accept();
+        await guest.close(); // gone before it answered
+        // gone (it heard "left") or taken (the service refused the offer)
+        await expectLater(
+          accepting,
+          throwsA(
+            isA<MatchError>().having(
+              (e) => e.failure,
+              'f',
+              isNot(MatchFailure.offline),
+            ),
+          ),
+        );
+        while (host.waiting != null) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
+        expect(signal.matches[code]!.guest, isNull, reason: 'code open again');
+        await host.close();
+      },
+    );
+
+    test('another guest came meanwhile: the offer is not for it', () async {
+      final signal = FakeSignal();
+      final t = Together(signal, FakeLinks(), retryPause: _short);
+      final host = HostMatch(t);
+      final code = await host.open();
+      await GuestMatch(t).join(code, nonce: 'a' * 32);
+      while (host.waiting == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+      }
+      // the first guest goes and a stranger joins before the host's
+      // phone heard of it
+      final m = signal.matches[code]!;
+      m.guest = null;
+      await GuestMatch(t).join(code, nonce: 'b' * 32);
+      // taken (the service refused it) or gone (the phone heard of it)
+      await expectLater(host.accept(), throwsA(isA<MatchError>()));
+      expect(
+        m.msgs.where((x) => x.from == 'host'),
+        isEmpty,
+        reason: 'no offer sent',
+      );
+      await host.close();
+    });
+
+    test('closed while opening: the match is left, no reader stays', () async {
+      final signal = FakeSignal();
+      final t = Together(signal, FakeLinks(), retryPause: _short);
+      final host = HostMatch(t);
+      final opening = expectLater(host.open(), throwsA(isA<MatchError>()));
+      await host.close();
+      await opening;
+      await pumpEventQueue();
+      expect(signal.matches, isEmpty);
+      final recvs = signal.calls.where((c) => c == 'recv').length;
+      await Future<void>.delayed(const Duration(milliseconds: 100));
+      expect(signal.calls.where((c) => c == 'recv').length, recvs);
+    });
+
+    test('a lost join answer: asked again, same guest', () async {
+      final signal = FakeSignal()..lostJoins = 1;
+      final t = Together(signal, FakeLinks(), retryPause: _short);
+      final host = HostMatch(t);
+      final code = await host.open();
+      expect(await GuestMatch(t).join(code), 5);
+      expect(signal.calls.where((c) => c == 'join'), hasLength(2));
+      await host.close();
+    });
+
+    test('odd answers from the service end in a MatchError', () async {
+      final r = SignalReader(_Broken(), 'abcd', 't', retryPause: _short);
+      await expectLater(
+        r.messages.toList(),
+        throwsA(
+          isA<MatchError>().having((e) => e.failure, 'f', MatchFailure.offline),
+        ),
+      );
+    });
+  });
+
+  group('http', () {
+    late HttpServer server;
+    late HttpMatchSignal signal;
+    final answers = <String, (int, Object?)>{};
+    HttpOverrides? before;
+    setUp(() async {
+      // flutter_test answers every HttpClient with 400; this test talks to
+      // a real server on localhost
+      before = HttpOverrides.current;
+      HttpOverrides.global = _RealHttp();
+      server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      server.listen((req) async {
+        final body = jsonDecode(await utf8.decoder.bind(req).join());
+        final route = req.uri.path.replaceFirst('/pp-app/api/', '');
+        final (st, json) = answers[route] ?? (404, null);
+        req.response.statusCode = st;
+        if (json != null) {
+          req.response.headers.contentType = ContentType.json;
+          req.response.write(jsonEncode(json));
+        }
+        if (route == 'match/send') answers['seen'] = (0, body);
+        await req.response.close();
+      });
+      signal = HttpMatchSignal(
+        base: Uri.parse('http://127.0.0.1:${server.port}/pp-app/api/'),
+      );
+    });
+    tearDown(() async {
+      HttpOverrides.global = before;
+      await server.close(force: true);
+    });
+
+    test('routes, bodies and status codes', () async {
+      answers['match/new'] = (201, {'code': '3f0a', 'token': 'h'});
+      expect((await signal.create()).code, '3f0a');
+      answers['match/join'] = (200, {'token': 'g', 'animal': 7});
+      expect((await signal.join('3f0a', 'n' * 32)).animal, 7);
+      answers['match/send'] = (204, null);
+      await signal.send('3f0a', 'h', {'type': 'offer'}, id: 'o', guest: 3);
+      expect(answers['seen']!.$2, {
+        'code': '3f0a',
+        'token': 'h',
+        'msg': {'type': 'offer'},
+        'id': 'o',
+        'guest': 3,
+      });
+      answers['match/recv'] = (
+        200,
+        {
+          'msgs': [
+            {
+              'seq': 1,
+              'from': 'service',
+              'msg': {'type': 'joined', 'animal': 2},
+            },
+          ],
+          'next': 1,
+        },
+      );
+      final r = await signal.recv('3f0a', 'h', 0);
+      expect(r.msgs.single.msg['animal'], 2);
+      expect(r.next, 1);
+      answers['turn'] = (
+        200,
+        {
+          'iceServers': [
+            {
+              'urls': ['stun:x'],
+            },
+          ],
+          'ttl': 3600,
+        },
+      );
+      expect(await signal.iceServers(), hasLength(1));
+    });
+
+    test('failures', () async {
+      Future<MatchFailure> failure(Future<void> f) async {
+        try {
+          await f;
+        } on MatchError catch (e) {
+          return e.failure;
+        }
+        fail('no error');
+      }
+
+      answers.clear();
+      expect(
+        await failure(signal.join('ffff', 'n' * 32)),
+        MatchFailure.noSuchCode,
+      );
+      expect(await failure(signal.send('ffff', 't', {})), MatchFailure.gone);
+      answers['match/join'] = (409, null);
+      expect(await failure(signal.join('ffff', 'n' * 32)), MatchFailure.taken);
+      answers['match/new'] = (503, null);
+      expect(await failure(signal.create()), MatchFailure.offline);
+      // a captive portal answers 200 with HTML
+      answers['match/recv'] = (200, null);
+      expect(await failure(signal.recv('ffff', 't', 0)), MatchFailure.offline);
+      // odd JSON
+      answers['match/recv'] = (200, {'msgs': 'no'});
+      expect(await failure(signal.recv('ffff', 't', 0)), MatchFailure.offline);
+      await server.close(force: true);
+      expect(await failure(signal.create()), MatchFailure.offline);
     });
   });
 
@@ -269,14 +504,17 @@ void main() {
     ) async {
       final signal = FakeSignal();
       final links = FakeLinks();
-      final t = Together(signal, links);
+      final t = Together(signal, links, retryPause: _short);
       await tester.runAsync(() async {
         await openScreen(tester, t);
         await tester.tap(find.byKey(const ValueKey('together-open')));
         await tester.pump();
         await Future<void>.delayed(const Duration(milliseconds: 50));
         await tester.pump();
-        expect(find.text('Show your friend these pictures!'), findsOneWidget);
+        expect(
+          find.text('Show these pictures to the other child!'),
+          findsOneWidget,
+        );
         expect(find.byKey(const ValueKey('code-3')), findsOneWidget);
 
         // a friend joins with the code
@@ -309,7 +547,7 @@ void main() {
       tester,
     ) async {
       final signal = FakeSignal();
-      final t = Together(signal, FakeLinks());
+      final t = Together(signal, FakeLinks(), retryPause: _short);
       await tester.runAsync(() async {
         await openScreen(tester, t);
         await tester.tap(find.byKey(const ValueKey('together-open')));
@@ -322,7 +560,10 @@ void main() {
         await tester.tap(find.byKey(const ValueKey('together-no')));
         await Future<void>.delayed(const Duration(milliseconds: 50));
         await tester.pump();
-        expect(find.text('Show your friend these pictures!'), findsOneWidget);
+        expect(
+          find.text('Show these pictures to the other child!'),
+          findsOneWidget,
+        );
         expect(signal.matches['3f0a']!.guest, isNull);
         expect(
           signal.calls,
@@ -336,7 +577,7 @@ void main() {
       tester,
     ) async {
       final signal = FakeSignal();
-      final t = Together(signal, FakeLinks());
+      final t = Together(signal, FakeLinks(), retryPause: _short);
       await tester.runAsync(() async {
         final host = HostMatch(t);
         await host.open(); // 3f0a
@@ -354,7 +595,13 @@ void main() {
         }
         await Future<void>.delayed(const Duration(milliseconds: 50));
         await tester.pump();
-        expect(find.text('Wait until your friend says yes.'), findsOneWidget);
+        expect(
+          find.text('Wait until the other child says yes.'),
+          findsOneWidget,
+        );
+        while (host.waiting == null) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+        }
         final link = await host.accept();
         await Future<void>.delayed(const Duration(milliseconds: 100));
         await tester.pump();
@@ -362,12 +609,15 @@ void main() {
         await link.close();
         await Future<void>.delayed(const Duration(milliseconds: 20));
         await tester.pump();
-        expect(find.text('Your friend is not there any more.'), findsOneWidget);
+        expect(
+          find.text('The other child is not there any more.'),
+          findsOneWidget,
+        );
       });
     });
 
     testWidgets('a mistyped code: try again right there', (tester) async {
-      final t = Together(FakeSignal(), FakeLinks());
+      final t = Together(FakeSignal(), FakeLinks(), retryPause: _short);
       await tester.runAsync(() async {
         await openScreen(tester, t);
         await tester.tap(find.byKey(const ValueKey('together-join')));
@@ -388,7 +638,7 @@ void main() {
 
     testWidgets('offline: says so and offers to try again', (tester) async {
       final signal = FakeSignal()..offline = true;
-      final t = Together(signal, FakeLinks());
+      final t = Together(signal, FakeLinks(), retryPause: _short);
       await tester.runAsync(() async {
         await openScreen(tester, t);
         await tester.tap(find.byKey(const ValueKey('together-open')));
@@ -415,7 +665,7 @@ void main() {
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.reset);
         final signal = FakeSignal();
-        final t = Together(signal, FakeLinks());
+        final t = Together(signal, FakeLinks(), retryPause: _short);
         await tester.runAsync(() async {
           await tester.pumpWidget(
             MaterialApp(
@@ -452,7 +702,11 @@ void main() {
               ),
               child: TogetherScreen(
                 key: const ValueKey('second'),
-                together: Together(FakeSignal(), FakeLinks()),
+                together: Together(
+                  FakeSignal(),
+                  FakeLinks(),
+                  retryPause: _short,
+                ),
               ),
             ),
           ),

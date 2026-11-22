@@ -3,10 +3,10 @@
 // is shown on both phones, so the host's child knows who wants to play.
 
 /// One picture per hex digit 0-f: things a small child names easily and
-/// does not mix up.
+/// does not mix up (no 🏠: that is the host's button and picture).
 const codePictures = [
-  '🍎', '🍌', '🚗', '🌙', '⭐', '🌻', '🚀', '⚽', //
-  '🎈', '🍓', '🌈', '🏠', '☀️', '🔑', '🎁', '🚲',
+  '🍎', '🍌', '🚗', '🌙', '🎸', '🌻', '🚀', '⚽', //
+  '🎈', '🧸', '🌈', '🍐', '☀️', '🔑', '🎁', '🚲',
 ];
 
 /// The guest's animal, by the number the service sends (0-15).

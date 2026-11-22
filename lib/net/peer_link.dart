@@ -10,7 +10,8 @@ import 'package:flutter_webrtc/flutter_webrtc.dart';
 
 /// An open link to the other phone.
 abstract class PeerLink {
-  /// Messages of the other phone, in order. Ends when the link is lost.
+  /// Messages of the other phone, in order (one listener). Ends when the
+  /// link is lost.
   Stream<Map<String, dynamic>> get messages;
 
   void send(Map<String, dynamic> msg);
@@ -30,6 +31,7 @@ abstract class PendingLink {
   /// Waits until the data channel is open.
   Future<PeerLink> open(Duration timeout);
 
+  /// Frees it, unless [open] gave a link (that one is closed with the link).
   Future<void> dispose();
 }
 
@@ -41,6 +43,10 @@ abstract class LinkMaker {
     Map<String, dynamic> offer,
   );
 }
+
+/// A connection that stays "disconnected" this long counts as lost (the
+/// other app was closed); ICE alone would take about half a minute.
+const disconnectedFor = Duration(seconds: 6);
 
 class WebRtcLinkMaker implements LinkMaker {
   const WebRtcLinkMaker();
@@ -71,13 +77,21 @@ class WebRtcLinkMaker implements LinkMaker {
   @override
   Future<PendingLink> offer(List<Map<String, dynamic>> iceServers) async {
     final pc = await _pc(iceServers);
-    final channel = await pc.createDataChannel(
-      'game',
-      RTCDataChannelInit()..ordered = true,
-    );
-    await pc.setLocalDescription(await pc.createOffer());
-    final d = await _gathered(pc);
-    return _WebRtcPending(pc, Future.value(channel), d.toMap());
+    final p = _WebRtcPending(pc);
+    try {
+      p.channel(
+        await pc.createDataChannel(
+          'game',
+          RTCDataChannelInit()..ordered = true,
+        ),
+      );
+      await pc.setLocalDescription(await pc.createOffer());
+      p.description = (await _gathered(pc)).toMap().cast<String, dynamic>();
+      return p;
+    } catch (e) {
+      await p.dispose();
+      throw _wrap(e);
+    }
   }
 
   @override
@@ -86,96 +100,148 @@ class WebRtcLinkMaker implements LinkMaker {
     Map<String, dynamic> offer,
   ) async {
     final pc = await _pc(iceServers);
-    final channel = Completer<RTCDataChannel>();
-    pc.onDataChannel = (c) {
-      if (!channel.isCompleted) channel.complete(c);
-    };
-    await pc.setRemoteDescription(
-      RTCSessionDescription(offer['sdp'] as String, offer['type'] as String),
-    );
-    await pc.setLocalDescription(await pc.createAnswer());
-    final d = await _gathered(pc);
-    return _WebRtcPending(pc, channel.future, d.toMap());
+    final p = _WebRtcPending(pc);
+    pc.onDataChannel = p.channel;
+    try {
+      await pc.setRemoteDescription(
+        RTCSessionDescription(offer['sdp'] as String, offer['type'] as String),
+      );
+      await pc.setLocalDescription(await pc.createAnswer());
+      p.description = (await _gathered(pc)).toMap().cast<String, dynamic>();
+      return p;
+    } catch (e) {
+      await p.dispose();
+      throw _wrap(e);
+    }
   }
 }
+
+/// flutter_webrtc throws strings from failed platform calls.
+Exception _wrap(Object e) => e is Exception ? e : Exception('webrtc: $e');
 
 class _WebRtcPending implements PendingLink {
-  _WebRtcPending(this.pc, this.channel, Map<dynamic, dynamic> description)
-    : description = description.cast<String, dynamic>();
-
-  final RTCPeerConnection pc;
-  final Future<RTCDataChannel> channel;
-  @override
-  final Map<String, dynamic> description;
-
-  @override
-  Future<void> accept(Map<String, dynamic> answer) => pc.setRemoteDescription(
-    RTCSessionDescription(answer['sdp'] as String, answer['type'] as String),
-  );
-
-  @override
-  Future<PeerLink> open(Duration timeout) async {
-    final c = await channel.timeout(timeout);
-    if (c.state != RTCDataChannelState.RTCDataChannelOpen) {
-      final opened = Completer<void>();
-      c.onDataChannelState = (s) {
-        if (s == RTCDataChannelState.RTCDataChannelOpen &&
-            !opened.isCompleted) {
-          opened.complete();
-        }
-      };
-      await opened.future.timeout(timeout);
-    }
-    return _WebRtcLink(pc, c);
+  _WebRtcPending(this.pc) {
+    pc.onConnectionState = (s) {
+      _state = s;
+      if (s == RTCPeerConnectionState.RTCPeerConnectionStateFailed &&
+          !_opened.isCompleted) {
+        _opened.completeError(TimeoutException('no connection'));
+      }
+      _link?._connection(s);
+    };
   }
 
+  final RTCPeerConnection pc;
   @override
-  Future<void> dispose() => pc.close();
-}
+  late final Map<String, dynamic> description;
+  RTCDataChannel? _channel;
+  final _opened = Completer<void>();
+  // messages from the moment the channel exists, so none is lost before
+  // the game listens
+  final _in = StreamController<Map<String, dynamic>>();
+  _WebRtcLink? _link;
+  RTCPeerConnectionState? _state;
+  var _disposed = false;
 
-class _WebRtcLink implements PeerLink {
-  _WebRtcLink(this.pc, this.channel) {
-    channel.onMessage = (m) {
+  void channel(RTCDataChannel c) {
+    if (_channel != null) return;
+    _channel = c;
+    c.onMessage = (m) {
       if (m.isBinary) return;
       try {
         final j = jsonDecode(m.text);
-        if (j is Map) _out.add(j.cast<String, dynamic>());
+        if (j is Map && !_in.isClosed) _in.add(j.cast<String, dynamic>());
       } on FormatException catch (e) {
         debugPrint('peer: bad message $e');
       }
     };
-    channel.onDataChannelState = (s) {
-      if (s == RTCDataChannelState.RTCDataChannelClosed) _end();
-    };
-    pc.onConnectionState = (s) {
-      if (s == RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
-          s == RTCPeerConnectionState.RTCPeerConnectionStateClosed) {
-        _end();
+    c.onDataChannelState = (s) {
+      if (s == RTCDataChannelState.RTCDataChannelOpen && !_opened.isCompleted) {
+        _opened.complete();
       }
+      if (s == RTCDataChannelState.RTCDataChannelClosed) _link?._end();
     };
+    if (c.state == RTCDataChannelState.RTCDataChannelOpen &&
+        !_opened.isCompleted) {
+      _opened.complete();
+    }
   }
 
-  final RTCPeerConnection pc;
-  final RTCDataChannel channel;
-  final _out = StreamController<Map<String, dynamic>>();
+  @override
+  Future<void> accept(Map<String, dynamic> answer) async {
+    try {
+      await pc.setRemoteDescription(
+        RTCSessionDescription(
+          answer['sdp'] as String,
+          answer['type'] as String,
+        ),
+      );
+    } catch (e) {
+      throw _wrap(e);
+    }
+  }
 
   @override
-  Stream<Map<String, dynamic>> get messages => _out.stream;
+  Future<PeerLink> open(Duration timeout) async {
+    await _opened.future.timeout(timeout);
+    final link = _link = _WebRtcLink(this);
+    if (_state != null) link._connection(_state!);
+    return link;
+  }
+
+  @override
+  Future<void> dispose() async {
+    if (_disposed) return;
+    _disposed = true;
+    if (!_in.isClosed) unawaited(_in.close());
+    try {
+      // dispose, not only close: it frees the native connection and its
+      // event channels
+      await pc.dispose();
+    } catch (e) {
+      debugPrint('peer: dispose $e');
+    }
+  }
+}
+
+class _WebRtcLink implements PeerLink {
+  _WebRtcLink(this._p);
+  final _WebRtcPending _p;
+  Timer? _lost;
+
+  @override
+  Stream<Map<String, dynamic>> get messages => _p._in.stream;
+
+  void _connection(RTCPeerConnectionState s) {
+    switch (s) {
+      case RTCPeerConnectionState.RTCPeerConnectionStateFailed ||
+          RTCPeerConnectionState.RTCPeerConnectionStateClosed:
+        _end();
+      case RTCPeerConnectionState.RTCPeerConnectionStateDisconnected:
+        _lost ??= Timer(disconnectedFor, _end);
+      default:
+        _lost?.cancel();
+        _lost = null;
+    }
+  }
 
   void _end() {
-    if (!_out.isClosed) unawaited(_out.close());
+    _lost?.cancel();
+    if (!_p._in.isClosed) unawaited(_p._in.close());
   }
 
   @override
   void send(Map<String, dynamic> msg) {
-    if (channel.state != RTCDataChannelState.RTCDataChannelOpen) return;
-    unawaited(channel.send(RTCDataChannelMessage(jsonEncode(msg))));
+    final c = _p._channel;
+    if (c == null || c.state != RTCDataChannelState.RTCDataChannelOpen) return;
+    c.send(RTCDataChannelMessage(jsonEncode(msg))).catchError((Object e) {
+      debugPrint('peer: send $e');
+    });
   }
 
   @override
   Future<void> close() async {
     _end();
-    await channel.close();
-    await pc.close();
+    await _p.dispose();
   }
 }
