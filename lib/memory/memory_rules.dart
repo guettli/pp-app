@@ -51,6 +51,18 @@ const memorySizes = <MemoryGame, List<int>>{
   MemoryGame.say: [2, 2, 3, 3, 3],
 };
 
+/// The same for a child who already had three stars: a picture more.
+const memorySizesHarder = <MemoryGame, List<int>>{
+  MemoryGame.look: [3, 3, 4, 4, 4],
+  MemoryGame.hear: [3, 3, 4, 4, 4],
+  MemoryGame.missing: [4, 4, 5, 5, 5],
+  MemoryGame.say: [2, 3, 3, 4, 4],
+};
+
+/// The picture counts of a round of [game].
+List<int> memoryRoundSizes(MemoryGame game, {bool harder = false}) =>
+    (harder ? memorySizesHarder : memorySizes)[game]!;
+
 /// Pictures to choose from: six to find the remembered ones among, three
 /// for the missing one. "What did you see?": the words the recogniser
 /// tells apart (not shown: a word that was not there is one of these).
@@ -89,6 +101,7 @@ List<MemoryQuestion> makeMemoryRound(
   math.Random rng, {
   bool Function(Phrase a, Phrase b)? similar,
   bool Function(List<Phrase> shown, List<Phrase> options)? fair,
+  bool harder = false,
 }) {
   // one phrase per picture: two with the same picture cannot be told apart
   final seen = <String>{};
@@ -116,7 +129,7 @@ List<MemoryQuestion> makeMemoryRound(
 
   final out = <MemoryQuestion>[];
   var last = <Phrase>{};
-  for (final n in memorySizes[game]!) {
+  for (final n in memoryRoundSizes(game, harder: harder)) {
     final extra = memoryOptions(game) - (game == MemoryGame.missing ? 1 : n);
     final need = n + extra;
     if (pics.length < need) break;
@@ -189,6 +202,9 @@ class MemoryLines {
 
   /// A word of a picture that was not there.
   String get notThere => _t[7];
+
+  /// Before a harder round (three stars before): more pictures now.
+  String get harder => _t[8];
 }
 
 const _lines = <String, List<String>>{
@@ -201,6 +217,7 @@ const _lines = <String, List<String>>{
     'Was hast du gesehen? Sag mir ein Bild!',
     'Und was noch?',
     'Das war nicht dabei.',
+    'Das machst du schon richtig gut! Jetzt kommen noch mehr dazu.',
   ],
   'en': [
     'Look closely!',
@@ -211,6 +228,7 @@ const _lines = <String, List<String>>{
     'What did you see? Tell me one picture!',
     'And what else?',
     'That wasn’t there.',
+    'You’re really good at this! Now there are more.',
   ],
   'fr': [
     'Regarde bien !',
@@ -221,6 +239,7 @@ const _lines = <String, List<String>>{
     'Qu’est-ce que tu as vu ? Dis-moi une image !',
     'Et quoi d’autre ?',
     'Ça, ce n’était pas là !',
+    'Tu y arrives très bien ! Maintenant, il y a encore plus d’images.',
   ],
   'it': [
     'Guarda bene!',
@@ -231,6 +250,7 @@ const _lines = <String, List<String>>{
     'Cosa hai visto? Dimmi un’immagine!',
     'E cos’altro?',
     'Non c’era.',
+    'Ci riesci benissimo! Adesso sono di più.',
   ],
   'es': [
     '¡Mira bien!',
@@ -241,5 +261,6 @@ const _lines = <String, List<String>>{
     '¿Qué has visto? ¡Dime una imagen!',
     '¿Y qué más?',
     'Eso no estaba ahí.',
+    '¡Lo haces muy bien! Ahora hay más.',
   ],
 };

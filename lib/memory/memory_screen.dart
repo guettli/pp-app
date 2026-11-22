@@ -158,6 +158,17 @@ class _MemoryScreenState extends State<MemoryScreen>
   bool get _missing => widget.game == MemoryGame.missing;
   bool get _naming => widget.game == MemoryGame.say;
 
+  bool _harderSaid = false;
+
+  /// Three stars before: a picture more per question.
+  late final bool _harder =
+      widget.round == null &&
+      widget.app.progress.thinkBest(
+            MemoryScreen.progressKey(widget.game),
+            _lang,
+          ) >=
+          3;
+
   String get _which => switch (widget.game) {
     MemoryGame.look => _lines.whichSeen,
     MemoryGame.hear => _lines.whichHeard,
@@ -182,9 +193,12 @@ class _MemoryScreenState extends State<MemoryScreen>
       // what did you see: the recogniser must tell the words apart
       similar: _hear || _naming ? similar : null,
       fair: _naming ? fair : null,
+      harder: _harder,
     );
     final round = make(app.knownWords());
-    if (round.length == memorySizes[widget.game]!.length) return round;
+    if (round.length == memoryRoundSizes(widget.game, harder: _harder).length) {
+      return round;
+    }
     return make(app.book.phrases);
   }
 
@@ -302,6 +316,12 @@ class _MemoryScreenState extends State<MemoryScreen>
       );
     } else {
       await _say(_hear ? _lines.listen : _lines.look);
+    }
+    // once: the child did well, now there are more
+    if (_harder && !_harderSaid && _current(id)) {
+      await _say(_lines.harder);
+      // cut off (paused): said again when the question starts again
+      _harderSaid = _current(id);
     }
     if (!await _wait(id, const Duration(milliseconds: 300))) return;
     if (_hear) {
