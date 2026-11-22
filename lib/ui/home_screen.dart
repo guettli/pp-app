@@ -37,34 +37,39 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = S.of(context);
     final lang = await showModalBottomSheet<String>(
       context: context,
+      // five languages and a title: more than half of a small phone
+      isScrollControlled: true,
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                s.chooseLanguage,
-                style: Theme.of(ctx).textTheme.titleLarge,
-              ),
-            ),
-            for (final l in studyLanguages)
-              ListTile(
-                leading: EmojiImage(languageFlags[l]!, size: 36),
-                title: Text(
-                  languageNames[l]!,
-                  style: const TextStyle(fontSize: 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  s.chooseLanguage,
+                  style: Theme.of(ctx).textTheme.titleLarge,
                 ),
-                selected: l == app.book.lang,
-                onTap: () => Navigator.pop(ctx, l),
               ),
-          ],
+              for (final l in studyLanguages)
+                ListTile(
+                  leading: EmojiImage(languageFlags[l]!, size: 36),
+                  title: Text(
+                    languageNames[l]!,
+                    style: const TextStyle(fontSize: 20),
+                  ),
+                  selected: l == app.book.lang,
+                  onTap: () => Navigator.pop(ctx, l),
+                ),
+            ],
+          ),
         ),
       ),
     );
     if (lang != null && lang != app.book.lang) {
       await app.switchLanguage(lang);
-      setState(() {});
+      // new in the other language, not in this one
+      setState(_fresh.clear);
     }
   }
 
@@ -349,22 +354,23 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 );
-                if (!fresh) return tile;
+                // always in a Stack: the tap's ripple stays when ✨ goes
                 return Stack(
                   clipBehavior: Clip.none,
                   children: [
                     Positioned.fill(child: tile),
-                    Positioned(
-                      top: -6,
-                      right: -6,
-                      child: IgnorePointer(
-                        child: EmojiImage(
-                          '✨',
-                          key: ValueKey('world-new-$w'),
-                          size: 32,
+                    if (fresh)
+                      Positioned(
+                        top: -6,
+                        right: -6,
+                        child: IgnorePointer(
+                          child: EmojiImage(
+                            '✨',
+                            key: ValueKey('world-new-$w'),
+                            size: 32,
+                          ),
                         ),
                       ),
-                    ),
                   ],
                 );
               },
