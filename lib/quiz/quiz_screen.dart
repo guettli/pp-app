@@ -653,14 +653,16 @@ class _QuizScreenState extends State<QuizScreen>
                       constraints: BoxConstraints(
                         maxHeight: MediaQuery.sizeOf(context).height * 0.17,
                       ),
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: SizedBox(
-                          width: MediaQuery.sizeOf(context).width - 32,
-                          child: Text(
-                            _lines.question(_q.ask),
-                            textAlign: TextAlign.center,
-                            style: _text.copyWith(fontSize: 28),
+                      child: LayoutBuilder(
+                        builder: (context, c) => FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: SizedBox(
+                            width: c.maxWidth - 32,
+                            child: Text(
+                              _lines.question(_q.ask),
+                              textAlign: TextAlign.center,
+                              style: _text.copyWith(fontSize: 28),
+                            ),
                           ),
                         ),
                       ),
