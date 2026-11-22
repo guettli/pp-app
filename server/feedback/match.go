@@ -1,23 +1,24 @@
 package main
 
 // The meeting point of the two-player games: one phone opens a match and
-// shows its code (four pictures); the other picks an animal and joins with
-// the code. The host's child sees "🐻 wants to play" and accepts or
-// rejects; only after accepting does the host send its WebRTC offer, so a
+// shows its code (four pictures); the other joins with the code and gets an
+// animal picked here. Both screens show it; the host's child sees "🐻
+// wants to play" and accepts or rejects; only after accepting does the host send its WebRTC offer, so a
 // stranger who guesses a code learns nothing and gets in nowhere. Then the
 // two phones swap offer and answer here and talk directly (or through
 // coturn, turn.go). Nothing is stored: matches live in memory.
 //
 //	POST new    {}                          -> 201 {code, token}
-//	POST join   {code, nonce, animal}       -> 200 {token} | 404 | 409
+//	POST join   {code, nonce}               -> 200 {token, animal} | 404 | 409
 //	POST reject {code, token}               -> 204   (host: reopen the code)
 //	POST send   {code, token, msg, id?}     -> 204
 //	POST recv   {code, token, after}        -> 200 {msgs, next}
 //	POST leave  {code, token}               -> 204
 //
 // (all under /pp-app/api/match/). recv waits up to Matches.wait for a
-// message of the other phone; "joined" (with the animal), "rejected" and
-// "left" come from the service. Tokens are in bodies, never in URLs
+// message of the other phone. The host also gets "joined" (with the
+// animal) and "left" from the service; a guest sees only what the host
+// sent after it joined (an earlier guest's offer is not its business). Tokens are in bodies, never in URLs
 // (access logs). A join with the same nonce again (a lost answer) gets the
 // same token; a send with the same id again is dropped.
 
@@ -26,9 +27,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -41,12 +44,15 @@ const (
 	matchIdle = time.Minute
 	// recv long-poll; must stay well below the server's WriteTimeout (20 s)
 	matchWait     = 15 * time.Second
-	matchMax      = 2000     // matches at a time
-	matchPerOwner = 3        // open matches per client
+	matchMax      = 500      // matches at a time
+	matchPerOwner = 10       // open matches per client (a school Wi-Fi is one)
+	matchPerNet   = 30       // ... per IPv6 /48 or IPv4 /24
 	matchMsgs     = 50       // messages per phone and match
 	matchMsg      = 8 << 10  // bytes per message (an SDP with all candidates)
-	matchBytes    = 16 << 10 // bytes per phone and match: 2000 matches < 64 MiB
+	matchBytes    = 16 << 10 // bytes per phone and match: 500 matches = 16 MiB
+	matchReopens  = 10       // guests a host may reject or lose per match
 	matchWaiters  = 1000     // recvs waiting at a time
+	waitersPerIP  = 20       // ... per client
 	matchNew      = 30       // new matches per client and hour
 	matchJoin     = 20       // joins per client and hour (wrong codes count)
 	matchPerHour  = 20000    // each of new and join, all clients
@@ -74,14 +80,18 @@ type side struct {
 	bytes int
 	ids   map[string]bool
 	kick  chan struct{} // closed to end this side's waiting recv
+	base  int           // a guest sees messages after this seq only
 }
 
 type match struct {
 	code       string
 	owner      string // client of the host, for matchPerOwner
+	net        string // its network, for matchPerNet
+	reopens    int
 	host       side
 	guest      side
 	guestNonce string
+	animal     int // the guest's picture, both screens show it
 	created    time.Time
 	opened     time.Time // since when it can be joined (again)
 	msgs       []MatchMsg
@@ -123,6 +133,7 @@ type Matches struct {
 	newLim  *limiter
 	joinLim *limiter
 	waiters chan struct{}
+	perIP   map[string]int // waiting recvs per client
 }
 
 func NewMatches(now func() time.Time) *Matches {
@@ -131,6 +142,7 @@ func NewMatches(now func() time.Time) *Matches {
 		newLim:  newLimiter(matchNew, matchPerHour),
 		joinLim: newLimiter(matchJoin, matchPerHour),
 		waiters: make(chan struct{}, matchWaiters),
+		perIP:   map[string]int{},
 	}
 }
 
@@ -187,7 +199,7 @@ var (
 	errBudget  = errors.New("too many messages")
 )
 
-func (ms *Matches) create(owner string) (code, tok string, err error) {
+func (ms *Matches) create(owner, net string) (code, tok string, err error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	now := ms.now()
@@ -195,13 +207,16 @@ func (ms *Matches) create(owner string) (code, tok string, err error) {
 	if len(ms.byCode) >= matchMax {
 		return "", "", errBusy
 	}
-	mine := 0
+	mine, ours := 0, 0
 	for _, m := range ms.byCode {
 		if m.owner == owner {
 			mine++
 		}
+		if m.net == net {
+			ours++
+		}
 	}
-	if mine >= matchPerOwner {
+	if mine >= matchPerOwner || ours >= matchPerNet {
 		return "", "", errBusy
 	}
 	for {
@@ -215,12 +230,12 @@ func (ms *Matches) create(owner string) (code, tok string, err error) {
 			break
 		}
 	}
-	m := &match{code: code, owner: owner, host: newSide(now), created: now, opened: now, changed: make(chan struct{})}
+	m := &match{code: code, owner: owner, net: net, host: newSide(now), created: now, opened: now, changed: make(chan struct{})}
 	ms.byCode[code] = m
 	return code, m.host.token, nil
 }
 
-func (ms *Matches) join(code, nonce string, animal int) (string, error) {
+func (ms *Matches) join(code, nonce string) (tok string, animal int, err error) {
 	ms.mu.Lock()
 	defer ms.mu.Unlock()
 	now := ms.now()
@@ -230,28 +245,37 @@ func (ms *Matches) join(code, nonce string, animal int) (string, error) {
 		m = nil
 	}
 	if m == nil {
-		return "", errNoMatch
+		return "", 0, errNoMatch
 	}
 	if m.guest.token != "" {
 		if m.guestNonce == nonce && !m.guest.left {
 			m.guest.seen = now
-			return m.guest.token, nil // the answer got lost: the same again
+			return m.guest.token, m.animal, nil // the answer got lost: the same again
 		}
-		return "", errFull
+		return "", 0, errFull
 	}
 	m.guest = newSide(now)
+	m.guest.base = len(m.msgs)
 	m.guestNonce = nonce
-	m.post("service", json.RawMessage(`{"type":"joined","animal":`+strconv.Itoa(animal)+`}`))
-	return m.guest.token, nil
+	b := make([]byte, 1)
+	_, _ = rand.Read(b)
+	m.animal = int(b[0]) % matchAnimals
+	m.post("service", json.RawMessage(`{"type":"joined","animal":`+strconv.Itoa(m.animal)+`}`))
+	return m.guest.token, m.animal, nil
 }
 
 // reopen forgets the guest (the host rejected it, or it left): its token
-// stops working and the code can be joined again. Call with mu held.
-func (m *match) reopen(now time.Time) {
+// stops working and the code can be joined again, with a fresh budget for
+// the host's next offer. It reports false when the match had enough
+// guests. Call with mu held and a guest in the match.
+func (m *match) reopen(now time.Time) bool {
 	close(m.guest.kick)
 	m.guest = side{}
 	m.guestNonce = ""
+	m.host.msgs, m.host.bytes = 0, 0
 	m.opened = now // a fresh window to join (matchLife still counts)
+	m.reopens++
+	return m.reopens <= matchReopens
 }
 
 func (ms *Matches) reject(code, tok string) error {
@@ -264,9 +288,8 @@ func (ms *Matches) reject(code, tok string) error {
 	if who != "host" {
 		return errNoMatch
 	}
-	if m.guest.token != "" {
-		m.reopen(ms.now())
-		m.post("service", json.RawMessage(`{"type":"rejected"}`))
+	if m.guest.token != "" && !m.reopen(ms.now()) {
+		ms.drop(code)
 	}
 	return nil
 }
@@ -296,7 +319,7 @@ func (ms *Matches) send(code, tok, id string, msg json.RawMessage) error {
 // recv returns the other phone's (and the service's) messages after seq
 // after, waiting up to ms.wait for one. A newer recv of the same phone
 // ends this one.
-func (ms *Matches) recv(r *http.Request, code, tok string, after int) ([]MatchMsg, int, error) {
+func (ms *Matches) recv(r *http.Request, client, code, tok string, after int) ([]MatchMsg, int, error) {
 	select {
 	case ms.waiters <- struct{}{}:
 		defer func() { <-ms.waiters }()
@@ -304,6 +327,18 @@ func (ms *Matches) recv(r *http.Request, code, tok string, after int) ([]MatchMs
 		return nil, 0, errBusy
 	}
 	ms.mu.Lock()
+	if ms.perIP[client] >= waitersPerIP {
+		ms.mu.Unlock()
+		return nil, 0, errBusy
+	}
+	ms.perIP[client]++
+	defer func() {
+		ms.mu.Lock()
+		if ms.perIP[client]--; ms.perIP[client] <= 0 {
+			delete(ms.perIP, client)
+		}
+		ms.mu.Unlock()
+	}()
 	_, _, s, err := ms.get(code, tok)
 	if err != nil {
 		ms.mu.Unlock()
@@ -318,18 +353,18 @@ func (ms *Matches) recv(r *http.Request, code, tok string, after int) ([]MatchMs
 	defer deadline.Stop()
 	for {
 		ms.mu.Lock()
-		m, me, _, err := ms.get(code, tok)
+		m, me, s, err := ms.get(code, tok)
 		if err != nil {
 			ms.mu.Unlock()
 			return nil, 0, err
 		}
 		next := len(m.msgs)
-		if after > next || after < 0 {
-			after = 0 // a stale client: everything again
+		if after > next || after < s.base {
+			after = s.base // a stale client: everything (of its own) again
 		}
 		var out []MatchMsg
 		for _, x := range m.msgs[after:] {
-			if x.From != me {
+			if (me == "host" && x.From != "host") || (me == "guest" && x.From == "host") {
 				out = append(out, x)
 			}
 		}
@@ -364,19 +399,21 @@ func (ms *Matches) leave(code, tok string) error {
 		ms.drop(code) // the guest's recv ends with 404
 		return nil
 	}
-	m.reopen(ms.now())
+	if !m.reopen(ms.now()) {
+		ms.drop(code)
+		return nil
+	}
 	m.post("service", json.RawMessage(`{"type":"left"}`))
 	return nil
 }
 
 type matchReq struct {
-	Code   string          `json:"code"`
-	Token  string          `json:"token"`
-	Nonce  string          `json:"nonce"`
-	Animal int             `json:"animal"`
-	ID     string          `json:"id"`
-	Msg    json.RawMessage `json:"msg"`
-	After  int             `json:"after"`
+	Code  string          `json:"code"`
+	Token string          `json:"token"`
+	Nonce string          `json:"nonce"`
+	ID    string          `json:"id"`
+	Msg   json.RawMessage `json:"msg"`
+	After int             `json:"after"`
 }
 
 func writeJSON(w http.ResponseWriter, code int, v any) {
@@ -422,14 +459,14 @@ func (s *Server) serveMatch(w http.ResponseWriter, r *http.Request, op string) {
 			http.Error(w, "too many, try later", http.StatusTooManyRequests)
 			return
 		}
-		code, tok, err := ms.create(clientIP(r))
+		code, tok, err := ms.create(clientIP(r), clientNet(r))
 		if err != nil {
 			busy(w)
 			return
 		}
 		writeJSON(w, http.StatusCreated, map[string]string{"code": code, "token": tok})
 	case "join":
-		if !noncePattern.MatchString(q.Nonce) || q.Animal < 0 || q.Animal >= matchAnimals {
+		if !noncePattern.MatchString(q.Nonce) {
 			http.Error(w, "bad join", http.StatusBadRequest)
 			return
 		}
@@ -437,14 +474,14 @@ func (s *Server) serveMatch(w http.ResponseWriter, r *http.Request, op string) {
 			http.Error(w, "too many, try later", http.StatusTooManyRequests)
 			return
 		}
-		tok, err := ms.join(q.Code, q.Nonce, q.Animal)
+		tok, animal, err := ms.join(q.Code, q.Nonce)
 		switch {
 		case errors.Is(err, errFull):
 			http.Error(w, err.Error(), http.StatusConflict)
 		case err != nil:
 			http.Error(w, err.Error(), http.StatusNotFound)
 		default:
-			writeJSON(w, http.StatusOK, map[string]string{"token": tok})
+			writeJSON(w, http.StatusOK, map[string]any{"token": tok, "animal": animal})
 		}
 	case "reject":
 		if err := ms.reject(q.Code, q.Token); err != nil {
@@ -466,7 +503,7 @@ func (s *Server) serveMatch(w http.ResponseWriter, r *http.Request, op string) {
 			w.WriteHeader(http.StatusNoContent)
 		}
 	case "recv":
-		msgs, next, err := ms.recv(r, q.Code, q.Token, q.After)
+		msgs, next, err := ms.recv(r, clientIP(r), q.Code, q.Token, q.After)
 		switch {
 		case errors.Is(err, errBusy):
 			busy(w)
@@ -481,4 +518,20 @@ func (s *Server) serveMatch(w http.ResponseWriter, r *http.Request, op string) {
 	default:
 		http.NotFound(w, r)
 	}
+}
+
+// clientNet is the client's wider network: an IPv6 /48 (one customer can
+// have all of it) or an IPv4 /24.
+func clientNet(r *http.Request) string {
+	c := clientIP(r)
+	if p, ok := strings.CutSuffix(c, "/64"); ok {
+		ip := net.ParseIP(p)
+		if ip != nil {
+			return ip.Mask(net.CIDRMask(48, 128)).String() + "/48"
+		}
+	}
+	if ip := net.ParseIP(c); ip != nil && ip.To4() != nil {
+		return ip.Mask(net.CIDRMask(24, 32)).String() + "/24"
+	}
+	return c
 }
