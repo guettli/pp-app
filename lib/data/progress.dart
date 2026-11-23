@@ -145,6 +145,11 @@ class Progress {
   Future<void> setQuizReports(bool on) =>
       _prefs.setBool('settings|quizReports', on);
 
+  /// Rommé: what the first melds must be worth (0: anything).
+  int get rummyOpenPoints => _prefs.getInt('rummy|open') ?? 30;
+  Future<void> setRummyOpenPoints(int points) =>
+      _prefs.setInt('rummy|open', points);
+
   String? get studyLang => _prefs.getString('studyLang');
   Future<void> setStudyLang(String lang) => _prefs.setString('studyLang', lang);
 }
