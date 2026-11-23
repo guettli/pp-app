@@ -1,7 +1,8 @@
 // Two phones play together: one child opens a match and shows four
 // pictures, the other taps them in. The host's child sees the guest's
 // animal and says yes (or no); then the phones are linked (lib/net/) and
-// the game starts.
+// the game starts. The host's phone says which game (the guest may have
+// come from another one); Rommé can also be played against the Hase.
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,6 +10,10 @@ import 'package:flutter/material.dart';
 import '../net/match.dart';
 import '../net/peer_link.dart';
 import '../net/together.dart';
+import '../data/progress.dart';
+import '../rummy/rummy_rules.dart';
+import '../rummy/rummy_seat.dart';
+import '../rummy/rummy_table.dart';
 import '../ui/emoji_image.dart';
 import '../ui/round_button.dart';
 import '../ui/strings.dart';
@@ -28,13 +33,28 @@ enum _Step {
   failed,
 }
 
+/// The games two phones can play.
+enum TogetherGame { wave, rummy }
+
+/// What the first melds may have to be worth.
+const rummyOpenChoices = [0, 30, 40];
+
 /// Why the screen shows [_Step.failed].
 enum _Why { taken, notAccepted, expired, offline, noLink }
 
 class TogetherScreen extends StatefulWidget {
-  const TogetherScreen({super.key, required this.together});
+  const TogetherScreen({
+    super.key,
+    required this.together,
+    this.game = TogetherGame.wave,
+    this.progress,
+  });
 
   final Together together;
+  final TogetherGame game;
+
+  /// Keeps the Rommé settings (none in tests).
+  final Progress? progress;
 
   @override
   State<TogetherScreen> createState() => _TogetherScreenState();
@@ -44,7 +64,11 @@ class _TogetherScreenState extends State<TogetherScreen> {
   var _step = _Step.choose;
   HostMatch? _host;
   GuestMatch? _guest;
-  PeerLink? _link;
+  _Relay? _link;
+  RummySeat? _seat;
+  late TogetherGame _playing = widget.game;
+  late int _openPoints = widget.progress?.rummyOpenPoints ?? 30;
+  var _vsHase = false;
   StreamSubscription<HostEvent>? _events;
   late final AppLifecycleListener _lifecycle;
   List<String> _code = const [];
@@ -90,9 +114,11 @@ class _TogetherScreenState extends State<TogetherScreen> {
     unawaited(_host?.close());
     unawaited(_guest?.close());
     unawaited(_link?.close());
+    _seat?.dispose();
     _host = null;
     _guest = null;
     _link = null;
+    _seat = null;
   }
 
   void _fail(_Why why) {
@@ -178,7 +204,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
         unawaited(link.close());
         return;
       }
-      _play(link);
+      unawaited(_play(link));
     } on MatchError catch (e) {
       if (!mounted || gen != _gen) return;
       // that guest went (or another came): the code is still open
@@ -234,7 +260,7 @@ class _TogetherScreenState extends State<TogetherScreen> {
         unawaited(link.close());
         return;
       }
-      _play(link);
+      unawaited(_play(link));
     } on MatchError catch (e) {
       if (!mounted || gen != _gen) return;
       if (e.failure == MatchFailure.noSuchCode) {
@@ -254,11 +280,44 @@ class _TogetherScreenState extends State<TogetherScreen> {
     }
   }
 
-  void _play(PeerLink link) {
+  Future<void> _play(PeerLink link) async {
     unawaited(_events?.cancel());
     _events = null;
+    final gen = _gen;
+    final relay = _link = _Relay(link);
+    var game = widget.game;
+    final rules = RummyRules(openPoints: _openPoints);
+    if (_isHost) {
+      link.send({'t': 'game', 'name': game.name, 'rules': rules.toJson()});
+    } else {
+      setState(() => _step = _Step.connecting);
+      // (an older host says nothing: it waves)
+      final hello = await relay.hello.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => null,
+      );
+      if (!mounted || gen != _gen) return;
+      game =
+          TogetherGame.values.asNameMap()[hello?['name']] ?? TogetherGame.wave;
+    }
     setState(() {
-      _link = link;
+      _playing = game;
+      _vsHase = false;
+      if (game == TogetherGame.rummy) {
+        _seat = _isHost ? HostSeat(relay, rules) : GuestSeat(relay);
+      }
+      _step = _Step.play;
+    });
+  }
+
+  void _playHase() {
+    if (_step != _Step.choose) return;
+    _gen++;
+    setState(() {
+      _isHost = true;
+      _vsHase = true;
+      _playing = TogetherGame.rummy;
+      _seat = HaseSeat(RummyRules(openPoints: _openPoints));
       _step = _Step.play;
     });
   }
@@ -293,18 +352,37 @@ class _TogetherScreenState extends State<TogetherScreen> {
             _Step.ask => _ask(s),
             _Step.typeCode => _typeCode(s),
             _Step.waitHost => _waitHost(s),
-            _Step.play => WaveGame(
-              key: const ValueKey('together-play'),
-              link: _link!,
-              me: _isHost ? '🏠' : animalFor(_animal ?? 0),
-              friend: _isHost ? animalFor(_animal ?? 0) : '🏠',
-              onGone: _restart,
-            ),
+            _Step.play => _game(),
             _Step.failed => _failed(s),
           },
         ),
       ),
     );
+  }
+
+  Widget _game() {
+    final me = _isHost ? '🏠' : animalFor(_animal ?? 0);
+    final friend = _vsHase
+        ? '🐰'
+        : _isHost
+        ? animalFor(_animal ?? 0)
+        : '🏠';
+    return switch (_playing) {
+      TogetherGame.wave => WaveGame(
+        key: const ValueKey('together-play'),
+        link: _link!,
+        me: me,
+        friend: friend,
+        onGone: _restart,
+      ),
+      TogetherGame.rummy => RummyTable(
+        key: const ValueKey('together-play'),
+        seat: _seat!,
+        me: me,
+        friend: friend,
+        onGone: _restart,
+      ),
+    };
   }
 
   Widget _text(String t, {double size = 22}) => Text(
@@ -315,13 +393,41 @@ class _TogetherScreenState extends State<TogetherScreen> {
 
   Widget _choose(S s) => Center(
     child: SingleChildScrollView(
-      child: Wrap(
-        alignment: WrapAlignment.center,
-        spacing: 24,
-        runSpacing: 24,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _bigChoice('together-open', '🏠', s.openMatch, _open),
-          _bigChoice('together-join', '🚪', s.joinMatch, _startTyping),
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 24,
+            runSpacing: 24,
+            children: [
+              _bigChoice('together-open', '🏠', s.openMatch, _open),
+              _bigChoice('together-join', '🚪', s.joinMatch, _startTyping),
+              if (widget.game == TogetherGame.rummy)
+                _bigChoice('together-hase', '🐰', s.playHase, _playHase),
+            ],
+          ),
+          if (widget.game == TogetherGame.rummy) ...[
+            const SizedBox(height: 24),
+            _text(s.openAt, size: 18),
+            const SizedBox(height: 8),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 8,
+              children: [
+                for (final p in rummyOpenChoices)
+                  ChoiceChip(
+                    key: ValueKey('rummy-open-$p'),
+                    label: Text(p == 0 ? s.openNone : '$p'),
+                    selected: _openPoints == p,
+                    onSelected: (_) {
+                      setState(() => _openPoints = p);
+                      unawaited(widget.progress?.setRummyOpenPoints(p));
+                    },
+                  ),
+              ],
+            ),
+          ],
         ],
       ),
     ),
@@ -551,4 +657,44 @@ class _TogetherScreenState extends State<TogetherScreen> {
       ),
     ),
   );
+}
+
+/// The link, with the host's first message ("which game") taken off.
+class _Relay implements PeerLink {
+  _Relay(this.link) {
+    _sub = link.messages.listen(
+      (m) {
+        if (!_hello.isCompleted && m['t'] == 'game') {
+          _hello.complete(m);
+        } else {
+          _out.add(m);
+        }
+      },
+      onDone: () {
+        if (!_hello.isCompleted) _hello.complete(null);
+        unawaited(_out.close());
+      },
+    );
+  }
+
+  final PeerLink link;
+  late final StreamSubscription<Map<String, dynamic>> _sub;
+  final _out = StreamController<Map<String, dynamic>>();
+  final _hello = Completer<Map<String, dynamic>?>();
+
+  Future<Map<String, dynamic>?> get hello => _hello.future;
+
+  @override
+  Stream<Map<String, dynamic>> get messages => _out.stream;
+
+  @override
+  void send(Map<String, dynamic> msg) => link.send(msg);
+
+  @override
+  Future<void> close() async {
+    await _sub.cancel();
+    if (!_hello.isCompleted) _hello.complete(null);
+    unawaited(_out.close());
+    await link.close();
+  }
 }

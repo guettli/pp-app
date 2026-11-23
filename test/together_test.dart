@@ -7,6 +7,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:phoneme_party/net/match.dart';
 import 'package:phoneme_party/net/peer_link.dart';
 import 'package:phoneme_party/net/together.dart';
+import 'package:phoneme_party/rummy/rummy_rules.dart';
+import 'package:phoneme_party/rummy/rummy_seat.dart';
 import 'package:phoneme_party/together/codes.dart';
 import 'package:phoneme_party/together/together_screen.dart';
 
@@ -531,7 +533,12 @@ void main() {
         await tester.pump();
         expect(find.byKey(const ValueKey('wave-button')), findsOneWidget);
 
-        final waved = g.messages.first;
+        final msgs = StreamIterator(g.messages);
+        // the host says which game first
+        expect(await msgs.moveNext(), isTrue);
+        expect(msgs.current['t'], 'game');
+        expect(msgs.current['name'], 'wave');
+        final waved = msgs.moveNext().then((_) => msgs.current);
         await tester.tap(find.byKey(const ValueKey('wave-button')));
         await tester.pump();
         expect(await waved, {'t': 'wave'});
@@ -638,6 +645,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 10));
         }
         final link = await host.accept();
+        link.send({'t': 'game', 'name': 'wave'});
         await Future<void>.delayed(const Duration(milliseconds: 100));
         await tester.pump();
         expect(find.byKey(const ValueKey('wave-button')), findsOneWidget);
@@ -648,6 +656,70 @@ void main() {
           find.text('The other child is not there any more.'),
           findsOneWidget,
         );
+      });
+    });
+
+    testWidgets('Rommé against the Hase, with 40 points to lay out', (
+      tester,
+    ) async {
+      final t = Together(FakeSignal(), FakeLinks(), retryPause: _short);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: TogetherScreen(together: t, game: TogetherGame.rummy),
+        ),
+      );
+      expect(find.byKey(const ValueKey('rummy-open-30')), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('rummy-open-40')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('together-hase')));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('rummy-stock')));
+      await tester.pump();
+      expect(
+        find.text('Lay out cards worth 40 points or discard one.'),
+        findsOneWidget,
+      );
+      await tester.pumpWidget(const SizedBox()); // the Hase stops
+    });
+
+    testWidgets('the host says Rommé: the guest plays Rommé', (tester) async {
+      final signal = FakeSignal();
+      final t = Together(signal, FakeLinks(), retryPause: _short);
+      await tester.runAsync(() async {
+        final host = HostMatch(t);
+        await host.open();
+        // the guest came from the waving game
+        await openScreen(tester, t);
+        await tester.tap(find.byKey(const ValueKey('together-join')));
+        await tester.pump();
+        for (final i in [3, 15, 0, 10]) {
+          await tester.tap(find.byKey(ValueKey('together-pic-$i')));
+          await tester.pump();
+        }
+        while (host.waiting == null) {
+          await Future<void>.delayed(const Duration(milliseconds: 10));
+          await tester.pump();
+        }
+        final link = await host.accept();
+        link.send({'t': 'game', 'name': 'rummy'});
+        final seat = HostSeat(link, const RummyRules());
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        await tester.pump();
+        expect(find.byKey(const ValueKey('rummy-stock')), findsOneWidget);
+        expect(find.byKey(const ValueKey('wave-button')), findsNothing);
+        // the host's turn
+        seat.move(const DrawStock());
+        seat.move(Discard(seat.game.hands[0].first));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+        await tester.tap(find.byKey(const ValueKey('rummy-stock')));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+        expect(seat.game.hands[1], hasLength(14));
+        seat.dispose();
+        await link.close();
+        await Future<void>.delayed(const Duration(milliseconds: 20));
+        await tester.pump();
       });
     });
 

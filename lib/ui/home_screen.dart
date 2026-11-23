@@ -254,6 +254,17 @@ class _HomeScreenState extends State<HomeScreen> {
               audio: Audio.none,
               best: null,
             ),
+            (
+              screen: () => TogetherScreen(
+                together: together,
+                game: TogetherGame.rummy,
+                progress: app.progress,
+              ),
+              emojis: const ['🃏'],
+              name: s.rummy,
+              audio: Audio.none,
+              best: null,
+            ),
           ],
         ),
     ];

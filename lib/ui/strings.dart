@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../rummy/rummy_rules.dart' show RummyNo;
+
 /// Minimal UI texts. Kids mostly navigate by pictures; texts are for parents.
 class S {
   const S(this._t);
@@ -72,6 +74,35 @@ class S {
   String get offline => _t['offline']!;
   String get linkFailed => _t['linkFailed']!;
   String get wave => _t['wave']!;
+  String get rummy => _t['rummy']!;
+  String get playHase => _t['playHase']!;
+  String get openAt => _t['openAt']!;
+  String get openNone => _t['openNone']!;
+  String get rummyDraw => _t['rummyDraw']!;
+  String get rummyPlay => _t['rummyPlay']!;
+  String get waitPlease => _t['waitPlease']!;
+  String get meldBtn => _t['meldBtn']!;
+  String get openBtn => _t['openBtn']!;
+  String get discardBtn => _t['discardBtn']!;
+  String get putBack => _t['putBack']!;
+  String get sortCards => _t['sortCards']!;
+  String get youWon => _t['youWon']!;
+  String get friendWon => _t['friendWon']!;
+  String get noWinner => _t['noWinner']!;
+  String get penaltyPoints => _t['penaltyPoints']!;
+  String get nextRound => _t['nextRound']!;
+  String get pickOne => _t['pickOne']!;
+  String cardsLeft(int n) => _t['cardsLeft']!.replaceAll('{n}', '$n');
+  String stagedPoints(int a, int b) =>
+      _t['stagedPoints']!.replaceAll('{a}', '$a').replaceAll('{b}', '$b');
+  String rummyPlayOpen(int n) => n == 0
+      ? _t['rummyPlayFree']!
+      : _t['rummyPlayOpen']!.replaceAll('{n}', '$n');
+
+  /// Why the game refused a move ([open]: the points for laying out).
+  String rummyNo(RummyNo no, int open) =>
+      _t['no_${no == RummyNo.notOver ? RummyNo.notYourTurn.name : no.name}']!
+          .replaceAll('{n}', '$open');
   String get codeExpired => _t['codeExpired']!;
   String get notAccepted => _t['notAccepted']!;
   String get phoneTalks => _t['phoneTalks']!;
@@ -168,6 +199,40 @@ class S {
       'offline': 'Keine Verbindung zum Internet.',
       'linkFailed': 'Die Handys finden sich nicht.',
       'wave': 'Winken',
+      'rummy': 'Rommé',
+      'playHase': 'Mit dem Hasen',
+      'openAt': 'Rauslegen ab',
+      'openNone': 'ohne',
+      'rummyDraw': 'Zieh eine Karte: vom Stapel oder vom Ablagestapel.',
+      'rummyPlay': 'Leg aus, leg an oder wirf eine Karte ab.',
+      'rummyPlayFree': 'Leg Karten raus oder wirf eine ab.',
+      'rummyPlayOpen': 'Leg Karten für {n} Punkte raus oder wirf eine ab.',
+      'waitPlease': 'Warte …',
+      'meldBtn': 'Auslegen',
+      'openBtn': 'Rauslegen',
+      'discardBtn': 'Abwerfen',
+      'putBack': 'Zurücklegen',
+      'sortCards': 'Sortieren',
+      'youWon': 'Gewonnen!',
+      'friendWon': 'hat gewonnen.',
+      'noWinner': 'Die Karten sind alle.',
+      'penaltyPoints': 'Minuspunkte',
+      'nextRound': 'Noch eine Runde',
+      'pickOne': 'Wähle eine Karte.',
+      'cardsLeft': '{n} Karten',
+      'stagedPoints': 'Zum Rauslegen: {a} von {b} Punkten',
+      'no_notYourTurn': 'Du bist nicht dran.',
+      'no_drawFirst': 'Zieh zuerst eine Karte.',
+      'no_drewAlready': 'Du hast schon gezogen.',
+      'no_notInHand': 'Diese Karte hast du nicht.',
+      'no_notAMeld': 'Das ist kein Satz und keine Reihe.',
+      'no_tooFewPoints': 'Zum Rauslegen brauchst du {n} Punkte.',
+      'no_mustUsePile':
+          'Die Karte vom Ablagestapel muss mit raus – oder leg sie zurück.',
+      'no_openFirst': 'Leg zuerst raus.',
+      'no_doesNotFit': 'Das passt hier nicht.',
+      'no_keepThatCard': 'Diese Karte darfst du jetzt nicht abwerfen.',
+      'no_pileEmpty': 'Vom Ablagestapel geht es gerade nicht.',
       'phoneTalks': 'Das Handy spricht',
       'phoneSilent': 'Das Handy spricht nicht',
       'phoneListens': 'Das Handy hört zu',
@@ -263,6 +328,40 @@ class S {
       'offline': 'No internet connection.',
       'linkFailed': 'The phones can\'t find each other.',
       'wave': 'Wave',
+      'rummy': 'Rummy',
+      'playHase': 'With the hare',
+      'openAt': 'First meld from',
+      'openNone': 'any',
+      'rummyDraw': 'Draw a card: from the stock or the discard pile.',
+      'rummyPlay': 'Meld, lay off or discard a card.',
+      'rummyPlayFree': 'Lay out cards or discard one.',
+      'rummyPlayOpen': 'Lay out cards worth {n} points or discard one.',
+      'waitPlease': 'Wait …',
+      'meldBtn': 'Meld',
+      'openBtn': 'Lay out',
+      'discardBtn': 'Discard',
+      'putBack': 'Put back',
+      'sortCards': 'Sort',
+      'youWon': 'You won!',
+      'friendWon': 'won.',
+      'noWinner': 'The cards ran out.',
+      'penaltyPoints': 'Penalty points',
+      'nextRound': 'Another round',
+      'pickOne': 'Pick one card.',
+      'cardsLeft': '{n} cards',
+      'stagedPoints': 'To lay out: {a} of {b} points',
+      'no_notYourTurn': 'It is not your turn.',
+      'no_drawFirst': 'Draw a card first.',
+      'no_drewAlready': 'You drew already.',
+      'no_notInHand': 'You do not have that card.',
+      'no_notAMeld': 'That is not a set or a run.',
+      'no_tooFewPoints': 'You need {n} points to lay out.',
+      'no_mustUsePile':
+          'The card from the discard pile must be laid out – or put it back.',
+      'no_openFirst': 'Lay out first.',
+      'no_doesNotFit': 'That does not fit here.',
+      'no_keepThatCard': 'You may not discard that card now.',
+      'no_pileEmpty': 'Not from the discard pile now.',
       'phoneTalks': 'The phone talks',
       'phoneSilent': 'The phone stays quiet',
       'phoneListens': 'The phone listens',
@@ -357,6 +456,40 @@ class S {
       'offline': 'Pas de connexion Internet.',
       'linkFailed': 'Les téléphones ne se trouvent pas.',
       'wave': 'Saluer',
+      'rummy': 'Rami',
+      'playHase': 'Avec le lièvre',
+      'openAt': 'Première pose dès',
+      'openNone': 'libre',
+      'rummyDraw': 'Pioche une carte : dans la pioche ou la défausse.',
+      'rummyPlay': 'Pose, complète ou défausse une carte.',
+      'rummyPlayFree': 'Pose des cartes ou défausse-en une.',
+      'rummyPlayOpen': 'Pose des cartes pour {n} points ou défausse-en une.',
+      'waitPlease': 'Attends …',
+      'meldBtn': 'Poser',
+      'openBtn': 'Ouvrir',
+      'discardBtn': 'Défausser',
+      'putBack': 'Reposer',
+      'sortCards': 'Trier',
+      'youWon': 'Gagné !',
+      'friendWon': 'a gagné.',
+      'noWinner': 'Plus de cartes.',
+      'penaltyPoints': 'Points de pénalité',
+      'nextRound': 'Encore une manche',
+      'pickOne': 'Choisis une carte.',
+      'cardsLeft': '{n} cartes',
+      'stagedPoints': 'À poser : {a} sur {b} points',
+      'no_notYourTurn': 'Ce n’est pas ton tour.',
+      'no_drawFirst': 'Pioche d’abord une carte.',
+      'no_drewAlready': 'Tu as déjà pioché.',
+      'no_notInHand': 'Tu n’as pas cette carte.',
+      'no_notAMeld': 'Ce n’est ni une série ni une suite.',
+      'no_tooFewPoints': 'Il faut {n} points pour ouvrir.',
+      'no_mustUsePile':
+          'La carte de la défausse doit être posée – ou repose-la.',
+      'no_openFirst': 'Ouvre d’abord.',
+      'no_doesNotFit': 'Ça ne va pas ici.',
+      'no_keepThatCard': 'Tu ne peux pas défausser cette carte maintenant.',
+      'no_pileEmpty': 'Pas depuis la défausse maintenant.',
       'phoneTalks': 'Le téléphone parle',
       'phoneSilent': 'Le téléphone ne parle pas',
       'phoneListens': 'Le téléphone écoute',
@@ -452,6 +585,39 @@ class S {
       'offline': 'Nessuna connessione a Internet.',
       'linkFailed': 'I telefoni non si trovano.',
       'wave': 'Saluta',
+      'rummy': 'Ramino',
+      'playHase': 'Con la lepre',
+      'openAt': 'Prima calata da',
+      'openNone': 'libera',
+      'rummyDraw': 'Pesca una carta: dal mazzo o dagli scarti.',
+      'rummyPlay': 'Cala, attacca o scarta una carta.',
+      'rummyPlayFree': 'Cala delle carte o scartane una.',
+      'rummyPlayOpen': 'Cala carte per {n} punti o scartane una.',
+      'waitPlease': 'Aspetta …',
+      'meldBtn': 'Cala',
+      'openBtn': 'Apri',
+      'discardBtn': 'Scarta',
+      'putBack': 'Rimetti',
+      'sortCards': 'Ordina',
+      'youWon': 'Hai vinto!',
+      'friendWon': 'ha vinto.',
+      'noWinner': 'Le carte sono finite.',
+      'penaltyPoints': 'Punti di penalità',
+      'nextRound': 'Un’altra mano',
+      'pickOne': 'Scegli una carta.',
+      'cardsLeft': '{n} carte',
+      'stagedPoints': 'Da calare: {a} di {b} punti',
+      'no_notYourTurn': 'Non è il tuo turno.',
+      'no_drawFirst': 'Prima pesca una carta.',
+      'no_drewAlready': 'Hai già pescato.',
+      'no_notInHand': 'Non hai questa carta.',
+      'no_notAMeld': 'Non è né un tris né una scala.',
+      'no_tooFewPoints': 'Servono {n} punti per aprire.',
+      'no_mustUsePile': 'La carta degli scarti va calata – o rimettila.',
+      'no_openFirst': 'Prima apri.',
+      'no_doesNotFit': 'Qui non va.',
+      'no_keepThatCard': 'Ora non puoi scartare questa carta.',
+      'no_pileEmpty': 'Ora non dagli scarti.',
       'phoneTalks': 'Il telefono parla',
       'phoneSilent': 'Il telefono non parla',
       'phoneListens': 'Il telefono ascolta',
@@ -547,6 +713,39 @@ class S {
       'offline': 'No hay conexión a Internet.',
       'linkFailed': 'Los teléfonos no se encuentran.',
       'wave': 'Saludar',
+      'rummy': 'Rummy',
+      'playHase': 'Con la liebre',
+      'openAt': 'Primera bajada desde',
+      'openNone': 'libre',
+      'rummyDraw': 'Roba una carta: del mazo o del descarte.',
+      'rummyPlay': 'Baja, añade o descarta una carta.',
+      'rummyPlayFree': 'Baja cartas o descarta una.',
+      'rummyPlayOpen': 'Baja cartas por {n} puntos o descarta una.',
+      'waitPlease': 'Espera …',
+      'meldBtn': 'Bajar',
+      'openBtn': 'Abrir',
+      'discardBtn': 'Descartar',
+      'putBack': 'Devolver',
+      'sortCards': 'Ordenar',
+      'youWon': '¡Has ganado!',
+      'friendWon': 'ha ganado.',
+      'noWinner': 'Se acabaron las cartas.',
+      'penaltyPoints': 'Puntos de penalización',
+      'nextRound': 'Otra ronda',
+      'pickOne': 'Elige una carta.',
+      'cardsLeft': '{n} cartas',
+      'stagedPoints': 'Para abrir: {a} de {b} puntos',
+      'no_notYourTurn': 'No es tu turno.',
+      'no_drawFirst': 'Primero roba una carta.',
+      'no_drewAlready': 'Ya has robado.',
+      'no_notInHand': 'No tienes esa carta.',
+      'no_notAMeld': 'No es ni un trío ni una escalera.',
+      'no_tooFewPoints': 'Necesitas {n} puntos para abrir.',
+      'no_mustUsePile': 'La carta del descarte debe bajarse, o devuélvela.',
+      'no_openFirst': 'Primero abre.',
+      'no_doesNotFit': 'Aquí no encaja.',
+      'no_keepThatCard': 'Ahora no puedes descartar esta carta.',
+      'no_pileEmpty': 'Ahora no del descarte.',
       'phoneTalks': 'El teléfono habla',
       'phoneSilent': 'El teléfono no habla',
       'phoneListens': 'El teléfono escucha',
