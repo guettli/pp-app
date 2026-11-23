@@ -233,6 +233,15 @@ void main() {
             for (final o in three) {
               expect(facts.of(o)!.truth(odd.single), Truth.no, reason: '$q');
             }
+            // and nothing else singles one out (the only one that flies)
+            expect(
+              singledOut(
+                [for (final o in q.options) facts.of(o)!],
+                {kind.single, odd.single},
+              ),
+              isNull,
+              reason: '$q',
+            );
             seen.add(kind.single);
           }
         }

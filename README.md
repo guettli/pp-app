@@ -128,7 +128,9 @@ and high also listen (and so do the worlds).
   an animal and food); the odd one is clearly not of the three's kind and
   the three clearly not of its kind (a cow might be food: never three
   animals and a pizza); plants are never mixed with food (a carrot is
-  both).
+  both). No other property may single one of the four out: never frog,
+  flamingo, shark and a scarf (the flamingo is the only one that flies),
+  never bread, egg, ice cream and a butterfly (the only cold one).
 - **🌊🐟 Who lives here?** a place, shown big (🌊 sea, 🚜 farm, 🌳 forest,
   🌴 jungle, ❄️ ice, 🏜️ desert, 🏠 at home), and three animals; one lives
   there. Animals that might live there too (a penguin in the sea, a mouse
