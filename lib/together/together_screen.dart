@@ -287,18 +287,27 @@ class _TogetherScreenState extends State<TogetherScreen> {
     final relay = _link = _Relay(link);
     var game = widget.game;
     final rules = RummyRules(openPoints: _openPoints);
+    // The host says which game; the guest says it is ready for it. Both
+    // wait a while (an older app says nothing: then they wave), the host
+    // longer, so a late "ready" cannot leave them in different games.
+    setState(() => _step = _Step.connecting);
     if (_isHost) {
       link.send({'t': 'game', 'name': game.name, 'rules': rules.toJson()});
-    } else {
-      setState(() => _step = _Step.connecting);
-      // (an older host says nothing: it waves)
-      final hello = await relay.hello.timeout(
-        const Duration(seconds: 5),
+      final ready = await relay.hello.timeout(
+        const Duration(seconds: 20),
         onTimeout: () => null,
       );
       if (!mounted || gen != _gen) return;
-      game =
-          TogetherGame.values.asNameMap()[hello?['name']] ?? TogetherGame.wave;
+      if (ready?['t'] != 'ready') game = TogetherGame.wave;
+    } else {
+      final hello = await relay.hello.timeout(
+        const Duration(seconds: 15),
+        onTimeout: () => null,
+      );
+      if (!mounted || gen != _gen) return;
+      final named = TogetherGame.values.asNameMap()[hello?['name']];
+      if (named != null) link.send({'t': 'ready'});
+      game = named ?? TogetherGame.wave;
     }
     setState(() {
       _playing = game;
@@ -659,12 +668,12 @@ class _TogetherScreenState extends State<TogetherScreen> {
   );
 }
 
-/// The link, with the host's first message ("which game") taken off.
+/// The link, with the first "which game" or "ready" message taken off.
 class _Relay implements PeerLink {
   _Relay(this.link) {
     _sub = link.messages.listen(
       (m) {
-        if (!_hello.isCompleted && m['t'] == 'game') {
+        if (!_hello.isCompleted && (m['t'] == 'game' || m['t'] == 'ready')) {
           _hello.complete(m);
         } else {
           _out.add(m);

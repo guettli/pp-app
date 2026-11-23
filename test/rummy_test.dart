@@ -132,6 +132,23 @@ void main() {
       }
       expect(RummyMove.fromJson({'m': 'lay', 'card': 'x'}), isNull);
       expect(RummyMove.fromJson({'m': 'fly'}), isNull);
+      // checked at once, not when the game uses it
+      expect(
+        RummyMove.fromJson({
+          'm': 'meld',
+          'cards': ['x', 1, 2],
+        }),
+        isNull,
+      );
+      expect(
+        RummyMove.fromJson({
+          'm': 'open',
+          'melds': [
+            [1, 2, null],
+          ],
+        }),
+        isNull,
+      );
     });
   });
 

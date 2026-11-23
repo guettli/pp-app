@@ -281,10 +281,8 @@ sealed class RummyMove {
         'stock' => const DrawStock(),
         'pile' => const DrawPile(),
         'back' => const PutBack(),
-        'open' => OpenMelds([
-          for (final m in j['melds'] as List) (m as List).cast<int>(),
-        ]),
-        'meld' => LayMeld((j['cards'] as List).cast<int>()),
+        'open' => OpenMelds([for (final m in j['melds'] as List) _ints(m)]),
+        'meld' => LayMeld(_ints(j['cards'])),
         'lay' => LayOff(j['card'] as int, j['meld'] as int),
         'swap' => SwapJoker(j['card'] as int, j['meld'] as int),
         'discard' => Discard(j['card'] as int),
@@ -362,6 +360,9 @@ class NextRound extends RummyMove {
   @override
   Map<String, dynamic> toJson() => {'m': 'next'};
 }
+
+/// A list of ints from JSON, checked now (a lazy cast would fail later).
+List<int> _ints(Object? l) => [for (final x in l as List) x as int];
 
 /// Why a move was refused (the screen explains it).
 enum RummyNo {

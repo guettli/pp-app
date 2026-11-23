@@ -4,7 +4,8 @@
 // Tap cards to pick them. Picked cards make a meld ("Auslegen"); before
 // you are out the melds are gathered first and laid together
 // ("Rauslegen") once they are worth enough. One picked card: tap a meld
-// on the table to lay it off (or to swap the joker it stands for), or
+// on the table to lay it off (a long press swaps the joker of a set it
+// stands for; a run's joker is swapped by a tap), or
 // throw it away ("Abwerfen").
 import 'dart:async';
 
@@ -148,7 +149,7 @@ class _RummyTableState extends State<RummyTable> {
   int _stagedPoints() =>
       _staged.fold(0, (s, m) => s + (Meld.of(m)?.points ?? 0));
 
-  void _tapMeld(RummyView v, int i, S s) {
+  void _tapMeld(RummyView v, int i, S s, {bool swap = false}) {
     if (!_canAct(v)) return;
     if (_picked.length != 1) {
       _say(s.pickOne);
@@ -160,14 +161,13 @@ class _RummyTableState extends State<RummyTable> {
     }
     final card = _picked.single;
     final meld = v.table[i];
-    // the last card goes on the meld (that wins); else a joker is better
-    final last = v.hand.length == 1;
-    if (!last && meld.swap(card) != null) {
-      _move(SwapJoker(card, i));
-    } else if (meld.withCard(card) != null) {
+    // laid off if it fits (a long press swaps a joker of a set instead)
+    if (!swap && meld.withCard(card) != null) {
       _move(LayOff(card, i));
     } else if (meld.swap(card) != null) {
       _move(SwapJoker(card, i));
+    } else if (meld.withCard(card) != null) {
+      _move(LayOff(card, i));
     } else {
       _say(s.rummyNo(RummyNo.doesNotFit, v.rules.openPoints));
     }
@@ -236,7 +236,11 @@ class _RummyTableState extends State<RummyTable> {
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [top, felt(c.maxHeight * 0.42), bottom],
+            children: [
+              top,
+              felt(c.maxHeight * (v.phase == RummyPhase.over ? 0.85 : 0.42)),
+              bottom,
+            ],
           ),
         );
       },
@@ -252,7 +256,10 @@ class _RummyTableState extends State<RummyTable> {
   /// Who plays, the other's cards and the scores; or a note.
   Widget _status(RummyView v, S s) {
     final other = 1 - v.me;
-    final refused = widget.seat.refused;
+    final refused = switch (widget.seat.refused) {
+      RummyNo.notOver => null, // both tapped "another round"
+      final r => r,
+    };
     final note =
         _note ??
         (refused == null ? null : s.rummyNo(refused, v.rules.openPoints));
@@ -343,6 +350,7 @@ class _RummyTableState extends State<RummyTable> {
                     (v.table[i].withCard(fits) != null ||
                         v.table[i].swap(fits) != null),
                 onTap: () => _tapMeld(v, i, s),
+                onLongPress: () => _tapMeld(v, i, s, swap: true),
               ),
           ],
         ),
@@ -357,9 +365,11 @@ class _RummyTableState extends State<RummyTable> {
     bool mine = false,
     bool hint = false,
     VoidCallback? onTap,
+    VoidCallback? onLongPress,
   }) => GestureDetector(
     key: key,
     onTap: onTap,
+    onLongPress: onLongPress,
     child: Container(
       padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(

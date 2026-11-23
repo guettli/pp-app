@@ -233,6 +233,30 @@ void main() {
     expect(g.turn, 0);
   });
 
+  testWidgets('a set: a tap lays off, a long press swaps the joker', (
+    tester,
+  ) async {
+    final seat = HaseSeat(const RummyRules(), rng: math.Random(6));
+    addTearDown(seat.dispose);
+    final g = seat.game;
+    final set = [c(0, 5), c(1, 5), 2 * deckSize];
+    rig(g, [c(2, 5), c(3, 5), c(0, 9)], away: set);
+    g.opened[0] = true;
+    g.table.add(Meld.of(set)!);
+    g.owners.add(1);
+    await tester.pumpWidget(app(seat));
+    await tapKey(tester, 'rummy-stock');
+    await tapKey(tester, 'rummy-card-${c(2, 5)}');
+    await tapKey(tester, 'rummy-meld-0');
+    expect(g.table[0].cards, contains(c(2, 5)));
+    expect(g.hands[0], isNot(contains(2 * deckSize)));
+    await tapKey(tester, 'rummy-card-${c(3, 5)}');
+    await tester.longPress(find.byKey(const ValueKey('rummy-meld-0')));
+    await tester.pump();
+    expect(g.hands[0], contains(2 * deckSize));
+    expect(g.table[0].cards, contains(c(3, 5)));
+  });
+
   testWidgets('over the link: the guest sees its view and moves', (
     tester,
   ) async {

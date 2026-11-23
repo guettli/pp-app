@@ -135,7 +135,13 @@ class HostSeat extends _EngineSeat {
   void _onMessage(Map<String, dynamic> msg) {
     if (msg['t'] != 'move') return;
     final m = RummyMove.fromJson(msg);
-    final no = m == null ? RummyNo.notAMeld : game.apply(1, m);
+    RummyNo? no;
+    try {
+      no = m == null ? RummyNo.notAMeld : game.apply(1, m);
+    } on Object catch (e) {
+      debugPrint('rummy move ${m?.toJson()}: $e'); // a broken app
+      no = RummyNo.notAMeld;
+    }
     if (no != null) link.send({'t': 'no', 'why': no.name});
     changed();
   }
@@ -172,6 +178,7 @@ class GuestSeat extends RummySeat {
   RummyNo? _refused;
   var _gone = false;
   var _busy = false;
+  var _wasRefused = false;
   var _disposed = false;
 
   @override
@@ -190,13 +197,15 @@ class GuestSeat extends RummySeat {
           (msg['v'] as Map? ?? const {}).cast<String, dynamic>(),
         );
         if (v == null) return;
-        // a refusal stays shown until the next move
-        if (_busy) _refused = null;
+        // the answer to my move (after a "no", if it was refused); a
+        // refusal stays shown until the next move
+        if (_busy && !_wasRefused) _refused = null;
         _view = v;
         _busy = false;
+        _wasRefused = false;
       case 'no':
         _refused = RummyNo.values.asNameMap()[msg['why']] ?? RummyNo.notAMeld;
-        _busy = false;
+        _wasRefused = true;
       default:
         return;
     }

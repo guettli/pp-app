@@ -529,15 +529,17 @@ void main() {
 
         await tester.tap(find.byKey(const ValueKey('together-yes')));
         final g = await guestLink;
-        await Future<void>.delayed(const Duration(milliseconds: 50));
-        await tester.pump();
-        expect(find.byKey(const ValueKey('wave-button')), findsOneWidget);
-
         final msgs = StreamIterator(g.messages);
-        // the host says which game first
+        // the host says which game first, and waits for the guest
         expect(await msgs.moveNext(), isTrue);
         expect(msgs.current['t'], 'game');
         expect(msgs.current['name'], 'wave');
+        await tester.pump();
+        expect(find.byKey(const ValueKey('wave-button')), findsNothing);
+        g.send({'t': 'ready'});
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        await tester.pump();
+        expect(find.byKey(const ValueKey('wave-button')), findsOneWidget);
         final waved = msgs.moveNext().then((_) => msgs.current);
         await tester.tap(find.byKey(const ValueKey('wave-button')));
         await tester.pump();
