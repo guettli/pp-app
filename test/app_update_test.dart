@@ -1,4 +1,7 @@
 // Updates from Play at start: what the app asks Play to do.
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:in_app_update/in_app_update.dart';
 import 'package:phoneme_party/net/app_update.dart';
@@ -9,6 +12,10 @@ class FakePlay implements PlayUpdates {
   AppUpdateInfo info;
   final calls = <String>[];
   AppUpdateResult result = AppUpdateResult.userDeniedUpdate;
+  Object? throws;
+
+  /// Like the plugin: never completes (the app restarts).
+  bool installHangs = false;
 
   @override
   Future<AppUpdateInfo> check() async {
@@ -19,11 +26,15 @@ class FakePlay implements PlayUpdates {
   @override
   Future<AppUpdateResult> updateNow() async {
     calls.add('updateNow');
+    if (throws case final e?) throw e;
     return result;
   }
 
   @override
-  Future<void> installDownloaded() async => calls.add('installDownloaded');
+  Future<void> installDownloaded() {
+    calls.add('installDownloaded');
+    return installHangs ? Completer<void>().future : Future.value();
+  }
 }
 
 AppUpdateInfo info({
@@ -81,6 +92,32 @@ void main() {
     expect(play.calls, ['check', 'installDownloaded']);
   });
 
+  test('Play could not update: asked again at the next start', () async {
+    final play = FakePlay(info())..result = AppUpdateResult.inAppUpdateFailed;
+    await updater(play).run();
+    expect(prefs.getInt('update|asked'), isNull);
+    await updater(play).run();
+    expect(play.calls, ['check', 'updateNow', 'check', 'updateNow']);
+  });
+
+  test('the update throws: no error, the app goes on', () async {
+    final play = FakePlay(info())..throws = StateError('broken');
+    await updater(play).run();
+    expect(play.calls, ['check', 'updateNow']);
+  });
+
+  test('install of a downloaded update never answers: run ends', () {
+    fakeAsync((time) {
+      final play = FakePlay(info(status: InstallStatus.downloaded))
+        ..installHangs = true;
+      var done = false;
+      updater(play).run().then((_) => done = true);
+      time.elapse(PlayAppUpdater.installWait);
+      time.flushMicrotasks();
+      expect(done, isTrue);
+    });
+  });
+
   test('an update in progress (the app was left): it goes on', () async {
     final play = FakePlay(
       info(availability: UpdateAvailability.developerTriggeredUpdateInProgress),
@@ -99,7 +136,19 @@ void main() {
       final play = FakePlay(i);
       await updater(play).run();
       expect(play.calls, ['check']);
+      expect(prefs.getInt('update|asked'), isNull);
     }
+  });
+
+  test('in progress, but Play allows no immediate update: nothing', () async {
+    final play = FakePlay(
+      info(
+        availability: UpdateAvailability.developerTriggeredUpdateInProgress,
+        immediate: false,
+      ),
+    );
+    await updater(play).run();
+    expect(play.calls, ['check']);
   });
 
   test('without Play (not Android): Play is not asked', () async {
@@ -111,6 +160,7 @@ void main() {
   test('Play fails (APK from GitHub, offline): no error', () async {
     final play = _FailingPlay();
     await PlayAppUpdater(prefs, play: play, android: true).run();
+    expect(prefs.getInt('update|asked'), isNull);
   });
 }
 

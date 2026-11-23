@@ -32,6 +32,8 @@ abstract class PlayUpdates {
   Future<AppUpdateResult> updateNow();
 
   /// Installs an update downloaded in the background; the app restarts.
+  /// (The plugin never completes this future: on success the app is gone,
+  /// on failure nothing is said.)
   Future<void> installDownloaded();
 }
 
@@ -55,6 +57,10 @@ class PlayAppUpdater implements AppUpdater {
   final bool? android;
 
   static const askEvery = Duration(days: 3);
+
+  /// An install of a downloaded update that has not restarted the app
+  /// after this has failed.
+  static const installWait = Duration(minutes: 1);
   static const _asked = 'update|asked';
 
   @override
@@ -65,13 +71,25 @@ class PlayAppUpdater implements AppUpdater {
       debugPrint('app update: $info');
       if (info.installStatus == InstallStatus.downloaded) {
         // loaded in the background (the old flexible way): install now
-        await play.installDownloaded();
+        await play.installDownloaded().timeout(
+          installWait,
+          onTimeout: () => debugPrint(
+            'app update: FAILED: the downloaded update was not installed '
+            '(no restart after $installWait)',
+          ),
+        );
         return;
       }
       if (info.updateAvailability ==
           UpdateAvailability.developerTriggeredUpdateInProgress) {
         // an update was started and the app left meanwhile: go on with it
-        await play.updateNow();
+        if (!info.immediateUpdateAllowed) {
+          // the plugin would never answer
+          debugPrint('app update: FAILED: cannot go on with the update');
+          return;
+        }
+        final result = await play.updateNow();
+        debugPrint('app update: $result');
         return;
       }
       if (info.updateAvailability != UpdateAvailability.updateAvailable) {
@@ -88,10 +106,17 @@ class PlayAppUpdater implements AppUpdater {
       // after "Update" the app is replaced and restarts; it returns only
       // when declined or failed
       final result = await play.updateNow();
-      debugPrint('app update: $result');
-    } catch (e) {
-      // not installed from Play, no Play services, offline
-      debugPrint('app update: $e');
+      if (result == AppUpdateResult.inAppUpdateFailed) {
+        // not the child's "no": ask again at the next start
+        await prefs.remove(_asked);
+        debugPrint('app update: FAILED: Play could not update');
+      } else {
+        debugPrint('app update: $result');
+      }
+    } catch (e, st) {
+      // not installed from Play, no Play services, offline; an update must
+      // never stop the app
+      debugPrint('app update: FAILED: $e\n$st');
     }
   }
 }
