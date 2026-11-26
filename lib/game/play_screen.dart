@@ -578,7 +578,10 @@ class _PlayScreenState extends State<PlayScreen>
   }
 
   /// Ends the recording (child finished, time limit, or tap) and scores it.
-  Future<void> _stop() async {
+  ///
+  /// [tapped]: the child tapped 🎤; if nothing was heard, the phone then
+  /// waits for the next tap instead of saying the word again by itself.
+  Future<void> _stop({bool tapped = false}) async {
     // not after the app went to the background: that drops the recording
     if (_phase != _Phase.listening || _paused) return;
     final round = _round;
@@ -602,7 +605,7 @@ class _PlayScreenState extends State<PlayScreen>
         _keepTry(phrase, pcm, false, '', null);
         // said, not only written: the child may not read the message;
         // the first time the phone says the word again and listens
-        final again = _silent++ == 0;
+        final again = _silent++ == 0 && !tapped;
         setState(() => _phase = _Phase.speaking);
         await _speakText(notHeardLine(_lang, again: again));
         if (!_current(round)) return;
@@ -614,6 +617,7 @@ class _PlayScreenState extends State<PlayScreen>
         _fail(_Phase.ready, (s) => s.notHeard);
         return;
       }
+      _silent = 0; // "twice": in a row
       final audio = prepareForRecognition(pcm16ToFloat(pcm));
       final rec = await widget.app.recognizer.recognize(audio);
       final cmp = scorePhrase(widget.app.comparer, phrase, rec.ipa, _lang);
@@ -671,7 +675,7 @@ class _PlayScreenState extends State<PlayScreen>
   void _onMic() {
     switch (_phase) {
       case _Phase.listening:
-        _stop();
+        _stop(tapped: true);
       case _Phase.ready || _Phase.result:
         _play();
       case _Phase.starting || _Phase.speaking || _Phase.thinking:

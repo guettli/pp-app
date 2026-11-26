@@ -136,6 +136,10 @@ class _MemoryScreenState extends State<MemoryScreen>
   /// Tries of the current question in which the mic heard nothing.
   int _silent = 0;
 
+  /// The child tapped 🎤 to stop this listening: a silence then waits
+  /// for the next tap instead of listening again by itself.
+  bool _tapped = false;
+
   /// Words heard for the current question (understood or not): enough,
   /// and the pictures are shown (a child saying the same wrong word
   /// again and again, or one the phone does not understand).
@@ -365,6 +369,7 @@ class _MemoryScreenState extends State<MemoryScreen>
     if (_phase != _Phase.pick || _over) return;
     switch (_mic) {
       case _Mic.listening:
+        _tapped = true;
         _listener.stopNow();
       case _Mic.ready:
         _listen(++_flow);
@@ -402,6 +407,7 @@ class _MemoryScreenState extends State<MemoryScreen>
     await _quietly(_tts.stop);
     await _quietly(_sfx.stop);
     if (!_current(id)) return;
+    _tapped = false;
     setState(() => _mic = _Mic.listening);
     final heard = await _listener.listen(
       onChunk: () {
@@ -416,7 +422,7 @@ class _MemoryScreenState extends State<MemoryScreen>
     if (!heard.speech) {
       // said, not only written: the child may not read the message; the
       // first time the phone listens again by itself
-      final again = _silent++ == 0;
+      final again = _silent++ == 0 && !_tapped;
       setState(() => _mic = _Mic.busy);
       await _say(notHeardLine(_lang, again: again));
       if (!_current(id)) return;
@@ -427,6 +433,7 @@ class _MemoryScreenState extends State<MemoryScreen>
       _micWaits(id, (s) => s.notHeardVoice);
       return;
     }
+    _silent = 0; // "twice": in a row
     setState(() => _mic = _Mic.thinking);
     Phrase? said;
     try {

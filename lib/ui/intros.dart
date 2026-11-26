@@ -202,7 +202,7 @@ const _notHeard = <String, ({String again, String tap})>{
   'de': (
     again: 'Ich habe nichts gehört. Noch einmal, ein bisschen lauter!',
     tap:
-        'Ich habe nichts gehört. Tippe auf das Mikrofon und versuch es noch einmal!',
+        'Ich habe nichts gehört. Tippe auf das Mikrofon und versuche es noch einmal!',
   ),
   'en': (
     again: 'I did not hear anything. Once more, a little louder!',
