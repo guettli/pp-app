@@ -193,16 +193,19 @@ void main() {
       await close(t, dev.log);
     });
 
-    testWidgets('0 stars: once more, the better try counts', (t) async {
+    testWidgets('0 stars: once more after hearing it, one star at most', (
+      t,
+    ) async {
       final (dev, progress) = await play(t, [
         ipa('Kuh'), // not Ei
-        ipa('Ei'),
+        ipa('Ei'), // right, but said after the phone said "Ei"
         ipa('Bett'),
       ]);
       await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
       expect(dev.log.started('mic'), hasLength(3));
-      expect(find.text('6 / 6'), findsOneWidget);
-      expect(progress.readAloudBest('de-DE'), 3);
+      expect(find.text('4 / 6'), findsOneWidget);
+      // the round's stars are the average: (1 + 3) / 2
+      expect(progress.readAloudBest('de-DE'), 2);
       await close(t, dev.log);
     });
 

@@ -94,7 +94,9 @@ and high also listen (and so do the worlds).
 - **📖🎤 Read aloud:** a word is written, nothing is said and no
   picture shown; the child reads it aloud. The phone listens by itself and
   scores it like the word game, then shows the picture and says the word.
-  0 stars: once more. Six words a round, short ones first; the round's
+  0 stars: once more. A try after the phone said the word is saying it
+  after the phone, not reading: it gets at most one star (so a grown-up
+  can trust the stars). Six words a round, short ones first; the round's
   stars are the average.
 - **🔔 Sound detective:** "What starts like Maus?" with the picture of
   the mouse; three pictures, one starts the same way (Mond), the child
