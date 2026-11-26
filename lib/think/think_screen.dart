@@ -127,6 +127,11 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
 
   String get _lang => widget.app.book.lang;
   bool get _riddle => widget.game == ThinkGame.riddle;
+  bool get _feelings =>
+      widget.game == ThinkGame.faces || widget.game == ThinkGame.feelings;
+
+  static String _capital(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
   ThinkQuestion get _q => _round[_index];
   bool get _moreClues => _given < _q.clues.length;
 
@@ -309,7 +314,18 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
       // why it is right, if there is more to say than the word
       final because = _q.because;
       await _say(
-        because == null ? '${p.text}! $praise' : '${p.text}! $because $praise',
+        _feelings
+            // "traurig!" would sound like a cheer, and praise after "what
+            // helps when I am sad" like praise for being sad: the praise is
+            // for the child's answer, first; the feeling calmly after it
+            ? [
+                praise,
+                '${_capital(p.text)}.',
+                if (because != null) because,
+              ].join(' ')
+            : because == null
+            ? '${p.text}! $praise'
+            : '${p.text}! $because $praise',
       );
       if (!_current(id)) return;
       _onward = Timer(const Duration(milliseconds: 600), _next);
