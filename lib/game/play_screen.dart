@@ -70,6 +70,9 @@ class _PlayScreenState extends State<PlayScreen>
   /// Tries of the current word (one retry after 0 stars).
   int _attempts = 0;
 
+  /// Tries of the current word in which the mic heard nothing.
+  int _silent = 0;
+
   late bool _introDone = !widget.intro;
 
   /// Goes on to the next word (or the retry) after the feedback.
@@ -575,7 +578,10 @@ class _PlayScreenState extends State<PlayScreen>
   }
 
   /// Ends the recording (child finished, time limit, or tap) and scores it.
-  Future<void> _stop() async {
+  ///
+  /// [tapped]: the child tapped 🎤; if nothing was heard, the phone then
+  /// waits for the next tap instead of saying the word again by itself.
+  Future<void> _stop({bool tapped = false}) async {
     // not after the app went to the background: that drops the recording
     if (_phase != _Phase.listening || _paused) return;
     final round = _round;
@@ -597,9 +603,21 @@ class _PlayScreenState extends State<PlayScreen>
       final pcm = _buffer.takeBytes();
       if (!heard) {
         _keepTry(phrase, pcm, false, '', null);
+        // said, not only written: the child may not read the message;
+        // the first time the phone says the word again and listens
+        final again = _silent++ == 0 && !tapped;
+        setState(() => _phase = _Phase.speaking);
+        await _speakText(notHeardLine(_lang, again: again));
+        if (!_current(round)) return;
+        if (again) {
+          setState(() => _phase = _Phase.ready);
+          unawaited(_play());
+          return;
+        }
         _fail(_Phase.ready, (s) => s.notHeard);
         return;
       }
+      _silent = 0; // "twice": in a row
       final audio = prepareForRecognition(pcm16ToFloat(pcm));
       final rec = await widget.app.recognizer.recognize(audio);
       final cmp = scorePhrase(widget.app.comparer, phrase, rec.ipa, _lang);
@@ -657,7 +675,7 @@ class _PlayScreenState extends State<PlayScreen>
   void _onMic() {
     switch (_phase) {
       case _Phase.listening:
-        _stop();
+        _stop(tapped: true);
       case _Phase.ready || _Phase.result:
         _play();
       case _Phase.starting || _Phase.speaking || _Phase.thinking:
@@ -688,6 +706,7 @@ class _PlayScreenState extends State<PlayScreen>
     }
     setState(() {
       _attempts = 0;
+      _silent = 0;
       _index++;
       _phase = _Phase.ready;
       _result = null;

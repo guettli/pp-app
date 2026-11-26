@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/ui/intros.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -413,12 +414,29 @@ void main() {
       await expectClean(t, dev.log);
     });
 
-    testWidgets('silence: waits for a tap, then goes on', (t) async {
+    testWidgets('silence: said, then asked once more by itself', (t) async {
       final (dev, _, dialog) = await play(
         t,
         [ipa('Vogel'), ipa('Apfel'), ipa('Elefant')],
         child: [Child.silent, Child.speaks],
       );
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      final said = dev.log.started('tts');
+      expect(said, contains(notHeardLine('de-DE', again: true)));
+      expect(said.where((s) => s == lines.ask(three()[0])), hasLength(2));
+      expect(find.text('3 / 3'), findsOneWidget);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('🎤 tapped before saying anything: no asking again', (t) async {
+      final (dev, _, dialog) = await play(
+        t,
+        [ipa('Vogel'), ipa('Apfel'), ipa('Elefant')],
+        child: [Child.silent, Child.speaks],
+      );
+      await until(t, () => dev.mic.recording, dev.log);
+      await t.pump(const Duration(milliseconds: 300));
+      await t.tap(find.byTooltip('Your turn!'));
       await until(
         t,
         () => find.byType(SnackBar).evaluate().isNotEmpty,
@@ -428,6 +446,43 @@ void main() {
         await t.pump(const Duration(milliseconds: 50));
       }
       expect(dev.log.started('mic'), hasLength(1));
+      expect(dev.log.started('tts').last, notHeardLine('de-DE', again: false));
+      await t.tap(find.byTooltip('Speak'));
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('silence, not understood, silence: asked again both times', (
+      t,
+    ) async {
+      final (dev, _, dialog) = await play(
+        t,
+        [ipa('Schmetterling'), ipa('Vogel'), ipa('Apfel'), ipa('Elefant')],
+        child: [Child.silent, Child.speaks, Child.silent, Child.speaks],
+      );
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      final again = notHeardLine('de-DE', again: true);
+      expect(dev.log.started('tts').where((s) => s == again), hasLength(2));
+      expect(find.byType(SnackBar), findsNothing);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('silence twice: waits for a tap, then goes on', (t) async {
+      final (dev, _, dialog) = await play(
+        t,
+        [ipa('Vogel'), ipa('Apfel'), ipa('Elefant')],
+        child: [Child.silent, Child.silent, Child.speaks],
+      );
+      await until(
+        t,
+        () => find.byType(SnackBar).evaluate().isNotEmpty,
+        dev.log,
+      );
+      for (var i = 0; i < 100; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(dev.log.started('mic'), hasLength(2));
+      expect(dev.log.started('tts').last, notHeardLine('de-DE', again: false));
       expect(dev.mic.recording, isFalse);
       await t.tap(find.byTooltip('Speak'));
       await until(t, () => dialog.evaluate().isNotEmpty, dev.log);

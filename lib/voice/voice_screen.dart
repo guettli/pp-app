@@ -22,6 +22,7 @@ import '../game/rocket_launch.dart';
 import '../game/voice_effects.dart';
 import '../net/quiz_report.dart';
 import '../ui/emoji_image.dart';
+import '../ui/intros.dart';
 import '../ui/recording_report.dart';
 import '../ui/round_button.dart';
 import '../ui/round_parts.dart';
@@ -63,6 +64,13 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
   /// Hold: the sound; low and high: [_PitchStep] index.
   int _step = 0;
   int _attempts = 0;
+
+  /// Tries of the current step in which the mic heard nothing.
+  int _silent = 0;
+
+  /// The child tapped 🎤 to stop this listening: a silence then waits
+  /// for the next tap instead of listening again by itself.
+  bool _tapped = false;
 
   /// The try that is being listened to or was just scored.
   VoiceTake? _take;
@@ -243,6 +251,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       // low and high: a short "A" is enough
       maxHeld: _hold ? const Duration(seconds: 15) : const Duration(seconds: 3),
     );
+    _tapped = false;
     setState(() {
       _phase = _Phase.listening;
       _take = take;
@@ -263,9 +272,21 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
       return;
     }
     if (heard.heardNothing || heard.pitch == null) {
+      // said, not only written: the child may not read the message; the
+      // first time the phone asks again by itself
+      final again = _silent++ == 0 && !_tapped;
+      setState(() => _phase = _Phase.speaking);
+      await _say(notHeardLine(_lang, again: again));
+      if (!_current(id)) return;
+      if (again) {
+        setState(() => _phase = _Phase.ready);
+        unawaited(_start());
+        return;
+      }
       _fail(id, (s) => s.notHeardVoice);
       return;
     }
+    _silent = 0; // "twice": in a row
     _attempts++;
     ({Duration counted, String? wrong})? sound;
     if (_hold) {
@@ -453,6 +474,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
     setState(() {
       _step++;
       _attempts = 0;
+      _silent = 0;
       _phase = _Phase.ready;
     });
     _start();
@@ -462,6 +484,7 @@ class _VoiceGameScreenState extends State<VoiceGameScreen>
   void _onMic() {
     switch (_phase) {
       case _Phase.listening:
+        _tapped = true;
         _listener.stopNow();
       case _Phase.ready:
         _start();

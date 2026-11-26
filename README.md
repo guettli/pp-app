@@ -38,6 +38,11 @@ built with Flutter. Native successor of the web app
    stops after 1 s of silence once the child has spoken
    (`lib/phonetics/endpointer.dart`), after 5 s without speech, or at the
    time limit (6–12 s, by phrase length). Tapping 🎤 stops early.
+   If the phone heard nothing, it says so in the study language ("Ich habe
+   nichts gehört. Noch einmal, ein bisschen lauter!") and tries once more
+   by itself; the second time it asks for a tap on 🎤. The same in every
+   game that listens (`notHeardLine` in `lib/ui/intros.dart`): a child who
+   cannot read the message must not just see nothing happen.
 3. The rocket flies as high as the pronunciation was clear. 3 stars = the
    planet is reached. 🎤 repeats the round (hear, then speak), 🔊 or the
    picture only repeats the phrase, ➡ goes to the next phrase, which starts

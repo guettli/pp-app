@@ -186,3 +186,38 @@ const _lines = <String, Map<GameIntro, String>>{
     GameIntro.feelings: '¡Escucha bien! ¿Qué siento? ¡Toca la cara correcta!',
   },
 };
+
+/// Said when the microphone heard nothing, in the study language: a child
+/// who cannot read the message below must hear it. [again]: the phone
+/// listens once more by itself; otherwise it waits for a tap on 🎤.
+String notHeardLine(String lang, {required bool again}) {
+  final code = lang.split('-').first;
+  final l = _notHeard[code] ?? _notHeard['en']!;
+  return again ? l.again : l.tap;
+}
+
+// No word here may depend on whether the child is a boy or a girl (fr
+// "prêt / prête", "entendu / entendue").
+const _notHeard = <String, ({String again, String tap})>{
+  'de': (
+    again: 'Ich habe nichts gehört. Noch einmal, ein bisschen lauter!',
+    tap:
+        'Ich habe nichts gehört. Tippe auf das Mikrofon und versuche es noch einmal!',
+  ),
+  'en': (
+    again: 'I did not hear anything. Once more, a little louder!',
+    tap: 'I did not hear anything. Tap the microphone and try again!',
+  ),
+  'fr': (
+    again: 'Je n’ai rien entendu. Encore une fois, un peu plus fort !',
+    tap: 'Je n’ai rien entendu. Touche le micro et essaie encore !',
+  ),
+  'it': (
+    again: 'Non ho sentito niente. Ancora una volta, un po’ più forte!',
+    tap: 'Non ho sentito niente. Tocca il microfono e riprova!',
+  ),
+  'es': (
+    again: 'No he oído nada. ¡Otra vez, un poco más fuerte!',
+    tap: 'No he oído nada. ¡Toca el micrófono e inténtalo otra vez!',
+  ),
+};

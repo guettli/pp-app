@@ -9,6 +9,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/ui/intros.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -224,21 +225,28 @@ void flows(bool ios) {
     g.expectClean();
   });
 
-  testWidgets('nothing heard: waits for a tap', (t) async {
+  testWidgets('nothing heard: said, once more, then waits for a tap', (
+    t,
+  ) async {
     final (g, f) = await start(t, iosTts: ios, child: () => Child.silent);
     await g.until(
-      () => g.recordings == 1 && g.log.intervals('mic').single.to != null,
+      () => g.recordings == 2 && g.log.intervals('mic').last.to != null,
     );
     await g.wait(const Duration(milliseconds: 500));
-    expect(find.byType(SnackBar), findsOneWidget);
+    await g.until(() => find.byType(SnackBar).evaluate().isNotEmpty);
+    // a child who cannot read hears it; the first time the word comes again
+    expect(g.praise, [
+      notHeardLine('de-DE', again: true),
+      notHeardLine('de-DE', again: false),
+    ]);
     await g.wait(quiet);
-    expect(g.recordings, 1);
+    expect(g.recordings, 2);
     expect(f.rec.calls, 0);
     expect(g.replays, 0);
     expect(f.dev.mic.voices, 0, reason: 'the screen may go off');
     await g.tap('Speak');
-    await g.until(() => g.recordings == 2);
-    expect(g.said, [g.words[0].text, g.words[0].text]);
+    await g.until(() => g.recordings == 3);
+    expect(g.said, [g.words[0].text, g.words[0].text, g.words[0].text]);
   });
 
   testWidgets('no microphone permission: nothing is said or recorded', (
@@ -384,7 +392,8 @@ void flows(bool ios) {
     f.dev.mic.endsAfter = const Duration(milliseconds: 100);
     await g.until(() => g.log.intervals('tts').firstOrNull?.to != null);
     final spoken = g.log.intervals('tts').first.to!;
-    await g.until(() => find.byType(SnackBar).evaluate().isNotEmpty);
+    final again = notHeardLine('de-DE', again: true);
+    await g.until(() => g.praise.contains(again));
     expect(g.log.now() - spoken, lessThan(const Duration(seconds: 1)));
     expect(f.rec.calls, 0, reason: 'nothing of the child was heard');
     f.dev.mic.endsAfter = null;
@@ -419,6 +428,9 @@ void flows(bool ios) {
     );
     await g.until(() => g.log.intervals('mic').firstOrNull?.to != null);
     // the mic opened 0.75 s after the phrase: 0.1 s of the answer is left
+    expect(f.rec.calls, 0);
+    // asked once more (also too quick), then it waits
+    await g.until(() => find.byType(SnackBar).evaluate().isNotEmpty);
     expect(f.rec.calls, 0);
     g.expectClean();
   });
