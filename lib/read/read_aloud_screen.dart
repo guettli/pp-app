@@ -77,6 +77,10 @@ class ReadAloudScreen extends StatefulWidget {
   /// Time to start reading before the try ends as "not heard".
   static const noSpeech = Duration(seconds: 12);
 
+  /// Stars a try can get at most after the phone said the word: that is
+  /// saying it after the phone, not reading.
+  static const afterHeard = 1;
+
   @override
   State<ReadAloudScreen> createState() => _ReadAloudScreenState();
 }
@@ -110,6 +114,10 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
 
   /// Stars of the last try of the current word (shown in the result).
   int _last = 0;
+
+  /// The phone has said the current word: later tries are not reading
+  /// any more ([ReadAloudScreen.afterHeard]).
+  bool _heardWord = false;
   String? _lastPraise;
 
   /// Incremented to stop what runs (next word, pause, closing).
@@ -327,26 +335,33 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
     ).showSnackBar(SnackBar(content: Text(message(S.of(context)))));
   }
 
+  /// [stars]: how well the try matched the word.
   Future<void> _scored(int id, int stars) async {
     _attempts++;
+    // after the phone said the word, a try only repeats it
+    final counted = _heardWord
+        ? math.min(stars, ReadAloudScreen.afterHeard)
+        : stars;
     setState(() {
       _phase = _Phase.result;
-      _last = stars;
-      _stars[_index] = math.max(_stars[_index] ?? 0, stars);
+      _last = counted;
+      _stars[_index] = math.max(_stars[_index] ?? 0, counted);
     });
-    unawaited(_sound(jingle(stars, _rng)));
+    unawaited(_sound(jingle(counted, _rng)));
     await Future<void>.delayed(const Duration(milliseconds: 600));
     if (!_current(id)) return;
     final retry = afterResult(stars, _attempts) == AfterResult.retry;
     final praise = pickPraise(
       _lang,
-      stars,
+      counted,
       _rng,
       avoid: _lastPraise,
       onward: !retry,
     );
     _lastPraise = praise;
-    // the word as it sounds: the child can compare
+    // the word as it sounds: the child can compare (also when cut off:
+    // the child may have heard it)
+    _heardWord = true;
     await _say('${_p.text}! $praise');
     if (!_current(id)) return;
     if (retry) {
@@ -377,6 +392,7 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
       _attempts = 0;
       _silent = 0;
       _last = 0;
+      _heardWord = false;
       _phase = _Phase.ready;
     });
     _listen();
