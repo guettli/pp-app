@@ -145,6 +145,13 @@ class Progress {
   Future<void> setQuizReports(bool on) =>
       _prefs.setBool('settings|quizReports', on);
 
+  /// A grown-up switched on the sound symbols (feedback screen, behind
+  /// the parent gate): the worlds then show the IPA symbol of every sound
+  /// in its chip (ʃ, ŋ, aɪ̯), not just a coloured dot. Off for children:
+  /// the symbols are not the letters they learn.
+  bool get ipaChips => _prefs.getBool('settings|ipaChips') ?? false;
+  Future<void> setIpaChips(bool on) => _prefs.setBool('settings|ipaChips', on);
+
   /// Rommé: what the first melds must be worth (0: anything).
   int get rummyOpenPoints => _prefs.getInt('rummy|open') ?? 30;
   Future<void> setRummyOpenPoints(int points) =>

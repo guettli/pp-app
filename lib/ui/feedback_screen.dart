@@ -144,6 +144,18 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
         ),
         const Divider(height: 24),
       ],
+      SwitchListTile(
+        key: const Key('ipaChips'),
+        contentPadding: EdgeInsets.zero,
+        title: Text(s.ipaChips),
+        subtitle: Text(s.ipaChipsInfo),
+        value: progress.ipaChips,
+        onChanged: (on) async {
+          await progress.setIpaChips(on);
+          if (mounted) setState(() {});
+        },
+      ),
+      const Divider(height: 24),
       Wrap(
         spacing: 8,
         runSpacing: 4,
