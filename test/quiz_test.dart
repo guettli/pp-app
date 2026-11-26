@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/ui/intros.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -413,11 +414,25 @@ void main() {
       await expectClean(t, dev.log);
     });
 
-    testWidgets('silence: waits for a tap, then goes on', (t) async {
+    testWidgets('silence: said, then asked once more by itself', (t) async {
       final (dev, _, dialog) = await play(
         t,
         [ipa('Vogel'), ipa('Apfel'), ipa('Elefant')],
         child: [Child.silent, Child.speaks],
+      );
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      final said = dev.log.started('tts');
+      expect(said, contains(notHeardLine('de-DE', again: true)));
+      expect(said.where((s) => s == lines.ask(three()[0])), hasLength(2));
+      expect(find.text('3 / 3'), findsOneWidget);
+      await expectClean(t, dev.log);
+    });
+
+    testWidgets('silence twice: waits for a tap, then goes on', (t) async {
+      final (dev, _, dialog) = await play(
+        t,
+        [ipa('Vogel'), ipa('Apfel'), ipa('Elefant')],
+        child: [Child.silent, Child.silent, Child.speaks],
       );
       await until(
         t,
@@ -427,7 +442,8 @@ void main() {
       for (var i = 0; i < 100; i++) {
         await t.pump(const Duration(milliseconds: 50));
       }
-      expect(dev.log.started('mic'), hasLength(1));
+      expect(dev.log.started('mic'), hasLength(2));
+      expect(dev.log.started('tts').last, notHeardLine('de-DE', again: false));
       expect(dev.mic.recording, isFalse);
       await t.tap(find.byTooltip('Speak'));
       await until(t, () => dialog.evaluate().isNotEmpty, dev.log);

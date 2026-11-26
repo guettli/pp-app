@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/ui/intros.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -546,11 +547,15 @@ void main() {
         two(),
       ], child: () => Child.silent);
       await untilSlots(t);
-      await wait(t, 15000);
-      expect(dev.log.started('mic'), hasLength(1));
+      await wait(t, 30000);
+      // said, once more by itself, then it waits
+      expect(dev.log.started('mic'), hasLength(2));
+      final said = dev.log.started('tts');
+      expect(said, contains(notHeardLine('de-DE', again: true)));
+      expect(said.last, notHeardLine('de-DE', again: false));
       await t.tap(find.byKey(const ValueKey('memory-mic')));
       await wait(t, 15000);
-      expect(dev.log.started('mic'), hasLength(2));
+      expect(dev.log.started('mic'), hasLength(3));
       await close(t, dev.log, mic: true);
     });
 

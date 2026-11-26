@@ -5,6 +5,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/ui/intros.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -290,11 +291,17 @@ void main() {
 
   testWidgets('silence: says nothing was heard and waits', (t) async {
     final r = await open(t, VoiceGame.hold, [noise(10)]);
-    await r.until(() => r.tries == 1 && !r.dev.mic.recording);
+    // the first time it asks again by itself, then waits for a tap
+    await r.until(() => r.tries == 2 && !r.dev.mic.recording);
     await r.wait(const Duration(milliseconds: 500));
-    expect(find.byType(SnackBar), findsOneWidget);
+    await r.until(() => find.byType(SnackBar).evaluate().isNotEmpty);
+    expect(
+      r.said.where((s) => s == notHeardLine('de-DE', again: true)),
+      hasLength(1),
+    );
+    expect(r.said.last, notHeardLine('de-DE', again: false));
     await r.wait(const Duration(seconds: 20));
-    expect(r.tries, 1);
+    expect(r.tries, 2);
     r.expectClean();
   });
 

@@ -95,6 +95,9 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
   /// Tries of the current word.
   int _attempts = 0;
 
+  /// Tries of the current word in which the mic heard nothing.
+  int _silent = 0;
+
   /// Best stars per word so far (null: not read yet).
   late final List<int?> _stars = List.filled(_round.length, null);
 
@@ -273,6 +276,20 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
     }
     if (!heard.speech) {
       _keepTry(heard, '', null);
+      // said, not only written: the child may not read the message; the
+      // first time the phone listens again by itself
+      final again = _silent++ == 0;
+      setState(() => _phase = _Phase.speaking);
+      await _say(notHeardLine(_lang, again: again));
+      if (!_current(id)) return;
+      if (again) {
+        // the speaker's echo must fade before the mic opens
+        await Future<void>.delayed(const Duration(milliseconds: 250));
+        if (!_current(id)) return;
+        setState(() => _phase = _Phase.ready);
+        unawaited(_listen());
+        return;
+      }
       _fail(id, (s) => s.notHeardVoice);
       return;
     }
@@ -352,6 +369,7 @@ class _ReadAloudScreenState extends State<ReadAloudScreen>
     setState(() {
       _index++;
       _attempts = 0;
+      _silent = 0;
       _last = 0;
       _phase = _Phase.ready;
     });

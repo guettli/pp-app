@@ -70,6 +70,9 @@ class _PlayScreenState extends State<PlayScreen>
   /// Tries of the current word (one retry after 0 stars).
   int _attempts = 0;
 
+  /// Tries of the current word in which the mic heard nothing.
+  int _silent = 0;
+
   late bool _introDone = !widget.intro;
 
   /// Goes on to the next word (or the retry) after the feedback.
@@ -597,6 +600,17 @@ class _PlayScreenState extends State<PlayScreen>
       final pcm = _buffer.takeBytes();
       if (!heard) {
         _keepTry(phrase, pcm, false, '', null);
+        // said, not only written: the child may not read the message;
+        // the first time the phone says the word again and listens
+        final again = _silent++ == 0;
+        setState(() => _phase = _Phase.speaking);
+        await _speakText(notHeardLine(_lang, again: again));
+        if (!_current(round)) return;
+        if (again) {
+          setState(() => _phase = _Phase.ready);
+          unawaited(_play());
+          return;
+        }
         _fail(_Phase.ready, (s) => s.notHeard);
         return;
       }
@@ -688,6 +702,7 @@ class _PlayScreenState extends State<PlayScreen>
     }
     setState(() {
       _attempts = 0;
+      _silent = 0;
       _index++;
       _phase = _Phase.ready;
       _result = null;

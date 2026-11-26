@@ -47,6 +47,17 @@ void main() {
     expect(introLine(GameIntro.sayWord, 'xx-XX'), contains('say'));
   });
 
+  test('"nothing heard" is said in every language, two different lines', () {
+    final en = notHeardLine('en-GB', again: true);
+    for (final lang in ['de-DE', 'fr-FR', 'it-IT', 'es-ES']) {
+      final again = notHeardLine(lang, again: true);
+      final tap = notHeardLine(lang, again: false);
+      expect(again, isNot(en), reason: lang);
+      expect(tap, isNot(again), reason: lang);
+    }
+    expect(notHeardLine('xx-XX', again: true), en);
+  });
+
   /// Shows [screen] and lets it run [seconds]; the devices for checks.
   Future<FakeDevices> run(
     WidgetTester t,

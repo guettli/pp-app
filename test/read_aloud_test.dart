@@ -6,6 +6,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:phoneme_party/ui/intros.dart';
 import 'package:phoneme_party/app_state.dart';
 import 'package:phoneme_party/data/phrases.dart';
 import 'package:phoneme_party/data/progress.dart';
@@ -218,11 +219,27 @@ void main() {
       await close(t, dev.log);
     });
 
-    testWidgets('silence: a hint, the mic waits for a tap', (t) async {
+    testWidgets('silence: said, listens once more by itself', (t) async {
       final (dev, _) = await play(
         t,
         [ipa('Ei'), ipa('Bett')],
         child: [Child.silent, Child.speaks],
+      );
+      await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
+      expect(
+        dev.log.started('tts'),
+        contains(notHeardLine('de-DE', again: true)),
+      );
+      expect(find.byType(SnackBar), findsNothing);
+      expect(dev.log.started('mic'), hasLength(3));
+      await close(t, dev.log);
+    });
+
+    testWidgets('silence twice: said, the mic waits for a tap', (t) async {
+      final (dev, _) = await play(
+        t,
+        [ipa('Ei'), ipa('Bett')],
+        child: [Child.silent, Child.silent, Child.speaks],
       );
       await until(
         t,
@@ -230,10 +247,14 @@ void main() {
         dev.log,
       );
       await wait(t, 2000);
-      expect(dev.log.started('mic'), hasLength(1));
+      expect(dev.log.started('mic'), hasLength(2));
+      expect(dev.log.started('tts'), [
+        notHeardLine('de-DE', again: true),
+        notHeardLine('de-DE', again: false),
+      ]);
       await t.tap(find.byTooltip('Speak'));
       await until(t, () => dialog.evaluate().isNotEmpty, dev.log);
-      expect(dev.log.started('mic'), hasLength(3));
+      expect(dev.log.started('mic'), hasLength(4));
       await close(t, dev.log);
     });
 
@@ -312,7 +333,7 @@ void main() {
       final (dev, _) = await play(
         t,
         [ipa('Bett')],
-        child: [Child.silent, Child.speaks],
+        child: [Child.silent, Child.silent, Child.speaks],
       );
       await until(
         t,

@@ -85,6 +85,9 @@ class _QuizScreenState extends State<QuizScreen>
   /// Tries of the current question that were not understood.
   int _unclear = 0;
 
+  /// Tries of the current question in which the mic heard nothing.
+  int _silent = 0;
+
   /// Per question: right (true), wrong (false), not yet (null).
   late final List<bool?> _results = List.filled(_round.length, null);
 
@@ -280,6 +283,18 @@ class _QuizScreenState extends State<QuizScreen>
     }
     if (!heard.speech) {
       _keepTry(heard, '', null);
+      // said, not only written: the child may not read; the first time
+      // the phone asks again by itself
+      final again = _silent++ == 0;
+      // still "speaking": taps must not cut it off and ask twice
+      setState(() => _phase = _Phase.speaking);
+      await _say(notHeardLine(_lang, again: again));
+      if (!_current(id)) return;
+      if (again) {
+        setState(() => _phase = _Phase.ready);
+        unawaited(_ask());
+        return;
+      }
       _fail(id, (s) => s.notHeardVoice);
       return;
     }
@@ -419,6 +434,7 @@ class _QuizScreenState extends State<QuizScreen>
     setState(() {
       _index++;
       _unclear = 0;
+      _silent = 0;
       _chosen = null;
       _phase = _Phase.ready;
     });

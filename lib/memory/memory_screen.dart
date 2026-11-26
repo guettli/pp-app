@@ -133,6 +133,9 @@ class _MemoryScreenState extends State<MemoryScreen>
   _Mic _mic = _Mic.busy;
   int _unclear = 0;
 
+  /// Tries of the current question in which the mic heard nothing.
+  int _silent = 0;
+
   /// Words heard for the current question (understood or not): enough,
   /// and the pictures are shown (a child saying the same wrong word
   /// again and again, or one the phone does not understand).
@@ -302,6 +305,7 @@ class _MemoryScreenState extends State<MemoryScreen>
       _heard = 0;
       _mic = _Mic.busy;
       _unclear = 0;
+      _silent = 0;
       _tries = 0;
     });
     if (!_introDone) {
@@ -410,6 +414,16 @@ class _MemoryScreenState extends State<MemoryScreen>
       return;
     }
     if (!heard.speech) {
+      // said, not only written: the child may not read the message; the
+      // first time the phone listens again by itself
+      final again = _silent++ == 0;
+      setState(() => _mic = _Mic.busy);
+      await _say(notHeardLine(_lang, again: again));
+      if (!_current(id)) return;
+      if (again) {
+        await _listen(id);
+        return;
+      }
       _micWaits(id, (s) => s.notHeardVoice);
       return;
     }
