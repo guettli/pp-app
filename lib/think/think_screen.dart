@@ -318,11 +318,7 @@ class _ThinkScreenState extends State<ThinkScreen> with WidgetsBindingObserver {
             // "traurig!" would sound like a cheer, and praise after "what
             // helps when I am sad" like praise for being sad: the praise is
             // for the child's answer, first; the feeling calmly after it
-            ? [
-                praise,
-                '${_capital(p.text)}.',
-                if (because != null) because,
-              ].join(' ')
+            ? [praise, '${_capital(p.text)}.', ?because].join(' ')
             : because == null
             ? '${p.text}! $praise'
             : '${p.text}! $because $praise',
