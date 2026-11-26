@@ -123,6 +123,8 @@ class S {
   String get feedbackQueued => _t['feedbackQueued']!;
   String get quizReports => _t['quizReports']!;
   String get quizReportsInfo => _t['quizReportsInfo']!;
+  String get ipaChips => _t['ipaChips']!;
+  String get ipaChipsInfo => _t['ipaChipsInfo']!;
   String get quizReportSend => _t['quizReportSend']!;
   String get quizReportAsk => _t['quizReportAsk']!;
   String get thinkReportAsk => _t['thinkReportAsk']!;
@@ -254,6 +256,9 @@ class S {
       'quizReports': 'Aufnahmen und Denkspiel-Fragen senden können',
       'quizReportsInfo':
           'In den Spielen, die zuhören (Welten, Rätsel, Anlaut-Detektiv, Lies vor, Lange Laute), erscheint ein 🐞-Knopf. Ein Tipp darauf fragt nach (die Aufnahme lässt sich vorher anhören) und sendet dann den letzten Versuch mit der Aufnahme des Kindes an den Entwickler, damit er die Spracherkennung verbessern kann. Gespeichert 90 Tage, nicht veröffentlicht. In den Denkspielen sendet 🐞 die Frage ohne Aufnahme als Rückmeldung (gelöscht nach 12 Monaten).',
+      'ipaChips': 'Lautschrift in den Welten zeigen',
+      'ipaChipsInfo':
+          'Nach jedem Versuch zeigt ein Punkt pro Laut, was gut war (grün), fast (orange) oder fehlte (rot). Eingeschaltet steht in jedem Punkt der Laut in Lautschrift (IPA, z. B. ʃ für sch). Für Erwachsene: Kinder lernen Buchstaben, nicht IPA.',
       'quizReportSend': 'An den Entwickler senden',
       'quizReportAsk': 'Diese Aufnahme an den Entwickler senden?',
       'listenRecording': 'Aufnahme anhören',
@@ -383,6 +388,9 @@ class S {
       'quizReports': 'Allow sending recordings and thinking-game questions',
       'quizReportsInfo':
           'A 🐞 button appears in the games that listen (worlds, quiz, sound detective, read aloud, long sounds). Tapping it asks first (the recording can be heard before) and then sends the last try with the child’s recording to the developer, to improve the speech recognition. Kept 90 days, not published. In the thinking games, 🐞 sends the question without a recording, as feedback (deleted after 12 months).',
+      'ipaChips': 'Show phonetic symbols in the worlds',
+      'ipaChipsInfo':
+          'After each try, one dot per sound shows what was right (green), close (orange) or missing (red). Switched on, each dot shows its sound in phonetic symbols (IPA, e.g. ʃ for sh). For grown-ups: children learn letters, not IPA.',
       'quizReportSend': 'Send to the developer',
       'quizReportAsk': 'Send this recording to the developer?',
       'listenRecording': 'Listen to the recording',
@@ -512,6 +520,9 @@ class S {
           'Permettre d’envoyer les enregistrements et les questions des jeux de réflexion',
       'quizReportsInfo':
           'Un bouton 🐞 apparaît dans les jeux qui écoutent (mondes, devinettes, détective des sons, lecture à voix haute, sons longs). Après confirmation (l’enregistrement peut être écouté avant), il envoie le dernier essai avec l’enregistrement de l’enfant au développeur, pour améliorer la reconnaissance vocale. Gardé 90 jours, jamais publié. Dans les jeux de réflexion, 🐞 envoie la question sans enregistrement, comme un retour (effacé après 12\u00A0mois).',
+      'ipaChips': 'Afficher l’alphabet phonétique dans les mondes',
+      'ipaChipsInfo':
+          'Après chaque essai, un point par son montre ce qui était juste (vert), presque (orange) ou manquait (rouge). Activé, chaque point montre son son en alphabet phonétique (API, p. ex. ʃ pour ch). Pour les adultes : les enfants apprennent les lettres, pas l’API.',
       'quizReportSend': 'Envoyer au développeur',
       'quizReportAsk': 'Envoyer cet enregistrement au développeur\u00A0?',
       'listenRecording': 'Écouter l’enregistrement',
@@ -640,6 +651,9 @@ class S {
           'Consenti l’invio delle registrazioni e delle domande dei giochi di logica',
       'quizReportsInfo':
           'Nei giochi che ascoltano (mondi, indovinelli, detective dei suoni, lettura ad alta voce, suoni lunghi) compare un pulsante 🐞. Dopo una conferma (la registrazione si può ascoltare prima) invia l’ultimo tentativo con la registrazione del bambino allo sviluppatore, per migliorare il riconoscimento vocale. Conservata 90 giorni, mai pubblicata. Nei giochi di logica, 🐞 invia la domanda senza registrazione, come un commento (cancellato dopo 12 mesi).',
+      'ipaChips': 'Mostra i simboli fonetici nei mondi',
+      'ipaChipsInfo':
+          'Dopo ogni tentativo, un punto per suono mostra cosa era giusto (verde), quasi (arancione) o mancava (rosso). Se attivo, ogni punto mostra il suo suono in simboli fonetici (IPA, p. es. ʃ per sc). Per gli adulti: i bambini imparano le lettere, non l’IPA.',
       'quizReportSend': 'Invia allo sviluppatore',
       'quizReportAsk': 'Inviare questa registrazione allo sviluppatore?',
       'listenRecording': 'Ascolta la registrazione',
@@ -768,6 +782,9 @@ class S {
           'Permitir enviar grabaciones y preguntas de los juegos de pensar',
       'quizReportsInfo':
           'En los juegos que escuchan (mundos, adivinanzas, detective de sonidos, lectura en voz alta, sonidos largos) aparece un botón 🐞. Tras confirmar (la grabación se puede escuchar antes) envía el último intento con la grabación del niño al desarrollador, para mejorar el reconocimiento de voz. Se guarda 90 días, no se publica. En los juegos de pensar, 🐞 envía la pregunta sin grabación, como comentario (se borra a los 12 meses).',
+      'ipaChips': 'Mostrar símbolos fonéticos en los mundos',
+      'ipaChipsInfo':
+          'Después de cada intento, un punto por sonido muestra qué estuvo bien (verde), casi (naranja) o faltó (rojo). Activado, cada punto muestra su sonido en símbolos fonéticos (AFI, p. ej. θ para la z). Para adultos: los niños aprenden letras, no el AFI.',
       'quizReportSend': 'Enviar al desarrollador',
       'quizReportAsk': '¿Enviar esta grabación al desarrollador?',
       'listenRecording': 'Escuchar la grabación',

@@ -206,6 +206,12 @@ void main() {
     expect(find.text('studyLang: de-DE'), findsOneWidget);
     // quiz reports: off until switched on, behind the gate, kept
     final sw = find.byKey(const Key('quizReports'));
+    // above the info, or below: the list builds only what is near
+    await t.scrollUntilVisible(
+      sw,
+      -200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(t.widget<SwitchListTile>(sw).value, isFalse);
     await t.ensureVisible(sw);
     await t.pumpAndSettle();
@@ -214,6 +220,19 @@ void main() {
     expect(progress.quizReports, isTrue);
     expect(t.widget<SwitchListTile>(sw).value, isTrue);
     expect((await Progress.load()).quizReports, isTrue);
+    // the sound symbols in the worlds: off for children, a grown-up's switch
+    final ipa = find.byKey(const Key('ipaChips'));
+    await t.scrollUntilVisible(
+      ipa,
+      100,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(t.widget<SwitchListTile>(ipa).value, isFalse);
+    await t.ensureVisible(ipa);
+    await t.pumpAndSettle();
+    await t.tap(ipa);
+    await t.pumpAndSettle();
+    expect((await Progress.load()).ipaChips, isTrue);
     // the longer switch text may push the id below the fold
     await t.scrollUntilVisible(
       find.textContaining('id: '),

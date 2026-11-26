@@ -912,7 +912,7 @@ class _PlayScreenState extends State<PlayScreen>
         ),
         if (_result != null) ...[
           const SizedBox(height: 12),
-          PhonemeChips(result: _result!),
+          PhonemeChips(result: _result!, symbols: widget.app.progress.ipaChips),
         ],
         const SizedBox(height: 8),
       ],
@@ -1020,11 +1020,17 @@ class _Flight extends AnimatedWidget {
   }
 }
 
-/// One chip per expected phoneme: green = good, orange = close, red = missing/wrong.
+/// One chip per expected phoneme: green = good, orange = close, red =
+/// missing/wrong. A plain dot for children: the IPA symbols (ʃ, ŋ, ə, "a ɪ̯"
+/// for Ei) are not the letters they learn to read and spell. With
+/// [symbols] (a grown-up setting) each chip shows its IPA symbol.
 class PhonemeChips extends StatelessWidget {
-  const PhonemeChips({super.key, required this.result});
+  const PhonemeChips({super.key, required this.result, this.symbols = false});
 
   final Comparison result;
+  final bool symbols;
+
+  static const dot = 22.0;
 
   @override
   Widget build(BuildContext context) {
@@ -1039,6 +1045,17 @@ class PhonemeChips extends StatelessWidget {
           : a.close
           ? const Color(0xFFFFAB00)
           : const Color(0xFFFF5252);
+      if (!symbols) {
+        chips.add(
+          Container(
+            margin: const EdgeInsets.all(3),
+            width: dot,
+            height: dot,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+        );
+        continue;
+      }
       chips.add(
         Container(
           margin: const EdgeInsets.all(2),
