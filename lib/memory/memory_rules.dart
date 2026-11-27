@@ -205,6 +205,24 @@ class MemoryLines {
 
   /// Before a harder round (three stars before): more pictures now.
   String get harder => _t[8];
+
+  /// "What did you hear?": a picture whose word was not said.
+  String get notSaid => _t[9];
+
+  /// "What's missing?": a picture that is still there.
+  String get notGone => _t[10];
+
+  /// After too many wrong taps: which they were ([words] said in order).
+  String answersWere(List<String> words) =>
+      _t[11].replaceAll('{w}', _join(words));
+
+  /// After too many wrong taps in "What's missing?": the one that was gone.
+  String goneWas(String word) => _t[12].replaceAll('{w}', word);
+
+  /// "Schuh, Hut und Ball".
+  String _join(List<String> w) => w.length < 2
+      ? w.join()
+      : '${w.take(w.length - 1).join(', ')} ${_t[13]} ${w.last}';
 }
 
 const _lines = <String, List<String>>{
@@ -218,6 +236,11 @@ const _lines = <String, List<String>>{
     'Und was noch?',
     'Das war nicht dabei.',
     'Das machst du schon richtig gut! Jetzt kommen noch mehr dazu.',
+    'Das habe ich nicht gesagt.',
+    'Das ist noch da.',
+    'Es waren: {w}.',
+    'Weg war: {w}.',
+    'und',
   ],
   'en': [
     'Look closely!',
@@ -229,6 +252,11 @@ const _lines = <String, List<String>>{
     'And what else?',
     'That wasn’t there.',
     'You’re really good at this! Now there are more.',
+    'I didn’t say that one.',
+    'That one is still there.',
+    'They were: {w}.',
+    'The one that was gone: {w}.',
+    'and',
   ],
   'fr': [
     'Regarde bien !',
@@ -240,6 +268,11 @@ const _lines = <String, List<String>>{
     'Et quoi d’autre ?',
     'Ça, ce n’était pas là !',
     'Tu y arrives très bien ! Maintenant, il y a encore plus d’images.',
+    'Ça, je ne l’ai pas dit.',
+    'Celle-là est encore là.',
+    'C’étaient : {w}.',
+    'Celle qui manquait : {w}.',
+    'et',
   ],
   'it': [
     'Guarda bene!',
@@ -251,6 +284,11 @@ const _lines = <String, List<String>>{
     'E cos’altro?',
     'Non c’era.',
     'Ci riesci benissimo! Adesso sono di più.',
+    'Questa non l’ho detta.',
+    'Questa c’è ancora.',
+    'Erano: {w}.',
+    'Mancava: {w}.',
+    'e',
   ],
   'es': [
     '¡Mira bien!',
@@ -262,5 +300,10 @@ const _lines = <String, List<String>>{
     '¿Y qué más?',
     'Eso no estaba ahí.',
     '¡Lo haces muy bien! Ahora hay más.',
+    'Esa no la he dicho.',
+    'Esa sigue ahí.',
+    'Eran: {w}.',
+    'Faltaba: {w}.',
+    'y',
   ],
 };

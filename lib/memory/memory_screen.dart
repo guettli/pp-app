@@ -522,7 +522,12 @@ class _MemoryScreenState extends State<MemoryScreen>
       return;
     }
     if (!await _wait(id, const Duration(milliseconds: 400))) return;
-    await _say(p.text);
+    // not just the word: why it was not right
+    await _say(switch (widget.game) {
+      MemoryGame.hear => '${p.text}? ${_lines.notSaid}',
+      MemoryGame.missing => '${p.text}? ${_lines.notGone}',
+      _ => '${p.text}? ${_lines.notThere}',
+    });
   }
 
   /// The question is over: [last] the tap that found the last picture, or
@@ -548,7 +553,13 @@ class _MemoryScreenState extends State<MemoryScreen>
         for (final a in _q.answers)
           if (!_found.contains(a)) a.text,
       ];
-      await _say('${missed.join(', ')}.');
+      // all of them, in order ("Es waren: Schuh und Hut."): the ones
+      // found too, the sentence stays whole
+      await _say(
+        widget.game == MemoryGame.missing
+            ? _lines.goneWas(missed.join())
+            : _lines.answersWere([for (final a in _q.answers) a.text]),
+      );
     }
     if (!_current(id)) return;
     _onward = Timer(const Duration(milliseconds: 900), _next);
