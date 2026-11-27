@@ -435,31 +435,31 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🦒',
-    alike: {'🦩', '🦁', '🐘', '🦓', '🐌', '🐍'},
+    alike: {'🦩', '🦁', '🐘', '🦓', '🐌', '🐍', '🐫', '🐐'},
     {
       'de': [
-        'Ich lebe in Afrika.',
         'Ich fresse Blätter von hohen Bäumen.',
+        'Ich bin das höchste Tier der Welt.',
         'Ich habe einen ganz langen Hals.',
       ],
       'en': [
-        'I live in Africa.',
         'I eat leaves from tall trees.',
+        'I am the tallest animal in the world.',
         'I have a very long neck.',
       ],
       'fr': [
-        'Je vis en Afrique.',
         'Je mange les feuilles des grands arbres.',
+        'Je suis l’animal le plus haut du monde.',
         'J’ai un très long cou.',
       ],
       'it': [
-        'Vivo in Africa.',
         'Mangio le foglie degli alberi alti.',
+        'Sono l’animale più alto del mondo.',
         'Ho il collo lunghissimo.',
       ],
       'es': [
-        'Vivo en África.',
         'Como hojas de árboles altos.',
+        'Soy el animal más alto del mundo.',
         'Tengo el cuello muy largo.',
       ],
     },
@@ -933,31 +933,31 @@ const riddles = <Riddle>[
   ),
   Riddle(
     '🦓',
-    alike: {'🦁', '🐘', '🦒', '🐧', '🐝'},
+    alike: {'🦁', '🐘', '🦒', '🐧', '🐝', '🐴'},
     {
       'de': [
         'Ich sehe fast aus wie ein Pferd.',
-        'Ich lebe in Afrika.',
+        'Ich sehe aus wie ein Pferd im Schlafanzug.',
         'Ich habe schwarze und weiße Streifen.',
       ],
       'en': [
         'I look almost like a horse.',
-        'I live in Africa.',
+        'I look like a horse in pyjamas.',
         'I have black and white stripes.',
       ],
       'fr': [
         'Je ressemble presque à un cheval.',
-        'Je vis en Afrique.',
+        'On dirait un cheval en pyjama.',
         'J’ai des rayures noires et blanches.',
       ],
       'it': [
         'Sembro quasi un cavallo.',
-        'Vivo in Africa.',
+        'Sembro un cavallo in pigiama.',
         'Ho le strisce bianche e nere.',
       ],
       'es': [
         'Parezco casi un caballo.',
-        'Vivo en África.',
+        'Parezco un caballo en pijama.',
         'Tengo rayas blancas y negras.',
       ],
     },
