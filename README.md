@@ -180,7 +180,9 @@ and high also listen (and so do the worlds).
   other (O/U, E/I: the recognizer often hears a child's O as u); if the
   recognizer hears no clear vowel, the time counts as before.
 - **📖 Word list:** every word with picture, rough size and weight and its
-  properties; tapping a word says it.
+  properties; tapping a word says it. A word said in a world shows its
+  best stars, and "To practise (≤ 1 ⭐)" keeps only the words said with
+  one star at most: a parent or teacher sees which sounds to practise.
 
 ## How recognition works
 

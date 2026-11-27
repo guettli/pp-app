@@ -286,6 +286,32 @@ void main() {
       await close(t);
     });
 
+    testWidgets('word list: the stars, and the words to practise, $name', (
+      t,
+    ) async {
+      await show(
+        t,
+        (app) => WordListScreen(app: app),
+        size: size,
+        prefs: {
+          'stars|de-DE|${book.phrases[0].text}': 3,
+          'stars|de-DE|${book.phrases[1].text}': 1,
+          'stars|de-DE|${book.phrases[2].text}': 0,
+        },
+      );
+      expect(t.takeException(), isNull);
+      expect(find.byKey(const ValueKey('word-stars')), findsNWidgets(3));
+      await t.tap(find.byKey(const ValueKey('words-practise')));
+      await t.pump();
+      expect(t.takeException(), isNull);
+      // one star at most, and said at least once: the second and third
+      expect(find.text(book.phrases[0].text), findsNothing);
+      expect(find.text(book.phrases[1].text), findsOneWidget);
+      expect(find.text(book.phrases[2].text), findsOneWidget);
+      expect(find.text(book.phrases[3].text), findsNothing);
+      await close(t);
+    });
+
     testWidgets('quiz, $name', (t) async {
       await show(t, (app) => QuizScreen(app: app), size: size);
       for (var i = 0; i < 40; i++) {

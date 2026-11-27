@@ -1,6 +1,8 @@
 // All words of the study language, for the grown-ups (and curious
 // children): picture, word, other accepted words, and what the quiz knows
-// about it. Tapping a word says it.
+// about it. Tapping a word says it. A word said in a world shows its best
+// stars; "To practise" keeps only those with one star at most, so a
+// grown-up sees which sounds the child struggles with.
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
@@ -23,6 +25,15 @@ class WordListScreen extends StatefulWidget {
 class _WordListScreenState extends State<WordListScreen> {
   late final Speaker _tts;
   late final QuizLines _lines = QuizLines.of(widget.app.book.lang);
+
+  /// Only words said in a world with at most one star.
+  bool _practise = false;
+
+  bool _weak(Phrase p) {
+    final lang = widget.app.book.lang;
+    return widget.app.progress.played(lang, p.text) &&
+        widget.app.progress.stars(lang, p.text) <= 1;
+  }
 
   @override
   void initState() {
@@ -52,6 +63,8 @@ class _WordListScreenState extends State<WordListScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     final book = widget.app.book;
+    final weak = book.phrases.where(_weak).toList();
+    final words = _practise ? weak : book.phrases;
     return Scaffold(
       backgroundColor: const Color(0xFF14143A),
       appBar: AppBar(
@@ -61,14 +74,38 @@ class _WordListScreenState extends State<WordListScreen> {
       ),
       body: ListView.separated(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 24),
-        itemCount: book.phrases.length,
+        itemCount: words.length + 1,
         separatorBuilder: (_, _) => const SizedBox(height: 8),
-        itemBuilder: (context, i) => _row(context, book.phrases[i]),
+        itemBuilder: (context, i) => i == 0
+            ? Align(
+                alignment: Alignment.centerLeft,
+                child: FilterChip(
+                  key: const ValueKey('words-practise'),
+                  label: Text('${s.toPractise} (≤ 1 ⭐)  ·  ${weak.length}'),
+                  selected: _practise,
+                  onSelected: (on) => setState(() => _practise = on),
+                ),
+              )
+            : _row(context, words[i - 1]),
       ),
     );
   }
 
+  /// The best stars of a word in the worlds, the ones not earned faint.
+  Widget _stars(int n) => Row(
+    key: const ValueKey('word-stars'),
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (var i = 0; i < 3; i++)
+        Opacity(
+          opacity: i < n ? 1 : 0.25,
+          child: const EmojiImage('⭐', size: 18),
+        ),
+    ],
+  );
+
   Widget _row(BuildContext context, Phrase p) {
+    final book = widget.app.book;
     final fact = widget.app.facts.of(p);
     final code = Localizations.maybeLocaleOf(context)?.languageCode ?? 'en';
     final measures = [
@@ -86,7 +123,13 @@ class _WordListScreenState extends State<WordListScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              EmojiImage(p.emoji, size: 56),
+              Column(
+                children: [
+                  EmojiImage(p.emoji, size: 56),
+                  if (widget.app.progress.played(book.lang, p.text))
+                    _stars(widget.app.progress.stars(book.lang, p.text)),
+                ],
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
