@@ -16,11 +16,19 @@ class Progress {
   int stars(String lang, String phrase) =>
       _prefs.getInt(_key(lang, phrase)) ?? 0;
 
-  /// Stores [stars] if it beats the best so far and returns the previous best,
-  /// so callers can count only the improvement.
+  /// The child has said [phrase] in a world (also with 0 stars; tries
+  /// before this was stored count only with a star).
+  bool played(String lang, String phrase) =>
+      _prefs.containsKey(_key(lang, phrase));
+
+  /// Stores [stars] if it beats the best so far (or is the first try) and
+  /// returns the previous best, so callers can count only the improvement.
   Future<int> record(String lang, String phrase, int stars) async {
+    final key = _key(lang, phrase);
     final prev = this.stars(lang, phrase);
-    if (stars > prev) await _prefs.setInt(_key(lang, phrase), stars);
+    if (stars > prev || !_prefs.containsKey(key)) {
+      await _prefs.setInt(key, stars);
+    }
     return prev;
   }
 

@@ -29,6 +29,15 @@ void main() {
     expect(progress.stars('de-DE', 'Hund'), 3);
   });
 
+  test('a word said with 0 stars counts as played', () async {
+    expect(progress.played('de-DE', 'Hund'), isFalse);
+    expect(await progress.record('de-DE', 'Hund', 0), 0);
+    expect(progress.played('de-DE', 'Hund'), isTrue);
+    expect(progress.stars('de-DE', 'Hund'), 0);
+    expect(await progress.record('de-DE', 'Hund', 2), 0);
+    expect(progress.stars('de-DE', 'Hund'), 2);
+  });
+
   test('stars are per language', () async {
     await progress.record('de-DE', 'Taxi', 3);
     expect(progress.stars('es-ES', 'Taxi'), 0);

@@ -113,6 +113,7 @@ class S {
   String get phoneListens => _t['phoneListens']!;
   String get phoneDeaf => _t['phoneDeaf']!;
   String get wordsTitle => _t['wordsTitle']!;
+  String get toPractise => _t['toPractise']!;
   String get feedbackTitle => _t['feedbackTitle']!;
   String get kindBug => _t['kindBug']!;
   String get kindIdea => _t['kindIdea']!;
@@ -246,6 +247,7 @@ class S {
       'phoneListens': 'Das Handy hört zu',
       'phoneDeaf': 'Das Mikrofon bleibt aus',
       'wordsTitle': 'Wörter',
+      'toPractise': 'Zum Üben',
       'feedbackTitle': 'Feedback für Der Hase lacht',
       'parentGate': 'Für Erwachsene: Wie viel ist {a} × {b}?',
       'kindBug': 'Fehler',
@@ -381,6 +383,7 @@ class S {
       'phoneListens': 'The phone listens',
       'phoneDeaf': 'The microphone stays off',
       'wordsTitle': 'Words',
+      'toPractise': 'To practise',
       'feedbackTitle': 'Feedback for Der Hase lacht',
       'parentGate': 'For grown-ups: what is {a} × {b}?',
       'kindBug': 'Bug',
@@ -515,6 +518,7 @@ class S {
       'phoneListens': 'Le téléphone écoute',
       'phoneDeaf': 'Le micro reste éteint',
       'wordsTitle': 'Mots',
+      'toPractise': 'À travailler',
       'feedbackTitle': 'Avis sur Der Hase lacht',
       'parentGate': 'Pour les adultes : combien font {a} × {b} ?',
       'kindBug': 'Bug',
@@ -649,6 +653,7 @@ class S {
       'phoneListens': 'Il telefono ascolta',
       'phoneDeaf': 'Il microfono resta spento',
       'wordsTitle': 'Parole',
+      'toPractise': 'Da esercitare',
       'feedbackTitle': 'Commenti su Der Hase lacht',
       'parentGate': 'Per gli adulti: quanto fa {a} × {b}?',
       'kindBug': 'Errore',
@@ -783,6 +788,7 @@ class S {
       'phoneListens': 'El teléfono escucha',
       'phoneDeaf': 'El micrófono permanece apagado',
       'wordsTitle': 'Palabras',
+      'toPractise': 'Para practicar',
       'feedbackTitle': 'Comentarios sobre Der Hase lacht',
       'parentGate': 'Para adultos: ¿cuánto es {a} × {b}?',
       'kindBug': 'Error',
