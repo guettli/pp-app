@@ -95,6 +95,18 @@ class S {
   String get penaltyPoints => _t['penaltyPoints']!;
   String get nextRound => _t['nextRound']!;
   String get pickOne => _t['pickOne']!;
+  String get handRummy => _t['handRummy']!;
+  String get cardHint => _t['cardHint']!;
+  String get newCards => _t['newCards']!;
+  String handRummyStart(int n) => _t['handRummyStart']!.replaceAll('{n}', '$n');
+  String get handRummyRest => _t['handRummyRest']!;
+  String get handRummyDone => _t['handRummyDone']!;
+  String get handRummyStuck => _t['handRummyStuck']!;
+  String get handRummyBack => _t['handRummyBack']!;
+  String get handRummyEmpty => _t['handRummyEmpty']!;
+  String get handRummyOpenNow => _t['handRummyOpenNow']!;
+  String get setAside => _t['setAside']!;
+  String get handRummyRules => _t['handRummyRules']!;
   String cardsLeft(int n) => _t['cardsLeft']!.replaceAll('{n}', '$n');
   String stagedPoints(int a, int b) =>
       _t['stagedPoints']!.replaceAll('{a}', '$a').replaceAll('{b}', '$b');
@@ -228,6 +240,19 @@ class S {
       'penaltyPoints': 'Minuspunkte',
       'nextRound': 'Noch eine Runde',
       'pickOne': 'Wähle eine Karte.',
+      'handRummy': 'Handrommé',
+      'cardHint': 'Tipp',
+      'newCards': 'Neue Karten',
+      'handRummyStart': 'Leg zuerst Karten für {n} Punkte raus.',
+      'handRummyRest': 'Jetzt alle anderen: auslegen oder anlegen.',
+      'handRummyDone': 'Alle Karten liegen!',
+      'handRummyStuck': 'So geht es nicht auf. Nimm etwas zurück (↶).',
+      'handRummyBack': 'Nimm etwas vom Rauslegen zurück.',
+      'handRummyEmpty': 'Noch liegt nichts auf dem Tisch.',
+      'handRummyOpenNow': 'Genug Punkte: jetzt Rauslegen!',
+      'setAside': 'Beiseite legen',
+      'handRummyRules':
+          'Satz: 3 oder 4 gleiche Zahlen, jede Farbe einmal. Reihe: 3 oder mehr einer Farbe in Folge. Ass 11 (in A-2-3: 1), Bild 10. Tipp auf eine Gruppe: zurück in die Hand.',
       'cardsLeft': '{n} Karten',
       'stagedPoints': 'Zum Rauslegen: {a} von {b} Punkten',
       'no_notYourTurn': 'Du bist nicht dran.',
@@ -364,6 +389,19 @@ class S {
       'penaltyPoints': 'Penalty points',
       'nextRound': 'Another round',
       'pickOne': 'Pick one card.',
+      'handRummy': 'Hand rummy',
+      'cardHint': 'Hint',
+      'newCards': 'New cards',
+      'handRummyStart': 'First lay out cards worth {n} points.',
+      'handRummyRest': 'Now all the others: meld or lay off.',
+      'handRummyDone': 'All cards are down!',
+      'handRummyStuck': 'That does not work out. Take something back (↶).',
+      'handRummyBack': 'Take a meld back from laying out.',
+      'handRummyEmpty': 'Nothing on the table yet.',
+      'handRummyOpenNow': 'Enough points: lay out now!',
+      'setAside': 'Set aside',
+      'handRummyRules':
+          'Set: 3 or 4 of a rank, each suit once. Run: 3 or more of a suit in a row. Ace 11 (in A-2-3: 1), pictures 10. Tap a group to take it back.',
       'cardsLeft': '{n} cards',
       'stagedPoints': 'To lay out: {a} of {b} points',
       'no_notYourTurn': 'It is not your turn.',
@@ -499,6 +537,19 @@ class S {
       'penaltyPoints': 'Points de pénalité',
       'nextRound': 'Encore une manche',
       'pickOne': 'Choisis une carte.',
+      'handRummy': 'Rami en main',
+      'cardHint': 'Indice',
+      'newCards': 'Nouvelles cartes',
+      'handRummyStart': 'Pose d’abord des cartes pour {n} points.',
+      'handRummyRest': 'Maintenant toutes les autres : pose ou complète.',
+      'handRummyDone': 'Toutes les cartes sont posées !',
+      'handRummyStuck': 'Ça ne marche pas. Reviens en arrière (↶).',
+      'handRummyBack': 'Reprends une combinaison à poser.',
+      'handRummyEmpty': 'Rien sur la table pour l’instant.',
+      'handRummyOpenNow': 'Assez de points : pose maintenant !',
+      'setAside': 'Mettre de côté',
+      'handRummyRules':
+          'Série : 3 ou 4 cartes de même valeur, chaque couleur une fois. Suite : 3 cartes ou plus d’une couleur qui se suivent. As 11 (dans A-2-3 : 1), figures 10. Touche un groupe pour le reprendre.',
       'cardsLeft': '{n} cartes',
       'stagedPoints': 'À poser : {a} sur {b} points',
       'no_notYourTurn': 'Ce n’est pas ton tour.',
@@ -635,6 +686,19 @@ class S {
       'penaltyPoints': 'Punti di penalità',
       'nextRound': 'Un’altra mano',
       'pickOne': 'Scegli una carta.',
+      'handRummy': 'Ramino in mano',
+      'cardHint': 'Suggerimento',
+      'newCards': 'Nuove carte',
+      'handRummyStart': 'Prima cala carte per {n} punti.',
+      'handRummyRest': 'Ora tutte le altre: cala o attacca.',
+      'handRummyDone': 'Tutte le carte sono giù!',
+      'handRummyStuck': 'Così non va. Torna indietro (↶).',
+      'handRummyBack': 'Riprendi una combinazione da calare.',
+      'handRummyEmpty': 'Sul tavolo non c’è ancora niente.',
+      'handRummyOpenNow': 'Punti sufficienti: cala adesso!',
+      'setAside': 'Metti da parte',
+      'handRummyRules':
+          'Tris: 3 o 4 carte dello stesso valore, ogni seme una volta. Scala: 3 o più carte dello stesso seme in fila. Asso 11 (in A-2-3: 1), figure 10. Tocca un gruppo per riprenderlo.',
       'cardsLeft': '{n} carte',
       'stagedPoints': 'Da calare: {a} di {b} punti',
       'no_notYourTurn': 'Non è il tuo turno.',
@@ -770,6 +834,19 @@ class S {
       'penaltyPoints': 'Puntos de penalización',
       'nextRound': 'Otra ronda',
       'pickOne': 'Elige una carta.',
+      'handRummy': 'Rummy de mano',
+      'cardHint': 'Pista',
+      'newCards': 'Cartas nuevas',
+      'handRummyStart': 'Primero baja cartas por {n} puntos.',
+      'handRummyRest': 'Ahora todas las demás: baja o añade.',
+      'handRummyDone': '¡Ya están todas las cartas!',
+      'handRummyStuck': 'Así no sale. Vuelve atrás (↶).',
+      'handRummyBack': 'Recupera una combinación de las que vas a bajar.',
+      'handRummyEmpty': 'Aún no hay nada en la mesa.',
+      'handRummyOpenNow': '¡Puntos suficientes: abre ya!',
+      'setAside': 'Apartar',
+      'handRummyRules':
+          'Trío: 3 o 4 cartas del mismo valor, cada palo una vez. Escalera: 3 o más del mismo palo seguidas. As 11 (en A-2-3: 1), figuras 10. Toca un grupo para recuperarlo.',
       'cardsLeft': '{n} cartas',
       'stagedPoints': 'Para abrir: {a} de {b} puntos',
       'no_notYourTurn': 'No es tu turno.',

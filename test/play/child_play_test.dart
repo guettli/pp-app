@@ -28,6 +28,8 @@ import 'package:phoneme_party/memory/memory_rules.dart';
 import 'package:phoneme_party/memory/memory_screen.dart';
 import 'package:phoneme_party/quiz/quiz_screen.dart';
 import 'package:phoneme_party/read/read_aloud_screen.dart';
+import 'package:phoneme_party/rummy/hand_rummy.dart';
+import 'package:phoneme_party/rummy/hand_rummy_screen.dart';
 import 'package:phoneme_party/voice/voice_screen.dart';
 import 'package:phoneme_party/spell/spell_screen.dart';
 import 'package:phoneme_party/think/think_screen.dart';
@@ -488,6 +490,85 @@ void main() {
       await settle(t, 3000);
     });
   }
+
+  testWidgets('hand rummy', (t) async {
+    final (_, app) = await start(t, 21);
+    transcript.writeln('# Handrommé');
+    // a deal with melds already out
+    var seed = 0;
+    while (makeHandRummy(math.Random(seed)).table.isEmpty) {
+      seed++;
+    }
+    final p = makeHandRummy(math.Random(seed));
+    await show(
+      t,
+      HandRummyScreen(progress: app.progress, rng: math.Random(seed)),
+    );
+    await settle(t);
+    await shot(t, 'handrummy-start');
+    Future<void> tap(String key) async {
+      await t.ensureVisible(find.byKey(ValueKey(key)));
+      await t.tap(find.byKey(ValueKey(key)));
+      await settle(t, 200);
+    }
+
+    // a card laid off too early
+    await tap('hr-card-${p.layOffs.first.card}');
+    await tap('hr-meld-${p.layOffs.first.meld}');
+    await shot(t, 'handrummy-too-early');
+    await tap('hr-card-${p.layOffs.first.card}');
+    await tap('hr-hint');
+    await shot(t, 'handrummy-hint');
+    await tap('hr-meld');
+    await shot(t, 'handrummy-staged');
+    // the rest by 💡 too, until it says: lay out now
+    for (var k = 0; k < 4; k++) {
+      await tap('hr-hint');
+      if (find.byKey(const ValueKey('hr-open')).evaluate().isEmpty) break;
+      final open = t.widget<FilledButton>(
+        find.byKey(const ValueKey('hr-open')),
+      );
+      if (open.onPressed != null) break;
+      await tap('hr-meld');
+    }
+    await shot(t, 'handrummy-enough');
+    await tap('hr-open');
+    await shot(t, 'handrummy-out');
+    // then step by step with 💡: a meld, or a card for the table
+    var fits = false;
+    for (var k = 0; k < 15; k++) {
+      if (find.byType(AlertDialog).evaluate().isNotEmpty) break;
+      await tap('hr-hint');
+      final meld = t.widget<FilledButton>(
+        find.byKey(const ValueKey('hr-meld')),
+      );
+      if (meld.onPressed != null) {
+        await tap('hr-meld');
+        continue;
+      }
+      if (!fits) {
+        fits = true;
+        await shot(t, 'handrummy-fits');
+      }
+      final hand = find.byWidgetPredicate(
+        (w) =>
+            w.key is ValueKey<String> &&
+            (w.key! as ValueKey<String>).value.startsWith('hr-card-'),
+      );
+      final before = hand.evaluate().length;
+      for (var i = 0; ; i++) {
+        final m = find.byKey(ValueKey('hr-meld-$i'));
+        if (m.evaluate().isEmpty) break;
+        await tap('hr-meld-$i');
+        // laid off: the card left the hand (a refusal keeps it picked)
+        if (hand.evaluate().length < before) break;
+      }
+    }
+    await settle(t, 2000);
+    await shot(t, 'handrummy-end');
+    await t.pumpWidget(const SizedBox());
+    await settle(t, 3000);
+  });
 
   for (final game in MemoryGame.values) {
     testWidgets('memory: ${game.name}', (t) async {

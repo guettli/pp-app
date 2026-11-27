@@ -239,11 +239,11 @@ void main() {
       (app) => HomeScreen(app: app),
       prefs: {'needs|de-DE': 2, 'listen|de-DE': 3},
     );
-    // thinking: five games with stars, 2 of 15
+    // thinking: six games with stars (Handrommé too), 2 of 18
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('group-think')),
-        matching: find.text('2/15'),
+        matching: find.text('2/18'),
       ),
       findsOneWidget,
     );
@@ -417,7 +417,7 @@ void main() {
         await t.pageBack();
         await t.pumpAndSettle();
       }
-      expect(games, 18);
+      expect(games, 19);
       await close(t);
     });
 

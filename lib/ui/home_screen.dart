@@ -9,6 +9,7 @@ import '../memory/memory_rules.dart';
 import '../memory/memory_screen.dart';
 import '../quiz/quiz_screen.dart';
 import '../read/read_aloud_screen.dart';
+import '../rummy/hand_rummy_screen.dart';
 import '../spell/spell_screen.dart';
 import '../think/think_screen.dart';
 import '../together/together_screen.dart';
@@ -207,6 +208,13 @@ class _HomeScreenState extends State<HomeScreen> {
       audio: Audio.output,
       best: () => p.thinkBest('feelings', lang),
     );
+    final handRummy = (
+      screen: () => HandRummyScreen(progress: p),
+      emojis: const ['🃏', '✋'],
+      name: s.handRummy,
+      audio: Audio.none,
+      best: () => p.thinkBest(handRummyKey, handRummyLang),
+    );
     Game memory(MemoryGame g, List<String> emojis, String name) => (
       screen: () => MemoryScreen(app: app, game: g),
       emojis: emojis,
@@ -227,7 +235,7 @@ class _HomeScreenState extends State<HomeScreen> {
         key: 'think',
         emoji: '🤔',
         name: s.thinkGroup,
-        games: [needs, riddle, odd, home, quiz],
+        games: [needs, riddle, odd, home, quiz, handRummy],
       ),
       (
         key: 'memory',

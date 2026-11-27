@@ -167,6 +167,15 @@ and high also listen (and so do the worlds).
   joie"): adjectives there would depend on whether the child is a boy or
   a girl. Texts: `lib/think/feelings_data.dart`; the screen is the one of
   the thinking games.
+- **🃏✋ Handrommé** (a card puzzle for one, no sound; `lib/rummy/hand_rummy.dart`):
+  twelve cards, all to be laid down in one go. First melds worth at
+  least 30 points from the hand ("Rauslegen", ace 11, pictures 10, a
+  joker the card it stands for), then the other melds, and the rest laid
+  off on the melds on the table — sometimes some are out already at the
+  start. Sets and runs as in Rommé (two decks and jokers). Every deal is
+  dealt from a way out, so it always goes out. 💡 picks the cards of a
+  next step, ↶ takes moves back; if nothing goes any more the screen
+  says so. Stars: three without 💡, two with one or two, else one.
 - With recording reports switched on, every thinking game shows 🐞 too: after
   asking (with room for a note) it sends the current question (what was
   said, the pictures, the answer, the taps) as a bug report through the
