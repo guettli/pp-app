@@ -406,7 +406,7 @@ void main() {
       expect(log.problems, isEmpty, reason: '$log');
       expect(log.started('mic'), isEmpty);
       if (find.byType(AlertDialog).evaluate().isNotEmpty) {
-        await t.tap(find.text('Great'));
+        await t.tap(find.byIcon(Icons.check_rounded));
       }
       await t.pumpWidget(const SizedBox());
       await wait(t);

@@ -110,6 +110,7 @@ void main() {
                   right: 8,
                   total: 8,
                   record: true,
+                  again: (_) => const Scaffold(),
                 ),
                 child: const Text('end'),
               ),
@@ -130,6 +131,8 @@ void main() {
       expect(find.text('Great').hitTestable(), findsOneWidget);
       // with a ✓ a child understands without reading
       expect(find.byIcon(Icons.check_rounded).hitTestable(), findsOneWidget);
+      // and the 🔁 for once more
+      expect(find.byIcon(Icons.replay_rounded).hitTestable(), findsOneWidget);
       // once, not forever: pumpAndSettle ends
       await t.pumpAndSettle();
       expect(t.takeException(), isNull);
@@ -137,6 +140,56 @@ void main() {
       await close(t);
     });
   }
+
+  testWidgets('round end without a star: good practice; 🔁 plays again', (
+    t,
+  ) async {
+    await show(
+      t,
+      (app) => Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => Scaffold(
+                    body: TextButton(
+                      onPressed: () => showRoundEnd(
+                        context,
+                        stars: 0,
+                        right: 1,
+                        total: 6,
+                        record: false,
+                        again: (_) => const Scaffold(body: Text('round 2')),
+                      ),
+                      child: const Text('end'),
+                    ),
+                  ),
+                ),
+              ),
+              child: const Text('game'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await t.tap(find.text('game'));
+    await t.pumpAndSettle();
+    await t.tap(find.text('end'));
+    await t.pumpAndSettle();
+    expect(find.text('Good practice!'), findsOneWidget);
+    expect(find.text('Well done!'), findsNothing);
+    expect(find.text('Done'), findsOneWidget);
+    await t.tap(find.byIcon(Icons.replay_rounded));
+    await t.pumpAndSettle();
+    // the game again, in place of the old one: back goes to the start
+    expect(find.text('round 2'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
+    t.state<NavigatorState>(find.byType(Navigator)).pop();
+    await t.pumpAndSettle();
+    expect(find.text('game'), findsOneWidget);
+    await close(t);
+  });
 
   for (final switchLanguage in [false, true]) {
     testWidgets('a world that just opened sparkles until it is tapped '

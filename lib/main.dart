@@ -6,6 +6,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'app_state.dart';
 import 'ui/emoji_image.dart';
+import 'ui/game_tile.dart';
 import 'ui/home_screen.dart';
 import 'ui/strings.dart';
 
@@ -36,6 +37,7 @@ class PhonemePartyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Der Hase lacht',
+      navigatorObservers: [starRoutes],
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFFF9100)),
