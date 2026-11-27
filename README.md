@@ -68,6 +68,13 @@ sag das richtige Wort!", "… tippe auf das richtige Bild!", …,
 `lib/ui/intros.dart`): a child who cannot read must know whether to tap
 or to speak.
 
+In the games where the child taps a picture (listen closely, word to
+picture, the thinking and feelings games), the right one is spread over
+the places: each place about equally often in a round, never twice in a
+row (`lib/game/answer_slots.dart`). A plain shuffle put it in the same
+place five times out of six now and then, and a child who always taps
+the same spot was right without listening.
+
 Every game tile shows what the game does with sound, for the
 grown-ups: 🔊 the phone talks, 🎤 it listens; the one a game does not
 use is crossed out (`lib/ui/audio_badge.dart`). Every game talks while

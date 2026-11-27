@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 
 import '../data/phrases.dart';
+import '../game/answer_slots.dart';
 
 /// One question: the word that is said and the pictures to choose from
 /// (the answer among them, in random order).
@@ -75,7 +76,11 @@ List<ListenQuestion> makeListenRound(
     if (chosen.length < options - 1) continue;
     round.add(ListenQuestion(answer, [answer, ...chosen]..shuffle(rng)));
   }
-  return round;
+  final slots = answerSlots(round.length, options, rng);
+  return [
+    for (final (i, q) in round.indexed)
+      ListenQuestion(q.answer, withAnswerAt(q.options, q.answer, slots[i])),
+  ];
 }
 
 /// How alike two words are written, 0..1: 1 - edit distance / longer
