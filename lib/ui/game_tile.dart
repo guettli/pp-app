@@ -156,6 +156,12 @@ List<Widget> tileRows(List<Widget> tiles, int perRow, {double gap = 12}) => [
     ),
 ];
 
+/// Tells screens that list stars when they are on top again (in the
+/// app's MaterialApp): 🔁 at a round's end replaces the game with a new
+/// one, so the screen that opened the first round does not see the
+/// second one end.
+final starRoutes = RouteObserver<ModalRoute<void>>();
+
 /// The games of one group, two in a row, each with the stars of its best
 /// round.
 class GroupScreen extends StatefulWidget {
@@ -167,8 +173,27 @@ class GroupScreen extends StatefulWidget {
   State<GroupScreen> createState() => _GroupScreenState();
 }
 
-class _GroupScreenState extends State<GroupScreen> {
+class _GroupScreenState extends State<GroupScreen> with RouteAware {
   GameGroup get group => widget.group;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null) starRoutes.subscribe(this, route);
+  }
+
+  @override
+  void dispose() {
+    starRoutes.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// A game (or the one 🔁 started in its place) closed: new stars.
+  @override
+  void didPopNext() {
+    if (mounted) setState(() {});
+  }
 
   Future<void> _open(Game g) async {
     await Navigator.of(
