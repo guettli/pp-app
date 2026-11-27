@@ -192,6 +192,22 @@ void main() {
         hasLength(2), // three and four pictures need five and six
       );
     });
+
+    test('what is said after a miss, in every language', () {
+      final de = MemoryLines.of('de-DE');
+      expect(de.answersWere(['Hut']), 'Es waren: Hut.');
+      expect(
+        de.answersWere(['Schuh', 'Hut', 'Ball']),
+        'Es waren: Schuh, Hut und Ball.',
+      );
+      expect(de.goneWas('Ring'), 'Weg war: Ring.');
+      for (final lang in ['en-GB', 'fr-FR', 'it-IT', 'es-ES']) {
+        final l = MemoryLines.of(lang);
+        expect(l.answersWere(['a', 'b']), isNot(contains('{w}')));
+        expect(l.goneWas('a'), contains('a'));
+        expect({l.notThere, l.notSaid, l.notGone}, hasLength(3));
+      }
+    });
   });
 
   group('screen', () {
@@ -336,14 +352,17 @@ void main() {
       await wait(t, 1000);
       await t.tap(option(1)); // Kuh, wrong
       await wait(t, 1500);
-      expect(dev.log.started('tts').last, 'Kuh');
+      // the word, and why it is wrong
+      const kuh = 'Kuh? Das war nicht dabei.';
+      expect(dev.log.started('tts').last, kuh);
       // a wrong picture cannot be tapped twice
       await t.tap(option(1));
       await wait(t, 1500);
-      expect(dev.log.started('tts').where((s) => s == 'Kuh'), hasLength(1));
+      expect(dev.log.started('tts').where((s) => s == kuh), hasLength(1));
       await t.tap(option(3)); // Mond, wrong: enough
       await wait(t, 1500);
-      expect(dev.log.started('tts'), contains('Buch.'));
+      // which they were, all of them, in a whole sentence
+      expect(dev.log.started('tts'), contains('Es waren: Hund und Buch.'));
       await wait(t, 6000);
       expect(find.text('0 / 1'), findsOneWidget);
       expect(progress.thinkBest('memory-look', 'de-DE'), 0);
