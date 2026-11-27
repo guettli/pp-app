@@ -318,11 +318,11 @@ const feelingStories = <FeelingStory>[
       'es': 'El cartero trae un paquete con mi nombre.',
     },
     {
-      'de': 'Ich atme tief durch und mache es ganz vorsichtig auf.',
-      'en': 'I take a deep breath and open it very carefully.',
-      'fr': 'Je respire un grand coup et je l’ouvre tout doucement.',
-      'it': 'Faccio un bel respiro e lo apro con calma.',
-      'es': 'Respiro hondo y lo abro con mucho cuidado.',
+      'de': 'Was da wohl drin ist? Ich mache es gleich auf!',
+      'en': 'What can be inside? I open it right away!',
+      'fr': 'Qu’est-ce qu’il y a dedans ? Je l’ouvre tout de suite !',
+      'it': 'Chissà cosa c’è dentro? Lo apro subito!',
+      'es': '¿Qué habrá dentro? ¡Lo abro ahora mismo!',
     },
   ),
   FeelingStory(

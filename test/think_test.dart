@@ -455,7 +455,9 @@ void main() {
       await close(t, dev.log);
     });
 
-    testWidgets('how do I feel: the face, what helps, then praise', (t) async {
+    testWidgets('how do I feel: praise, the feeling, then what helps', (
+      t,
+    ) async {
       final faces = feelingFaces('de-DE');
       const story = 'Mein Eis ist auf den Boden gefallen. Wie fühle ich mich?';
       const help = 'Wenn ich traurig bin, hilft mir eine Umarmung.';
@@ -474,7 +476,10 @@ void main() {
       expect(dev.log.started('tts'), [story, 'fröhlich', story]);
       await t.tap(find.byKey(const ValueKey('think-option-1')));
       await wait(t, 1500);
-      expect(dev.log.started('tts').last, startsWith('traurig! $help '));
+      // the praise is for the answer: first, not after the sad story
+      final last = dev.log.started('tts').last;
+      expect(last, endsWith(' Traurig. $help'));
+      expect(last, isNot(contains('traurig!')));
       expect(find.text('traurig'), findsOneWidget);
       await wait(t, 8000);
       expect(progress.thinkBest('feelings', 'de-DE'), 0);
