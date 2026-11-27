@@ -3,6 +3,7 @@
 import 'dart:math' as math;
 
 import '../data/phrases.dart';
+import '../game/answer_slots.dart';
 import '../quiz/facts.dart';
 import 'feelings_data.dart';
 import 'think_data.dart';
@@ -36,6 +37,22 @@ class ThinkQuestion {
   String toString() =>
       '${clues.last}: ${options.map((o) => o.emoji).join(' ')} -> '
       '${answer.emoji}';
+}
+
+/// [round] with the answers spread over the places ([answerSlots]).
+List<ThinkQuestion> spreadAnswers(List<ThinkQuestion> round, math.Random rng) {
+  if (round.isEmpty) return round;
+  final slots = answerSlots(round.length, round.first.options.length, rng);
+  return [
+    for (final (i, q) in round.indexed)
+      ThinkQuestion(
+        q.clues,
+        withAnswerAt(q.options, q.answer, slots[i]),
+        q.answer,
+        scene: q.scene,
+        because: q.because,
+      ),
+  ];
 }
 
 /// Emoji without the variation selector (☂ and ☂️ are the same picture).
@@ -93,7 +110,7 @@ List<ThinkQuestion> makeNeedsRound(
       ),
     );
   }
-  return out;
+  return spreadAnswers(out, rng);
 }
 
 /// [count] riddles of "Who am I?" with [options] pictures each; the wrong
@@ -128,7 +145,7 @@ List<ThinkQuestion> makeRiddleRound(
       ),
     );
   }
-  return out;
+  return spreadAnswers(out, rng);
 }
 
 /// [count] questions of "Odd one out": three pictures of one kind
@@ -219,7 +236,7 @@ List<ThinkQuestion> makeOddRound(
       ),
     );
   }
-  return out;
+  return spreadAnswers(out, rng);
 }
 
 /// The property besides [skip] by which one of [four] differs clearly
@@ -270,7 +287,7 @@ List<ThinkQuestion> makeHomeRound(
       ),
     );
   }
-  return out;
+  return spreadAnswers(out, rng);
 }
 
 /// The faces of all feelings in [lang], as pictures to tap (one instance
@@ -316,7 +333,7 @@ List<ThinkQuestion> makeFeelingsRound(
       ),
     );
   }
-  return out;
+  return spreadAnswers(out, rng);
 }
 
 /// [count] questions of "Feeling faces": a feeling is named, [options]
@@ -334,7 +351,7 @@ List<ThinkQuestion> makeFacesRound(
   while (order.length < count) {
     order.addAll([...Feeling.values]..shuffle(rng));
   }
-  return [
+  return spreadAnswers([
     for (final f in order.take(count))
       ThinkQuestion(
         [question.replaceAll('{f}', faces[f]!.text)],
@@ -348,5 +365,5 @@ List<ThinkQuestion> makeFacesRound(
         ]..shuffle(rng),
         faces[f]!,
       ),
-  ];
+  ], rng);
 }
