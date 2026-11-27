@@ -101,9 +101,10 @@ void main() {
     final dev = await run(
       t,
       (app) => QuizScreen(app: app, sounds: true, round: [q]),
+      seconds: 14, // the intro with its example is longer
     );
     expect(dev.log.started('tts').take(2), [
-      introLine(GameIntro.sayWord, 'de-DE'),
+      introLine(GameIntro.sounds, 'de-DE'),
       QuizLines.of('de-DE').ask(q),
     ]);
     expect(dev.log.started('mic'), isNotEmpty);
@@ -213,7 +214,7 @@ void main() {
       (app) => QuizScreen(app: app, sounds: true, round: [q1, q2]),
       seconds: 40,
     );
-    final intro = introLine(GameIntro.sayWord, 'de-DE');
+    final intro = introLine(GameIntro.sounds, 'de-DE');
     expect(dev.log.started('tts').where((s) => s == intro), hasLength(1));
     await close(t, dev);
   });
@@ -283,7 +284,7 @@ void main() {
     for (var i = 0; i < 100; i++) {
       await t.pump(const Duration(milliseconds: 50));
     }
-    final intro = introLine(GameIntro.sayWord, 'de-DE');
+    final intro = introLine(GameIntro.sounds, 'de-DE');
     expect(dev.log.started('tts').where((s) => s == intro), hasLength(2));
     await close(t, dev);
   });

@@ -228,6 +228,56 @@ void main() {
   group('screen', () {
     String ipa(String t) => w(t).ipa.replaceAll('/', '');
 
+    testWidgets('the question\'s word said back: what is asked, once more', (
+      t,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final progress = await Progress.load();
+      final t0 = t.binding.clock.now();
+      final log = IoLog(() => t.binding.clock.now().difference(t0));
+      final dev = FakeDevices(log);
+      var n = 0;
+      final heard = [ipa('Katze'), ipa('Kuh')];
+      final app = AppState(
+        FakeRecognizer(() => heard[(n++).clamp(0, 1)]),
+        comparer,
+        progress,
+        books['de-DE']!,
+        io: dev.io,
+      );
+      final q = QuizQuestion(Ask.startsLike(w('Katze')), [
+        w('Ei'),
+        w('Kuh'),
+        w('Bett'),
+      ], w('Kuh'));
+      final nav = GlobalKey<NavigatorState>();
+      await t.pumpWidget(
+        MaterialApp(navigatorKey: nav, home: const Scaffold()),
+      );
+      nav.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) =>
+              QuizScreen(app: app, sounds: true, round: [q], intro: false),
+        ),
+      );
+      await t.pump();
+      await t.pump();
+      final dialog = find.byType(AlertDialog);
+      for (var i = 0; i < 1200 && dialog.evaluate().isEmpty; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+      expect(dialog, findsOneWidget, reason: '$log');
+      final said = log.started('tts');
+      expect(said, contains(QuizLines.of('de-DE').notItself('Katze')));
+      expect(said, isNot(contains(QuizLines.of('de-DE').notUnderstood)));
+      expect(find.text('1 / 1'), findsOneWidget);
+      await t.tap(find.byIcon(Icons.check_rounded));
+      await t.pumpWidget(const SizedBox());
+      for (var i = 0; i < 60; i++) {
+        await t.pump(const Duration(milliseconds: 50));
+      }
+    });
+
     testWidgets('a round: asked like the quiz, own record', (t) async {
       SharedPreferences.setMockInitialValues({});
       final progress = await Progress.load();
@@ -268,6 +318,11 @@ void main() {
       expect(
         log.started('tts').first,
         'Was fängt an wie Katze? Ei, Kuh oder Bett?',
+      );
+      // what the two have in common, after the praise
+      expect(
+        log.started('tts'),
+        contains(endsWith(' Katze und Kuh fangen gleich an.')),
       );
       expect(progress.soundsBest('de-DE'), 3);
       expect(progress.quizBest('de-DE'), 0);

@@ -4,8 +4,12 @@
 
 /// The ways a game is played, each with its own short intro.
 enum GameIntro {
-  /// Quiz and sound detective: the child says the word.
+  /// Quiz: the child says the word.
   sayWord,
+
+  /// Sound detective: the child says the word that starts the same way;
+  /// an example first ("starts like" is new to a child).
+  sounds,
 
   /// Listen closely: hear, then tap a picture.
   tapPicture,
@@ -62,6 +66,8 @@ String introLine(GameIntro game, String lang) {
 const _lines = <String, Map<GameIntro, String>>{
   'de': {
     GameIntro.sayWord: 'Hör gut zu und sag das richtige Wort!',
+    GameIntro.sounds:
+        'Hör gut zu! Maus und Mond fangen gleich an. Sag das Wort, das genauso anfängt!',
     GameIntro.tapPicture: 'Hör gut zu und tippe auf das richtige Bild!',
     GameIntro.readTapPicture: 'Lies das Wort und tippe auf das passende Bild!',
     GameIntro.tapLetters: 'Tippe die Buchstaben der Reihe nach an!',
@@ -88,6 +94,8 @@ const _lines = <String, Map<GameIntro, String>>{
   },
   'en': {
     GameIntro.sayWord: 'Listen, then say the right word!',
+    GameIntro.sounds:
+        'Listen! Mouse and moon start the same way. Say the word that starts the same way!',
     GameIntro.tapPicture: 'Listen, then tap the right picture!',
     GameIntro.readTapPicture: 'Read the word, then tap its picture!',
     GameIntro.tapLetters: 'Tap the letters in the right order!',
@@ -112,6 +120,8 @@ const _lines = <String, Map<GameIntro, String>>{
   },
   'fr': {
     GameIntro.sayWord: 'Écoute bien, puis dis le bon mot !',
+    GameIntro.sounds:
+        'Écoute bien ! Moto et maison commencent pareil. Dis le mot qui commence pareil !',
     GameIntro.tapPicture: 'Écoute bien, puis touche la bonne image !',
     GameIntro.readTapPicture: 'Lis le mot, puis touche son image !',
     GameIntro.tapLetters: 'Touche les lettres dans le bon ordre !',
@@ -138,6 +148,8 @@ const _lines = <String, Map<GameIntro, String>>{
   },
   'it': {
     GameIntro.sayWord: 'Ascolta bene, poi di’ la parola giusta!',
+    GameIntro.sounds:
+        'Ascolta bene! Mela e mano cominciano allo stesso modo. Di’ la parola che comincia allo stesso modo!',
     GameIntro.tapPicture: 'Ascolta bene, poi tocca l’immagine giusta!',
     GameIntro.readTapPicture: 'Leggi la parola, poi tocca la sua immagine!',
     GameIntro.tapLetters: 'Tocca le lettere nell’ordine giusto!',
@@ -162,6 +174,8 @@ const _lines = <String, Map<GameIntro, String>>{
   },
   'es': {
     GameIntro.sayWord: '¡Escucha bien y di la palabra correcta!',
+    GameIntro.sounds:
+        '¡Escucha bien! Mesa y mano empiezan igual. ¡Di la palabra que empieza igual!',
     GameIntro.tapPicture: '¡Escucha bien y toca la imagen correcta!',
     GameIntro.readTapPicture: '¡Lee la palabra y toca su imagen!',
     GameIntro.tapLetters: '¡Toca las letras en el orden correcto!',

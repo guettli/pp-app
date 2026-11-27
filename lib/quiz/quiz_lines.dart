@@ -40,6 +40,13 @@ class QuizLines {
   String answerIs(String word) => _t['answerIs']!.replaceAll('{w}', word);
   String get notUnderstood => _t['notUnderstood']!;
 
+  /// Sound detective, after the answer: "Maus und Mond fangen gleich an."
+  String sameStart(String like, String answer) =>
+      _t['sameStart']!.replaceAll('{a}', like).replaceAll('{b}', answer);
+
+  /// Sound detective: the child said the question's word back.
+  String notItself(String like) => _t['notItself']!.replaceAll('{w}', like);
+
   /// Short name of [p] for the word list ("flies").
   String label(Prop p) => _t['label.${p.name}']!;
 
@@ -67,6 +74,8 @@ class QuizLines {
       'or': 'oder',
       'answerIs': 'Die Antwort ist: {w}.',
       'startsLike': 'Was fängt an wie {w}?',
+      'sameStart': '{a} und {b} fangen gleich an.',
+      'notItself': 'Nicht {w}! Ein anderes Wort, das so anfängt wie {w}.',
       'notUnderstood': 'Das habe ich nicht verstanden. Noch einmal!',
       'label.animal': 'Tier',
       'label.flies': 'fliegt',
@@ -107,6 +116,8 @@ class QuizLines {
       'or': 'or',
       'answerIs': 'The answer is: {w}.',
       'startsLike': 'Which one starts like {w}?',
+      'sameStart': '{a} and {b} start the same.',
+      'notItself': 'Not {w}! Another word that starts like {w}.',
       'notUnderstood': 'I did not catch that. Once more!',
       'label.animal': 'animal',
       'label.flies': 'flies',
@@ -147,6 +158,8 @@ class QuizLines {
       'or': 'ou',
       'answerIs': 'La réponse est\u00A0: {w}.',
       'startsLike': 'Qu’est-ce qui commence comme {w}\u00A0?',
+      'sameStart': '{a} et {b} commencent pareil.',
+      'notItself': 'Pas {w}\u00A0! Un autre mot qui commence comme {w}.',
       'notUnderstood': 'Je n’ai pas compris. Encore une fois\u00A0!',
       'label.animal': 'animal',
       'label.flies': 'vole',
@@ -187,6 +200,8 @@ class QuizLines {
       'or': 'o',
       'answerIs': 'La risposta è: {w}.',
       'startsLike': 'Cosa comincia come {w}?',
+      'sameStart': '{a} e {b} cominciano allo stesso modo.',
+      'notItself': 'Non {w}! Un’altra parola che comincia come {w}.',
       'notUnderstood': 'Non ho capito. Ancora una volta!',
       'label.animal': 'animale',
       'label.flies': 'vola',
@@ -227,6 +242,8 @@ class QuizLines {
       'or': 'o',
       'answerIs': 'La respuesta es: {w}.',
       'startsLike': '¿Qué empieza como {w}?',
+      'sameStart': '{a} y {b} empiezan igual.',
+      'notItself': '¡{w} no! Otra palabra que empieza como {w}.',
       'notUnderstood': 'No te he entendido. ¡Otra vez!',
       'label.animal': 'animal',
       'label.flies': 'vuela',
