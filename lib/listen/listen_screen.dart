@@ -313,8 +313,8 @@ class _ListenScreenState extends State<ListenScreen>
     }
     if (!mounted) return;
     unawaited(_sound(fanfare(_rng)));
-    // the round is done: at least a "well done", never "almost"
-    var text = pickPraise(_lang, math.max(stars, 2), _rng, avoid: _lastPraise);
+    // the round is done: see roundEndPraise
+    var text = roundEndPraise(_lang, stars, _rng, avoid: _lastPraise);
     if (record) text = '$text ${newRecordLine(_lang)}';
     _donePraise = Timer(const Duration(milliseconds: 1400), () {
       if (mounted && !_paused) _say(text);
@@ -325,6 +325,8 @@ class _ListenScreenState extends State<ListenScreen>
       right: right,
       total: _round.length,
       record: record,
+      again: (_) =>
+          ListenScreen(app: widget.app, reading: widget.reading, intro: false),
     );
   }
 

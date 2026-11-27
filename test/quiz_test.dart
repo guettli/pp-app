@@ -358,7 +358,7 @@ void main() {
         await t.pump(const Duration(milliseconds: 50));
       }
       if (find.byType(AlertDialog).evaluate().isNotEmpty) {
-        await t.tap(find.text('Great'));
+        await t.tap(find.byIcon(Icons.check_rounded));
       }
       await t.pumpWidget(const SizedBox());
       for (var i = 0; i < 60; i++) {

@@ -106,6 +106,27 @@ const newRecordSaid = <String, String>{
   'es': '¡Nuevo récord!',
 };
 
+/// Said at the end of a round without a star: kind, but not "well done".
+const practicedSaid = <String, String>{
+  'de': 'Gut geübt! Nächstes Mal gibt es mehr Sterne.',
+  'en': 'Good practice! Next time there will be more stars.',
+  'fr': 'Bel entraînement\u00A0! La prochaine fois, il y aura plus d’étoiles.',
+  'it': 'Bell’allenamento! La prossima volta ci saranno più stelle.',
+  'es': '¡Buen entrenamiento! La próxima vez habrá más estrellas.',
+};
+
+/// What the phone says at the end of a round of [stars]: at least a
+/// "well done", never "almost"; without a star a kind "good practice"
+/// (a "well done" for nothing teaches nothing).
+String roundEndPraise(
+  String lang,
+  int stars,
+  math.Random rng, {
+  String? avoid,
+}) => stars <= 0
+    ? practicedSaid[lang.split('-').first] ?? practicedSaid['en']!
+    : pickPraise(lang, math.max(stars, 2), rng, avoid: avoid);
+
 /// [newRecordSaid] in [lang] (e.g. "de-DE"); English if unknown.
 String newRecordLine(String lang) =>
     newRecordSaid[lang.split('-').first] ?? newRecordSaid['en']!;

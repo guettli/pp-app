@@ -25,6 +25,9 @@ class S {
   String get notHeard => _t['notHeard']!;
   String get worldDone => _t['worldDone']!;
   String get ok => _t['ok']!;
+  String get practiced => _t['practiced']!;
+  String get done => _t['done']!;
+  String get again => _t['again']!;
   String get funnyVoice => _t['funnyVoice']!;
   String get loading => _t['loading']!;
   String get holdTitle => _t['holdTitle']!;
@@ -149,6 +152,9 @@ class S {
       'yourTurn': 'Jetzt du!',
       'notHeard': 'Ich habe nichts gehört. Tippe auf 🎤 und sprich nach.',
       'worldDone': 'Geschafft!',
+      'practiced': 'Gut geübt!',
+      'done': 'Fertig',
+      'again': 'Noch mal',
       'newStars': '{n} neue Sterne gesammelt.',
       'ok': 'Super',
       'funnyVoice': 'Lustige Stimme',
@@ -281,6 +287,9 @@ class S {
       'yourTurn': 'Your turn!',
       'notHeard': 'I did not hear anything. Tap 🎤 and say it after me.',
       'worldDone': 'Well done!',
+      'practiced': 'Good practice!',
+      'done': 'Done',
+      'again': 'Again',
       'newStars': '{n} new stars collected.',
       'ok': 'Great',
       'funnyVoice': 'Funny voice',
@@ -412,6 +421,9 @@ class S {
       'yourTurn': 'À toi !',
       'notHeard': 'Je n’ai rien entendu. Touche 🎤 et répète.',
       'worldDone': 'Bravo !',
+      'practiced': 'Bel entraînement\u00A0!',
+      'done': 'Terminé',
+      'again': 'Encore',
       'newStars': '{n} nouvelles étoiles.',
       'ok': 'Super',
       'funnyVoice': 'Voix rigolote',
@@ -544,6 +556,9 @@ class S {
       'yourTurn': 'Tocca a te!',
       'notHeard': 'Non ho sentito niente. Tocca 🎤 e ripeti.',
       'worldDone': 'Bravo!',
+      'practiced': 'Bell’allenamento!',
+      'done': 'Fatto',
+      'again': 'Ancora',
       'newStars': '{n} nuove stelle raccolte.',
       'ok': 'Evviva',
       'funnyVoice': 'Voce buffa',
@@ -675,6 +690,9 @@ class S {
       'yourTurn': '¡Te toca!',
       'notHeard': 'No he oído nada. Toca 🎤 y repite.',
       'worldDone': '¡Muy bien!',
+      'practiced': '¡Buen entrenamiento!',
+      'done': 'Hecho',
+      'again': 'Otra vez',
       'newStars': '{n} estrellas nuevas.',
       'ok': 'Genial',
       'funnyVoice': 'Voz graciosa',

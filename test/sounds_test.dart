@@ -272,7 +272,7 @@ void main() {
       expect(progress.soundsBest('de-DE'), 3);
       expect(progress.quizBest('de-DE'), 0);
       expect(log.soundsWhileRecording(), isEmpty, reason: '$log');
-      await t.tap(find.text('Great'));
+      await t.tap(find.byIcon(Icons.check_rounded));
       await t.pumpWidget(const SizedBox());
       for (var i = 0; i < 60; i++) {
         await t.pump(const Duration(milliseconds: 50));

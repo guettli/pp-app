@@ -69,8 +69,35 @@ class DoneButton extends StatelessWidget {
   );
 }
 
+/// The big blue 🔁 beside [DoneButton]: the same game once more.
+class AgainButton extends StatelessWidget {
+  const AgainButton({super.key, required this.label, required this.onPressed});
+
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) => FilledButton.icon(
+    key: const ValueKey('round-again'),
+    style: FilledButton.styleFrom(
+      backgroundColor: const Color(0xFF2962FF),
+      foregroundColor: Colors.white,
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      textStyle: Theme.of(
+        context,
+      ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+    ),
+    onPressed: onPressed,
+    icon: const Icon(Icons.replay_rounded, size: 40),
+    label: Text(label),
+  );
+}
+
 /// The end of a round: [stars] of 3, [right] of [total], a new record.
-/// OK closes the dialog and the game. The back button cannot close it.
+/// ✓ closes the dialog and the game; with [again], 🔁 starts a new round
+/// of the same game instead (a child who liked it, or wants the stars it
+/// missed, need not find the tile again). The back button cannot close
+/// it. Without a star the title is a kind "good practice", not "well done".
 ///
 /// Not a still box: the hare of "Der Hase lacht" jumps for joy (higher
 /// and more often the more stars), and the stars pop in one after the
@@ -81,6 +108,7 @@ Future<void> showRoundEnd(
   required int right,
   required int total,
   required bool record,
+  WidgetBuilder? again,
 }) {
   final s = S.of(context);
   return showDialog<void>(
@@ -96,7 +124,7 @@ Future<void> showRoundEnd(
           children: [
             const EmojiImage('🏆', size: 48),
             const SizedBox(width: 12),
-            Flexible(child: Text(s.worldDone)),
+            Flexible(child: Text(stars > 0 ? s.worldDone : s.practiced)),
           ],
         ),
         content: RoundEndCheer(
@@ -105,9 +133,21 @@ Future<void> showRoundEnd(
           total: total,
           record: record ? s.newRecord : null,
         ),
+        actionsAlignment: MainAxisAlignment.spaceEvenly,
+        actionsOverflowAlignment: OverflowBarAlignment.center,
         actions: [
+          if (again != null)
+            AgainButton(
+              label: s.again,
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                Navigator.of(
+                  context,
+                ).pushReplacement(MaterialPageRoute<void>(builder: again));
+              },
+            ),
           DoneButton(
-            label: s.ok,
+            label: stars > 0 ? s.ok : s.done,
             onPressed: () {
               Navigator.of(ctx).pop();
               Navigator.of(context).pop();
@@ -139,6 +179,13 @@ class RoundEndCheer extends StatefulWidget {
   @override
   State<RoundEndCheer> createState() => _RoundEndCheerState();
 }
+
+const _grey = ColorFilter.matrix([
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0.2126, 0.7152, 0.0722, 0, 0, //
+  0, 0, 0, 1, 0,
+]);
 
 class _RoundEndCheerState extends State<RoundEndCheer>
     with SingleTickerProviderStateMixin {
@@ -179,13 +226,19 @@ class _RoundEndCheerState extends State<RoundEndCheer>
     mainAxisSize: MainAxisSize.min,
     children: [
       for (var i = 0; i < 3; i++)
-        Opacity(
-          opacity: i < widget.stars ? 1 : 0.25,
-          child: Transform.scale(
-            scale: i < widget.stars ? _pop(i) : 1,
-            child: const EmojiImage('⭐', size: 40),
-          ),
-        ),
+        i < widget.stars
+            ? Transform.scale(
+                scale: _pop(i),
+                child: const EmojiImage('⭐', size: 40),
+              )
+            // not earned: grey, clearly not a faint gold one
+            : const Opacity(
+                opacity: 0.35,
+                child: ColorFiltered(
+                  colorFilter: _grey,
+                  child: EmojiImage('⭐', size: 40),
+                ),
+              ),
     ],
   );
 
