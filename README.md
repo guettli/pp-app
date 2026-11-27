@@ -108,6 +108,11 @@ and high also listen (and so do the worlds).
 - **🔔 Sound detective:** "What starts like Maus?" with the picture of
   the mouse; three pictures, one starts the same way (Mond), the child
   says it (the quiz with other questions, `lib/quiz/sound_rules.dart`).
+  Its intro gives an example ("Maus und Mond fangen gleich an."); after
+  every answer, right or wrong, the phone says what the two have in
+  common ("Maus und Mond fangen gleich an."). Saying the question's word
+  back (the most common mix-up) gets "Nicht Maus! Ein anderes Wort, das so
+  anfängt wie Maus." instead of "I did not understand".
   "The same way" is every consonant before the first vowel: Stuhl /ʃt/
   starts like Stern, not like Spinne /ʃp/ or Schuh /ʃ/. Words starting
   with a vowel are left out; the wrong ones start with a clearly

@@ -65,6 +65,17 @@ Phrase? heardOption(
   return option;
 }
 
+/// The child said [echo], the question's word ("What starts like Blatt?"
+/// "Blatt!"), as clearly as an answer would have to be.
+bool saidEcho(PhonemeComparer comparer, Phrase echo, String ipa, String lang) {
+  if (ipa.isEmpty) return false;
+  final cs = [
+    for (final w in echo.accepted) comparer.compare(w.ipa, ipa, lang),
+  ];
+  return cs.map((c) => c.score).reduce(math.max) >= minAnswerScore &&
+      cs.map(sameShare).reduce(math.max) >= minAnswerSame;
+}
+
 /// Per option: its best score and best share of the same sounds against
 /// [ipa] (what [heardOption] decides on; for quiz reports).
 List<({String option, double score, double same})> optionScores(

@@ -258,7 +258,9 @@ class _QuizScreenState extends State<QuizScreen>
     }
     if (!_current(id)) return;
     if (!_introDone) {
-      await _say(introLine(GameIntro.sayWord, _lang));
+      await _say(
+        introLine(widget.sounds ? GameIntro.sounds : GameIntro.sayWord, _lang),
+      );
       // cut off (paused, 🐞): said again with the next try
       if (!_current(id)) return;
       _introDone = true;
@@ -307,6 +309,7 @@ class _QuizScreenState extends State<QuizScreen>
     setState(() => _phase = _Phase.thinking);
     Phrase? said;
     String? ipa;
+    var echoed = false;
     try {
       final rec = await widget.app.recognizer
           .recognize(heard.audio)
@@ -320,6 +323,11 @@ class _QuizScreenState extends State<QuizScreen>
       );
       debugPrint('quiz: heard "${rec.ipa}" -> ${said?.text}');
       ipa = rec.ipa;
+      final like = _q.ask.like;
+      echoed =
+          said == null &&
+          like != null &&
+          saidEcho(widget.app.comparer, like, rec.ipa, _lang);
     } catch (e, st) {
       debugPrint('recognition failed: $e\n$st');
       // not when the try was dropped meanwhile (paused, closed)
@@ -334,7 +342,11 @@ class _QuizScreenState extends State<QuizScreen>
       _unclear++;
       // still "speaking": taps must not cut it off and ask twice
       setState(() => _phase = _Phase.speaking);
-      await _say(_lines.notUnderstood);
+      // the question's word back: say what is asked, not "I did not
+      // understand" (it was understood)
+      await _say(
+        echoed ? _lines.notItself(_q.ask.like!.text) : _lines.notUnderstood,
+      );
       if (!_current(id)) return;
       setState(() => _phase = _Phase.ready);
       unawaited(_ask());
@@ -424,7 +436,13 @@ class _QuizScreenState extends State<QuizScreen>
     } else {
       text = _lines.answerIs(_q.answer.text);
     }
-    await _say(text);
+    final like = _q.ask.like;
+    // sound detective: what the two have in common, right or wrong
+    await _say(
+      like == null
+          ? text
+          : '$text ${_lines.sameStart(like.text, _q.answer.text)}',
+    );
     if (!_current(id)) return;
     _onward = Timer(const Duration(milliseconds: 900), () {
       if (_current(id) && _phase == _Phase.result) _next();
